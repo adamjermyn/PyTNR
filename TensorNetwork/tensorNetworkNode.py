@@ -1,4 +1,62 @@
 class Bucket:
+	'''
+	A bucket is a means of externally referencing an index of a tensor which handles the way in which
+	the tensor is linked to other tensors.
+
+	Each Bucket references exactly one index, but may contain multiple Links between that index and others.
+	This allows a given tensor to be part of a heirarchical network, wherein nodes may be merged while
+	retaining information about the unmerged structure. To accomodate this, each TensorNetworkNode is
+	associated with an integer known as a level, specifying where it sits in the structure. Each Link also
+	has such a number, and the level corresponding to that Link is the greater of the two node levels on
+	either end of the link.
+
+	Link is associated with
+	an integer known as the link level. The link level must be the greater of the 
+
+
+
+	two integers, corresponding to a link level on either side. For instance, suppose that three nodes A, B,
+	and C are all connected pairwise. Each of these links will have levels (0,0). If we merge A and B, a new
+	link will exist between this merged object and C, with level 1 for the merged object and level 0 for the 
+	are linked 
+
+	Buckets have the following functions:
+
+	node 		-	Returns the TensorNetworkNode this bucket belongs to.
+	index 		-	Returns the index of the TensorNetworkNode's Tensor this bucket refers to.
+	network 	-	Returns the TensorNetwork this bucket belongs to.
+	links 		-	Takes as input an integer specifying a link level and returns all links of that level.
+					There may be at most a single link of each level. If a link exists at level n then one
+					necessarily exists at level n-1 for all n > 1.
+	otherBucket	-	Takes as input an integer specifying a link level and returns the bucket on the other
+					side of the link of that level, if there is one. If there isn't one this raises an
+					AttributeError.
+	otherNode	-	Takes as input an integer specifying a link level and returns the TensorNetworkNode
+					on the other side of the link of that level, if there is one. If there isn't one
+					this raises an AttributeError.
+	makeLink	-	Takes as input another Bucket and creates a Link between this Bucket and that one.
+					The link level is automatically assigned to be 
+	'''
+
+	def __init__(self, node, index, network):
+		self.__node = node
+		self.__index = index
+		self.__network = network
+
+		self.links = None
+
+	def node(self):
+		return self.node
+
+	def index(self):
+		return self.index
+
+	def network(self):
+		return self.network
+
+
+
+class Bucket:
 	def __init__(self, tensor, index, all_links):
 		self.tensor = tensor
 		self.index = index
