@@ -121,7 +121,12 @@ class Node:
 				n.trace() # Keep going until there are no more repeated indices to trace.
 				return
 
-	def merge(self):
+	def merge(self, other):
+		c =self.connectedHigh()
+		if other not in c:
+			raise ValueError # Only allow mergers between highest-level objects (so each Node has at most one parent).
+
+
 		raise NotImplementedError
 
 
@@ -160,51 +165,6 @@ class Node:
 
 			self.buckets = self.buckets[lenlinks-1:]
 			other.buckets = other.buckets[lenlinks-1:]
-
-	def mergeAllLinks(self):
-		for t in self.connected.keys():
-			self.mergeLinks(t)
-
-	def trace(self, ind0, ind1):
-		self.array = np.trace(self.array, axis1=ind0, axis2=ind1)
-
-		b0 = self.buckets[ind0]
-		b1 = self.buckets[ind1]
-
-		self.buckets.remove(b0)
-		self.buckets.remove(b1)
-
-		del b0
-		del b1
-
-	def addLink(self, other, indSelf, indOther, kind='outside'):
-		# If kind is outside then indSelf and indOther are assumed to refer to outside (original) indices.
-		# Otherwise they are inside indices.
-		if kind=='outside':
-			for q in range(len(self.buckets)):
-				if self.buckets[q].index == indSelf:
-					i = q
-			for q in range(len(other.buckets)):
-				if other.buckets[q].index == indOther:
-					j = q
-		else:
-			i = indSelf
-			j = indOther
-
-		if self.buckets[i].link is not None:
-			raise ValueError('Error: That bucket is already occupied.')
-		if other.buckets[j].link is not None:
-			raise ValueError('Error: That bucket is already occupied.')
-
-		if self == other:
-			self.trace(i,j)
-		else:
-			b1 = self.buckets[i]
-			b2 = other.buckets[j]
-
-			# Build a link
-			b1.makeLink(b2)
-			l = b1.link
 
 	def contract(self, other, reshape=True): # There should be just one link
 		if other not in self.connected:
