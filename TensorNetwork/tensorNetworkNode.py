@@ -126,6 +126,11 @@ class Node:
 		if other not in c:
 			raise ValueError # Only allow mergers between highest-level objects (so each Node has at most one parent).
 
+		# Find all links between self and other
+
+		# Merge links between self and other
+
+		# Contract along new link
 
 		raise NotImplementedError
 
