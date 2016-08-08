@@ -1,7 +1,7 @@
 class Link:
 	'''
 	A Link is a means of indicating an intent to contract two tensors.
-	This object has two Buckets, one for each TensorNetworkNode being connected.
+	This object has two Buckets, one for each Node being connected.
 	In addition, it has a method for computing the von Neumann entropy of the Link.
 	In cases where this computation is intractable due to memory requirements, a heuristic
 	is used.
@@ -11,6 +11,9 @@ class Link:
 	bucket1		-	Returns the first Bucket this link connects to.
 	bucket2		-	Returns the second Bucket this link connects to.
 	entropy		-	Returns the entropy of the Link. Heuristics are used where memory requires them.
+	compress	-	Compresses the Link uses Singular Value Decomposition. This involves modifying
+					the Tensors the link contains, and so will trigger deletion of Links higher up
+					in the heirarchical network structure.
 	delete		-	Removes this link from both 
 
 	Links are instantiated with the buckets they connect, and are added to the end of the Link
@@ -50,16 +53,17 @@ class Bucket:
 
 	Buckets have the following functions:
 
-	node 		-	Returns the TensorNetworkNode this Bucket belongs to.
-	index 		-	Returns the index of the TensorNetworkNode's Tensor this Bucket refers to.
+	node 		-	Returns the Node this Bucket belongs to.
+	index 		-	Returns the index of the Node's Tensor this Bucket refers to.
 	network 	-	Returns the TensorNetwork this Bucket belongs to.
 	numLinks	-	Returns the number of Links this Bucket has.
+	links 		-	Returns all Links this Bucket has.
 	link 		-	Takes as input an integer specifying the index of the Link of interest and returns
 					that link.
 	otherBucket	-	Takes as input an integer specifying the index of the Link of interest and returns
 					the Bucket on the other side of that Link.
 	otherNode	-	Takes as input an integer specifying the index of the Link of interest and returns
-					the TensorNetworkNode on the other side of that Link.
+					the Node on the other side of that Link.
 	addLink		-	Takes as input a Link and appends it to the end of the Link list.
 	removeLink	-	Removes a Link from the Link list. Raises a ValueError if the Link is not present.
 	'''
@@ -83,6 +87,9 @@ class Bucket:
 	def numLinks(self):
 		return len(self.__links)
 
+	def links(self):
+		return self.__links
+
 	def link(self, index):
 		return self.__links[index]
 
@@ -104,32 +111,98 @@ class Bucket:
 		else:
 			raise ValueError
 
+class Node:
+	'''
+	A Node object stores the Buckets corresponding to a given Tensor.
+	It also provides helper methods allowing for easy access to neighbors.
 
+	Node objects have the following functions which do not modify them:
 
-class Bucket:
-	def __init__(self, tensor, index, all_links):
-		self.tensor = tensor
-		self.index = index
+	id 				-	Returns the id number of the Node. These numbers are unique within a network.
+	children		-	Returns the children Nodes (if any) which merged to form this Node.
+	parent			-	Returns the Node (if any) which this merges to form.
+	connected		-	Returns the Nodes this one is connected to.
+	connectedHigh	-	Returns the Nodes this one is connected to, giving the highest-level list possible.
+						That is, the list such that no element of the set has a parent which is connected
+						to this Node, and such that all Nodes connected to this one are children to some
+						degree of an element in the list.
+	tensor 			-	Returns the Tensor underlying this Node.
+	merge 			-	Takes as input another Node and merges this Node with it. The net result is that
+						a new node is added to the network. This Node and the other are left intact, with
+						all of their Links preserved. The rest of the network's Nodes will have Links both
+						to these and to the new Node, with Links to the new Node appearing later in their
+						Link lists.
 
-		self.all_links = all_links
+	There are additional functions which do modify Nodes, listed below. These functions result in automatic
+	deletion of all Nodes formed by merging this Tensor with others.
 
-		self.link = None
-		self.otherTensor = None
-		self.otherBucket = None
+	outerProduct	-	Takes as input a Tensor and modifies the Tensor underlying this one to be
+						the outer product of the original and the input. The input is indexed last
+						in the new Tensor. This is useful for lattice sites, for instance, where the
+						Tensor is really just the identify and there may be several Links added.
+	modify 			-	Takes as input a Tensor of the same shape as the underlying Tensor object and
+						replaces the underlying one with it. Note that a ValueError will be raised if
+						the shapes do not match.
+	delete			-	Delete the Node and all associated Links.
+	'''
+	def __init__(self, tens, network, children=[]):
+		self.__tensor = tens
+		self.__network = network
+		self.__id = self.__network.nextId()
+		self.__children = children
+		self.__parent = None
+		self.__buckets = [Bucket(self,i,self.__network) for i in range(len(self.__tensor.shape()))]
 
-	def makeLink(self, other):
-		self.otherBucket = other
+	def id(self):
+		return self.__id
 
-		self.link = Link(self,other,self.all_links)
-		other.link = self.link
+	def children(self):
+		return self.__children
 
-		other.otherBucket = self
+	def parent(self):
+		return self.__parent
 
-		self.otherTensor = other.tensor
-		other.otherTensor = self.tensor
+	def connected(self):
+		c = []
+		for b in self.__buckets:
+			for i in range(len(b.numLinks())):
+				c.append(b.otherNode(i))
+		return c
 
-		self.tensor.connected[self.otherTensor].append(self.link)
-		other.tensor.connected[other.otherTensor].append(self.link)
+	def connectedHigh(self):
+		c = []
+		for b in self.__buckets:
+			c.append(b.otherNode(b.numLinks()-1))
+		return c
+
+	def tensor(self):
+		return self.__tensor
+
+	def merge(self):
+		raise NotImplementedError
+
+	def delete(self):
+		if self.__parent is not None:
+			self.__parent.delete()
+
+		for b in self.__buckets:
+			for l in b.links():
+				l.delete()
+
+		for c in self.children():
+			c.parent = None
+
+		del self.__buckets
+		del self
+
+	def modify(self, other):
+		if self.__parent is not None:
+			self.__parent.delete()
+
+		if self.__tensor.shape() != other.shape():
+			raise ValueError
+
+		self.__tensor = other
 
 class Tensor:
 	def __init__(self, array, all_links, children = None, parent = None, kind = None, idd = None, network = None):
