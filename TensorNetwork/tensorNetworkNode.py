@@ -1,41 +1,28 @@
 class Bucket:
 	'''
-	A bucket is a means of externally referencing an index of a tensor which handles the way in which
+	A Bucket is a means of externally referencing an index of a tensor which handles the way in which
 	the tensor is linked to other tensors.
 
 	Each Bucket references exactly one index, but may contain multiple Links between that index and others.
 	This allows a given tensor to be part of a heirarchical network, wherein nodes may be merged while
-	retaining information about the unmerged structure. To accomodate this, each TensorNetworkNode is
-	associated with an integer known as a level, specifying where it sits in the structure. Each Link also
-	has such a number, and the level corresponding to that Link is the greater of the two node levels on
-	either end of the link.
-
-	Link is associated with
-	an integer known as the link level. The link level must be the greater of the 
-
-
-
-	two integers, corresponding to a link level on either side. For instance, suppose that three nodes A, B,
-	and C are all connected pairwise. Each of these links will have levels (0,0). If we merge A and B, a new
-	link will exist between this merged object and C, with level 1 for the merged object and level 0 for the 
-	are linked 
+	retaining information about the unmerged structure. To accomodate this, each Bucket contains a list
+	of Links. When two nodes are merged, the old links remain, while a new Link to the merged object
+	is added to the end of the Link list.
 
 	Buckets have the following functions:
 
-	node 		-	Returns the TensorNetworkNode this bucket belongs to.
-	index 		-	Returns the index of the TensorNetworkNode's Tensor this bucket refers to.
-	network 	-	Returns the TensorNetwork this bucket belongs to.
-	links 		-	Takes as input an integer specifying a link level and returns all links of that level.
-					There may be at most a single link of each level. If a link exists at level n then one
-					necessarily exists at level n-1 for all n > 1.
-	otherBucket	-	Takes as input an integer specifying a link level and returns the bucket on the other
-					side of the link of that level, if there is one. If there isn't one this raises an
-					AttributeError.
-	otherNode	-	Takes as input an integer specifying a link level and returns the TensorNetworkNode
-					on the other side of the link of that level, if there is one. If there isn't one
-					this raises an AttributeError.
+	node 		-	Returns the TensorNetworkNode this Bucket belongs to.
+	index 		-	Returns the index of the TensorNetworkNode's Tensor this Bucket refers to.
+	network 	-	Returns the TensorNetwork this Bucket belongs to.
+	numLinks	-	Returns the number of Links this Bucket has.
+	link 		-	Takes as input an integer specifying the index of the Link of interest and returns
+					that link.
+	otherBucket	-	Takes as input an integer specifying the index of the Link of interest and returns
+					the Bucket on the other side of that Link.
+	otherNode	-	Takes as input an integer specifying the index of the Link of interest and returns
+					the TensorNetworkNode on the other side of that Link.
 	makeLink	-	Takes as input another Bucket and creates a Link between this Bucket and that one.
-					The link level is automatically assigned to be 
+					The link level is automatically placed at the end of each Bucket's Link list.
 	'''
 
 	def __init__(self, node, index, network):
