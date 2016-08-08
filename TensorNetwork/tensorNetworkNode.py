@@ -17,12 +17,13 @@ class Node:
 						to this Node, and such that all Nodes connected to this one are children to some
 						degree of an element in the list.
 	tensor 			-	Returns the Tensor underlying this Node.
+	bucket 			-	Returns the Bucket at the given index.
 	bucketIndex 	-	Returns the index of the specified bucket.
 
 	There are functions which modify Nodes by linking them:
 
-	addLink			-	Takes as input another Node as well as two indices and creates a Link between
-						this Node and the other, this one on the first index and the other on the second.
+	addLink			-	Takes as input another Node as well as the index of the Bucket on this Node
+						and the index of the Bucket on the other Node. Links them.
 
 	There are additional functions which create modified copies of Nodes, listed below.
 	These may be called only if the node is parentless.
@@ -41,7 +42,6 @@ class Node:
 
 	TODO:
 	1. Implement merge.
-	2. Implement linking function (addLink).
 	'''
 	def __init__(self, tens, network, children=[]):
 		self.__tensor = tens
@@ -81,6 +81,9 @@ class Node:
 	def bucketIndex(self, b):
 		return self.__buckets.index(b)
 
+	def bucket(self, i):
+		return self.__buckets[i]
+
 	def delete(self):
 		if self.__parent is not None:
 			self.__parent.delete()
@@ -97,6 +100,11 @@ class Node:
 		del self.__buckets
 		del self
 
+	def addLink(self, selfBucket, otherBucket):
+		l = Link(selfBucket,otherBucket,self.__network)
+		selfBucket.addLink(l)
+		otherBucket.addLink(l)
+
 	def trace(self):
 		for b in self.__buckets:
 			otherBucket = b.otherBucket(b.numLinks()-1)
@@ -110,9 +118,8 @@ class Node:
 				counter = 0
 				for bb in self.__buckets:
 					if bb.linked() and bb != b and bb != otherBucket:
-						# TODO: Make addLink signature below conform to specification above.
-						n.addLink(counter,bb.otherBucket(bb.numLinks()-1))
-				n.trace()
+						n.addLink(n.bucket(counter),bb.otherNode(bb.numLinks()-1).bucketIndex(bb.otherBucket(bb.numLinks()-1)))
+				n.trace() # Keep going until there are no more repeated indices to trace.
 				return
 
 	def merge(self):
