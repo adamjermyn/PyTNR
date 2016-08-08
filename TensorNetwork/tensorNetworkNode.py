@@ -61,6 +61,9 @@ class Node:
 	def parent(self):
 		return self.__parent
 
+	def setParent(self, parent):
+		self.__parent = parent
+
 	def connected(self):
 		c = []
 		for b in self.__buckets:
@@ -99,8 +102,12 @@ class Node:
 		del self.__buckets
 		del self
 
-	def addLink(self, selfBucket, otherBucket):
+	def addLink(self, other, selfBucketIndex, otherBucketIndex):
+		selfBucket = self.bucket(selfBucketIndex)
+		otherBucket = other.bucket(otherBucketIndex)
+
 		l = Link(selfBucket,otherBucket,self.__network)
+
 		selfBucket.addLink(l)
 		otherBucket.addLink(l)
 
@@ -112,12 +119,12 @@ class Node:
 				ind0 = self.bucketIndex(b)
 				ind1 = self.bucketIndex(otherBucket)
 				newT = self.__tensor.trace(ind0,ind1)
-				n = Node(newT,self.__network,children=self)
-				self.__parent = n
+				n = Node(newT,self.__network,children=[self])
+				self.setParent(n)
 				counter = 0
 				for bb in self.__buckets:
 					if bb.linked() and bb != b and bb != otherBucket:
-						n.addLink(n.bucket(counter),bb.otherNode(-1).bucketIndex(bb.otherBucket(-1)))
+						n.addLink(bb.otherNode(-1),counter,bb.otherNode(-1).bucketIndex(bb.otherBucket(-1)))
 				n.trace() # Keep going until there are no more repeated indices to trace.
 				return
 
@@ -127,14 +134,35 @@ class Node:
 			raise ValueError # Only allow mergers between highest-level objects (so each Node has at most one parent).
 
 		# Find all links between self and other
+		links = []
+		for i,b in enumerate(self.__buckets):
+			if b.otherNode(-1) == other:
+				links.append((i,other.bucketIndex(b.otherBucket(-1))))
 
-		# Merge links between self and other
+		links = zip(*links)
 
-		# Contract along new link
+		# Contract along common links
+		t = self.__tensor.contract(links[0],other.tensor(),links[1])
 
-		raise NotImplementedError
+		# Build new Node
+		n = Node(t,self.__network,children=[self,other])
+		self.setParent(n)
+		other.setParent(n)
 
-
+		# Link new Node
+		counter = 0
+		for i in range(len(self.tensor().shape())):
+			b = self.bucket(i)
+			if i not in links[0]:
+				if b.linked():
+					n.addLink(b.otherNode(-1),n.bucket(counter),b.otherNode(-1).bucketIndex(b.otherBucket(-1)))
+				counter += 1
+		for i in range(len(other.tensor().shape())):
+			b = other.bucket(i)
+			if i not in links[1]:
+				if b.linked():
+					n.addLink(b.otherNode(-1),n.bucket(counter),b.otherNode(-1).bucketIndex(b.otherBucket(-1)))
+				counter += 1
 	
 
 '''

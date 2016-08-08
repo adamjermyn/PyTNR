@@ -46,10 +46,9 @@ class Tensor:
 	def trace(self, ind0, ind1):
 		if self.__shape[ind0] != self.__shape[ind1]:
 			raise ValueError
-		elif self.array is not None:
-			arr = np.trace(self.array(),axis1=ind0,axis2=ind1)
-			i0 = min(ind0,ind1)
-			i1 = max(ind0,ind1)
-			sh = list(self.shape())
-			sh = sh[:i0] + sh[i0+1:i1] + sh[i1+1:]
-			return Tensor(sh,arr)
+		arr = np.trace(self.array(),axis1=ind0,axis2=ind1)
+		i0 = min(ind0,ind1)
+		i1 = max(ind0,ind1)
+		sh = list(self.shape())
+		sh = sh[:i0] + sh[i0+1:i1] + sh[i1+1:]
+		return Tensor(sh,arr)
