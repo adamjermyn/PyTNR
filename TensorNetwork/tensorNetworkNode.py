@@ -1,3 +1,42 @@
+class Link:
+	'''
+	A Link is a means of indicating an intent to contract two tensors.
+	This object has two Buckets, one for each TensorNetworkNode being connected.
+	In addition, it has a method for computing the von Neumann entropy of the Link.
+	In cases where this computation is intractable due to memory requirements, a heuristic
+	is used.
+
+	Links have the following functions:
+
+	bucket1		-	Returns the first Bucket this link connects to.
+	bucket2		-	Returns the second Bucket this link connects to.
+	entropy		-	Returns the entropy of the Link. Heuristics are used where memory requires them.
+	delete		-	Removes this link from both 
+
+	Links are instantiated with the buckets they connect, and are added to the end of the Link
+	lists of their buckets. They are also added to the link registry of their TensorNetwork.
+	'''
+
+	def __init__(self, b1, b2, network):
+		self.__b1 = b1
+		self.__b2 = b2
+		self.__network = network
+		self.__network.registerLink(self)
+
+	def bucket1(self):
+		return self.__b1
+
+	def bucket2(self):
+		return self.__b2
+
+	def entropy(self):
+		raise NotImplementedError
+
+	def delete(self):
+		self.__network.deregisterLink(self)
+		self.__b1.removeLink(self)
+		self.__b2.removeLink(self)
+
 class Bucket:
 	'''
 	A Bucket is a means of externally referencing an index of a tensor which handles the way in which
@@ -21,8 +60,8 @@ class Bucket:
 					the Bucket on the other side of that Link.
 	otherNode	-	Takes as input an integer specifying the index of the Link of interest and returns
 					the TensorNetworkNode on the other side of that Link.
-	makeLink	-	Takes as input another Bucket and creates a Link between this Bucket and that one.
-					The link level is automatically placed at the end of each Bucket's Link list.
+	addLink		-	Takes as input a Link and appends it to the end of the Link list.
+	removeLink	-	Removes a Link from the Link list. Raises a ValueError if the Link is not present.
 	'''
 
 	def __init__(self, node, index, network):
@@ -30,7 +69,7 @@ class Bucket:
 		self.__index = index
 		self.__network = network
 
-		self.links = None
+		self.__links = None
 
 	def node(self):
 		return self.node
@@ -40,6 +79,30 @@ class Bucket:
 
 	def network(self):
 		return self.network
+
+	def numLinks(self):
+		return len(self.__links)
+
+	def link(self, index):
+		return self.__links[index]
+
+	def otherBucket(self, index):
+		b = self.__links[index].bucket1
+		if b == self:
+			b = self.__links[index].bucket2
+		return b
+
+	def otherNode(self, index):
+		return self.otherBucket(index).node()
+
+	def addLink(self, link):
+		self.__links.append(link)
+
+	def removeLink(self, link):
+		if link in self.__links:
+			self.__links.remove(link)
+		else:
+			raise ValueError
 
 
 
@@ -67,41 +130,6 @@ class Bucket:
 
 		self.tensor.connected[self.otherTensor].append(self.link)
 		other.tensor.connected[other.otherTensor].append(self.link)
-
-
-class Link:
-	def __init__(self, bucket1, bucket2, all_links):
-		self.bucket1 = bucket1
-		self.bucket2 = bucket2
-		self.all_links = all_links
-
-		self.entropy = None
-
-		self.all_links.add(self)
-
-	def __str__(self):
-		s = '('+str(self.bucket1.tensor.id) + ','+str(self.bucket1.index) + '),('
-		s = s + str(self.bucket2.tensor.id) + ','+str(self.bucket2.index)+')'
-		return s
-
-	def delete(self):
-		# De-register link
-		self.all_links.remove(self)
-
-		# Deregister from tensors
-		self.bucket1.tensor.connected[self.bucket2.tensor].remove(self)
-		self.bucket2.tensor.connected[self.bucket1.tensor].remove(self)
-
-		# Disconnect buckets
-		self.bucket1.otherTensor = None
-		self.bucket2.otherTensor = None
-		self.bucket1.otherBucket = None
-		self.bucket2.otherBucket = None
-		self.bucket1.link = None
-		self.bucket2.link = None
-
-		# Delete
-		del self		
 
 class Tensor:
 	def __init__(self, array, all_links, children = None, parent = None, kind = None, idd = None, network = None):
