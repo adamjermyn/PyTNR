@@ -147,6 +147,14 @@ class Node:
 						replaces the underlying one with it. Note that a ValueError will be raised if
 						the shapes do not match.
 	delete			-	Delete the Node and all associated Links.
+
+	TODO:
+	1. Implement deep copy operation
+	2. Implement inner contraction. That way you can merge two nodes by just copying them,
+	taking an outer product, and contracting internally. You'll still need a way to merge links,
+	but that can be done by some reshape operations...
+	3. Implement linking function (addLink).
+	4. Implement trace.
 	'''
 	def __init__(self, tens, network, children=[]):
 		self.__tensor = tens
