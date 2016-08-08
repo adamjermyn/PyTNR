@@ -13,7 +13,7 @@ class Link:
 	entropy		-	Returns the entropy of the Link. Heuristics are used where memory requires them.
 	compress	-	Compresses the Link uses Singular Value Decomposition. This involves modifying
 					the Tensors the link contains, and so will trigger deletion of Links higher up
-					in the heirarchical network structure.
+					in the heirarchical network structure. Takes as input a tolerance.
 	delete		-	Removes this link from both 
 
 	Links are instantiated with the buckets they connect, and are added to the end of the Link
@@ -33,6 +33,9 @@ class Link:
 		return self.__b2
 
 	def entropy(self):
+		raise NotImplementedError
+
+	def compress(self, tolerance):
 		raise NotImplementedError
 
 	def delete(self):
@@ -204,35 +207,11 @@ class Node:
 
 		self.__tensor = other
 
-class Tensor:
-	def __init__(self, array, all_links, children = None, parent = None, kind = None, idd = None, network = None):
-		self.array = np.copy(array)
+	def outerProduct(self, other):
+		raise NotImplementedError
+	
 
-		self.buckets = []
-
-		for i in range(len(self.array.shape)):
-			self.buckets.append(Bucket(self,i,all_links))
-
-		self.connected = defaultdict(list)
-
-		self.all_links = all_links
-		self.children = children
-		self.parent = parent
-		self.kind = kind
-		self.id = idd
-		self.network = network
-
-	def __str__(self):
-		s = 'Tensor: '+str(self.id)
-		s = s + '  Shape:'+str(self.array.shape)+'\n'
-		s = s + '  Connections:\n'
-		for i,b in enumerate(self.buckets):
-			if b.link is not None:
-				indexSelf = str(i)
-				indexOther = str(b.otherTensor.buckets.index(b.otherBucket))
-				s = s + 'Index ' + indexSelf + ' to ID ' + str(b.otherTensor.id)
-				s = s + ' with index ' + indexOther + '\n'
-		return s
+'''
 
 	def swapIndices(self, i, j):
 		self.buckets[i], self.buckets[j] = self.buckets[j], self.buckets[i]
@@ -335,3 +314,4 @@ class Tensor:
 				t = np.reshape(t,(prodSelf, prodOther))
 
 			return t
+'''
