@@ -52,7 +52,6 @@ class Node:
 		self.__parent = None
 		self.__buckets = [Bucket(self,i,self.__network) for i in range(len(self.__tensor.shape()))]
 
-
 	def id(self):
 		return self.__id
 
@@ -107,7 +106,7 @@ class Node:
 
 	def trace(self):
 		for b in self.__buckets:
-			otherBucket = b.otherBucket(b.numLinks()-1)
+			otherBucket = b.otherBucket(-1)
 			otherNode = otherBucket.node()
 			if otherNode == self:
 				ind0 = self.bucketIndex(b)
@@ -118,7 +117,7 @@ class Node:
 				counter = 0
 				for bb in self.__buckets:
 					if bb.linked() and bb != b and bb != otherBucket:
-						n.addLink(n.bucket(counter),bb.otherNode(bb.numLinks()-1).bucketIndex(bb.otherBucket(bb.numLinks()-1)))
+						n.addLink(n.bucket(counter),bb.otherNode(-1).bucketIndex(bb.otherBucket(-1)))
 				n.trace() # Keep going until there are no more repeated indices to trace.
 				return
 
