@@ -26,6 +26,7 @@ class Node:
 	There are additional functions which do modify Nodes, listed below. These functions result in automatic
 	deletion of all Nodes formed by merging this Tensor with others.
 
+	trace			-	Traces over 
 	modify 			-	Takes as input a Tensor of the same shape as the underlying Tensor object and
 						replaces the underlying one with it. Note that a ValueError will be raised if
 						the shapes do not match.
