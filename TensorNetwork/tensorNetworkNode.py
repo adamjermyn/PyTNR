@@ -20,10 +20,12 @@ class Node:
 	bucket 			-	Returns the Bucket at the given index.
 	bucketIndex 	-	Returns the index of the specified bucket.
 
-	There are functions which modify Nodes by linking them:
+	There are functions which modify Nodes by linking them or by setting heirarchy attributes:
 
 	addLink			-	Takes as input another Node as well as the index of the Bucket on this Node
 						and the index of the Bucket on the other Node. Links them.
+
+	setParent		-	Sets the parent of this Node to the reference given.
 
 	There are additional functions which create modified copies of Nodes, listed below.
 	These may be called only if the node is parentless.
@@ -40,8 +42,6 @@ class Node:
 
 	delete			-	Delete the Node and all associated Links. Recursively deletes all parents.
 
-	TODO:
-	1. Implement merge.
 	'''
 	def __init__(self, tens, network, children=[]):
 		self.__tensor = tens
