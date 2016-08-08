@@ -63,6 +63,7 @@ class Bucket:
 	links 		-	Returns all Links this Bucket has.
 	link 		-	Takes as input an integer specifying the index of the Link of interest and returns
 					that link.
+	linked		-	Returns True if the Bucket is linked. Returns False otherwise.
 	otherBucket	-	Takes as input an integer specifying the index of the Link of interest and returns
 					the Bucket on the other side of that Link.
 	otherNode	-	Takes as input an integer specifying the index of the Link of interest and returns
@@ -95,6 +96,9 @@ class Bucket:
 
 	def link(self, index):
 		return self.__links[index]
+
+	def linked(self):
+		return (len(self.__links) > 0)
 
 	def otherBucket(self, index):
 		b = self.__links[index].bucket1

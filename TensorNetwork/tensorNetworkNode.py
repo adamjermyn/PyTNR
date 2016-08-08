@@ -17,33 +17,41 @@ class Node:
 						to this Node, and such that all Nodes connected to this one are children to some
 						degree of an element in the list.
 	tensor 			-	Returns the Tensor underlying this Node.
+	bucketIndex 	-	Returns the index of the specified bucket.
+
+	There are functions which modify Nodes by linking them:
+
+	addLink			-	Takes as input another Node as well as two indices and creates a Link between
+						this Node and the other, this one on the first index and the other on the second.
+
+	There are additional functions which create modified copies of Nodes, listed below.
+	These may be called only if the node is parentless.
+
+	trace			-	Searches for indices which are linked to one another and produces a new Node
+						with them traced out. The new Node is then the parent of this Node.
 	merge 			-	Takes as input another Node and merges this Node with it. The net result is that
 						a new node is added to the network. This Node and the other are left intact, with
 						all of their Links preserved. The rest of the network's Nodes will have Links both
 						to these and to the new Node, with Links to the new Node appearing later in their
 						Link lists.
 
-	There are additional functions which do modify Nodes, listed below. These functions result in automatic
-	deletion of all Nodes formed by merging this Tensor with others.
+	Finally, nodes may be deleted:
 
-	trace			-	Traces over 
-	modify 			-	Takes as input a Tensor of the same shape as the underlying Tensor object and
-						replaces the underlying one with it. Note that a ValueError will be raised if
-						the shapes do not match.
-	delete			-	Delete the Node and all associated Links.
+	delete			-	Delete the Node and all associated Links. Recursively deletes all parents.
 
 	TODO:
 	1. Implement merge.
 	2. Implement linking function (addLink).
-	3. Implement trace.
 	'''
 	def __init__(self, tens, network, children=[]):
 		self.__tensor = tens
 		self.__network = network
+		self.__network.registerTensor(self)
 		self.__id = self.__network.nextId()
 		self.__children = children
 		self.__parent = None
 		self.__buckets = [Bucket(self,i,self.__network) for i in range(len(self.__tensor.shape()))]
+
 
 	def id(self):
 		return self.__id
@@ -70,8 +78,8 @@ class Node:
 	def tensor(self):
 		return self.__tensor
 
-	def merge(self):
-		raise NotImplementedError
+	def bucketIndex(self, b):
+		return self.__buckets.index(b)
 
 	def delete(self):
 		if self.__parent is not None:
@@ -84,17 +92,33 @@ class Node:
 		for c in self.children():
 			c.parent = None
 
+		self.__network.deregisterTensor(self)
+
 		del self.__buckets
 		del self
 
-	def modify(self, other):
-		if self.__parent is not None:
-			self.__parent.delete()
+	def trace(self):
+		for b in self.__buckets:
+			otherBucket = b.otherBucket(b.numLinks()-1)
+			otherNode = otherBucket.node()
+			if otherNode == self:
+				ind0 = self.bucketIndex(b)
+				ind1 = self.bucketIndex(otherBucket)
+				newT = self.__tensor.trace(ind0,ind1)
+				n = Node(newT,self.__network,children=self)
+				self.__parent = n
+				counter = 0
+				for bb in self.__buckets:
+					if bb.linked() and bb != b and bb != otherBucket:
+						# TODO: Make addLink signature below conform to specification above.
+						n.addLink(counter,bb.otherBucket(bb.numLinks()-1))
+				n.trace()
+				return
 
-		if self.__tensor.shape() != other.shape():
-			raise ValueError
+	def merge(self):
+		raise NotImplementedError
 
-		self.__tensor = other
+
 	
 
 '''
