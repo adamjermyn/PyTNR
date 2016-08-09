@@ -1,5 +1,6 @@
 from tensor import Tensor
-from linkbucket import Link, Bucket
+from link import Link
+from bucket import Bucket
 from tensorNetworkNode import Node
 
 class Network:
@@ -14,8 +15,8 @@ class Network:
 	deregisterNode	-	Deregisters the given Node.
 	nextID			-	Returns the next ID number.
 
-	
-	
+
+
 	'''
 
 

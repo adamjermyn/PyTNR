@@ -1,4 +1,5 @@
-from linkbucket import Link, Bucket
+from link import Link
+from bucket import Bucket
 from tensor import Tensor
 
 class Node:
