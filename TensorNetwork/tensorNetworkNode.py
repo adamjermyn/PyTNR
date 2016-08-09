@@ -49,7 +49,7 @@ class Node:
 		self.__tensor = tens
 		self.__network = network
 		self.__network.registerTensor(self)
-		self.__id = self.__network.nextId()
+		self.__id = self.__network.nextID()
 		self.__children = children
 		self.__parent = None
 		self.__buckets = [Bucket(self,i,self.__network) for i in range(len(self.__tensor.shape()))]
