@@ -11,6 +11,7 @@ class Node:
 	id 				-	Returns the id number of the Node. These numbers are unique within a network.
 	children		-	Returns the children Nodes (if any) which merged to form this Node.
 	parent			-	Returns the Node (if any) which this merges to form.
+	network 		-	Returns the Network this Node belongs to.
 	connected		-	Returns the Nodes this one is connected to.
 	connectedHigh	-	Returns the Nodes this one is connected to, giving the highest-level list possible.
 						That is, the list such that no element of the set has a parent which is connected
@@ -63,6 +64,9 @@ class Node:
 
 	def setParent(self, parent):
 		self.__parent = parent
+
+	def network(self):
+		return self.__network
 
 	def connected(self):
 		c = []

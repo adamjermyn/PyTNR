@@ -13,21 +13,6 @@ class TensorNetwork:
 		self.scalar = 1.0
 		self.logScalar = 0.0
 
-	def addTensor(self, array, children=None, parent=None, kind=None):
-		t = Tensor(array, self.all_links, children=children,parent=parent,kind=kind,idd=self.idCounter,network=self)
-		self.tensors.add(t)
-		self.idDict[self.idCounter] = t
-		self.idCounter += 1
-		return t
-
-	def graph(self):
-		G = networkx.Graph()
-
-		for link in self.all_links:
-			s = self.entropy(link=link)
-			G.add_edge(link.bucket1.tensor.id,link.bucket2.tensor.id,weight=s)
-		return G
-
 	# This should really be a thing that gets stored by the link objects
 	# and then updated as needed. There is no good reason to recompute it
 	# in full each time. Also worth noting is that we should probably not
@@ -130,76 +115,4 @@ class TensorNetwork:
 			self.tensors.remove(t)
 
 		return netRed
-
-	def planMerger(self):
-		s, toConsider = self.entropy()
-
-		for i in range(len(s)):
-			l = toConsider[i]
-			s[i] *= -1
-			s[i] /= np.log(2)
-			s[i] += l.bucket1.tensor.array.size*l.bucket2.tensor.array.size
-			s[i] -= l.bucket1.tensor.array.size
-			s[i] -= l.bucket2.tensor.array.size
-
-			t1 = l.bucket1.tensor
-			t2 = l.bucket2.tensor
-
-			c1 = set(t1.connected.keys())
-			c2 = set(t2.connected.keys())
-			c3 = c1.intersection(c2)
-
-			if len(c3) > 0:
-				for t in c3:
-					# Slightly overestimates corrections (ignores compounding on the merged tensor)
-					# This means it overvalues merging links.
-
-					# Also worth seeing if there's a good way to copy a subset of the network
-					# so you can estimate what happens directly
-					for l in t.connected[t1]:
-						bs = l.bucket1.tensor.array.shape[l.bucket1.tensor.buckets.index(l.bucket1)]
-						ts = l.bucket1.tensor.array.size
-						s[i] -= ts
-						s[i] += ts/np.sqrt(bs)
-						s[i] -= l.bucket1.tensor.array.size*l.bucket2.tensor.array.size/np.sqrt(bs)
-					for l in t.connected[t2]:
-						bs = l.bucket1.tensor.array.shape[l.bucket1.tensor.buckets.index(l.bucket1)]
-						ts = l.bucket1.tensor.array.size
-						s[i] -= ts
-						s[i] += ts/np.sqrt(bs)
-						s[i] -= l.bucket1.tensor.array.size*l.bucket2.tensor.array.size/np.sqrt(bs)
-
-
-		toConsider = [y for x,y in sorted(zip(s,toConsider))]
-		s = sorted(s)
-
-		print s[:20]
-
-		ind = 0
-		toRemove = []
-		while ind < len(toConsider):
-			link = toConsider[ind]
-			if link not in toRemove:
-				for i in range(ind+1,len(toConsider)):
-					if toConsider[i].bucket1.tensor is link.bucket1.tensor:
-						toRemove.append(toConsider[i])
-					elif toConsider[i].bucket1.tensor is link.bucket2.tensor:
-						toRemove.append(toConsider[i])
-					elif toConsider[i].bucket2.tensor is link.bucket1.tensor:
-						toRemove.append(toConsider[i])
-					elif toConsider[i].bucket2.tensor is link.bucket2.tensor:
-						toRemove.append(toConsider[i])
-			ind += 1
-
-		for l in toRemove:
-			if l in toConsider:
-				toConsider.remove(l)
-
-		toMerge = []
-		for l in toConsider:
-			toMerge.append([l.bucket1.tensor.id,l.bucket2.tensor.id])
-
-		toMerge = toMerge[:1+int(len(toMerge)/20)]
-
-		return toMerge
 
