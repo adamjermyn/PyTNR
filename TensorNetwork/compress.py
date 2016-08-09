@@ -6,6 +6,8 @@ def compress(link, tolerance, eps=1e-4):
 	n1 = link.bucket1().node()
 	n2 = link.bucket2().node()
 
+	print n1.id(),n2.id()
+
 	t1 = n1.tensor()
 	t2 = n2.tensor()
 
@@ -43,19 +45,20 @@ def compress(link, tolerance, eps=1e-4):
 	u *= np.sqrt(lam[:,np.newaxis])
 
 	v = np.transpose(v)
+
 	v = np.reshape(v,[ind]+sh1m)
 	u = np.reshape(u,[ind]+sh2m)
+
 	v = np.swapaxes(v,0,ind0)
 	u = np.swapaxes(u,0,ind1)
 
-	t1m = Tensor(u.shape,u)
-	t2m = Tensor(v.shape,v)
+	t1m = Tensor(v.shape,v)
+	t2m = Tensor(u.shape,u)
 
 	n1m = Node(t1m,n1.network(),children=[n1])
 	n2m = Node(t2m,n2.network(),children=[n2])
 
-	n1.setParent(n1m)
-	n2.setParent(n2m)
+	newLink = None
 
 	buckets1 = n1.buckets()
 	for i,b in enumerate(buckets1):
@@ -71,6 +74,9 @@ def compress(link, tolerance, eps=1e-4):
 			bb = b.otherBucket(-1)
 			if n2m.bucket(i).linked():
 				# Means that this is the link with n1m
-				n2m.addLink(nn,i,nn.bucketIndex(bb),compressed = True)
+				newLink = n2m.addLink(nn,i,nn.bucketIndex(bb),compressed = True)
 			else:
 				n2m.addLink(nn,i,nn.bucketIndex(bb))
+
+				
+	return newLink

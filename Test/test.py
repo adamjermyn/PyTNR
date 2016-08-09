@@ -45,9 +45,12 @@ n.trace()
 ### Merge tensors
 
 while len(n.topLevelLinks()) > 0:
+	print 'merge'
 	n.merge()
-
+	print 'compress'
 	n.compress()
+	print 'trace'
+	n.trace()
 
 a = n.topLevelNodes()
 

@@ -22,6 +22,7 @@ class Network:
 	merge				-	Performs the next best merger based on entropy heuristics.
 	topLevelNodes 		-	Returns all top level Nodes.
 	topLevelLinks 		-	Returns all top level Links.
+	nodes 				-	Returns all nodes
 
 	Note that the logic for keeping track of top level nodes requires that
 	nodes be deregistered from the top-down. This is in keeping with the notion
@@ -45,6 +46,7 @@ class Network:
 
 	def deregisterLink(self, link):
 		self.__allLinks.remove(link)
+		self.__topLevelLinks.remove(link)
 
 	def registerNode(self, node):
 		self.__nodes.add(node)
@@ -52,6 +54,7 @@ class Network:
 
 		children = node.children()
 		for c in children:
+			print c.id()
 			self.__topLevelNodes.remove(c)
 			buckets = c.buckets()
 			for b in buckets:
@@ -68,6 +71,9 @@ class Network:
 			for b in buckets:
 				if b.linked():
 					self.__topLevelLinks.add(b.link(-1))
+
+	def nodes(self):
+		return self.__nodes
 
 	def nextID(self):
 		idd = self.__idCounter
@@ -103,8 +109,16 @@ class Network:
 		link.bucket1().node().merge(link.bucket2().node())
 
 	def compress(self,tol=1e-4):
-		links = list(self.__topLevelLinks)
+		compressed = set()
 
-		for link in links:
-			if not link.compressed():
-				compress(link,tol)
+		for link in self.__topLevelLinks:
+			if link.compressed():
+				compressed.add(link)
+
+		while len(compressed) < len(self.__topLevelLinks):
+			todo = self.__topLevelLinks.difference(compressed)
+			todo = list(todo)
+			print 'lt',len(todo)
+			link = compress(todo[0],tol)
+			compressed.add(link)
+			

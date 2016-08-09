@@ -45,15 +45,25 @@ class Node:
 
 	delete			-	Delete the Node and all associated Links. Recursively deletes all parents.
 
+	TODO: 	Add method for copying a node to a higher level (so it can be modified in some fashion).
+			This method needs to preserve compressed status for links. This does mean that methods which
+			violate compressed status (merge, mergeLinks) need to have a modifier method they can
+			use to do so.
+
+	TODO:	Add method mergeLinks, which copies two tensors to a higher level and merges the multiple
+			links between them.
+
 	'''
 	def __init__(self, tens, network, children=[]):
 		self.__tensor = tens
 		self.__network = network
 		self.__id = self.__network.nextID()
-		self.__children = children
 		self.__parent = None
-		self.__buckets = [Bucket(self,i,self.__network) for i in range(len(self.__tensor.shape()))]
+		self.__children = children
 		self.__network.registerNode(self)
+		for c in children:
+			c.setParent(self)
+		self.__buckets = [Bucket(self,i,self.__network) for i in range(len(self.__tensor.shape()))]
 
 	def id(self):
 		return self.__id
@@ -122,6 +132,8 @@ class Node:
 		selfBucket.addLink(l)
 		otherBucket.addLink(l)
 
+		return l
+
 	def trace(self):
 		for b in self.__buckets:
 			if b.linked():
@@ -132,7 +144,6 @@ class Node:
 					ind1 = self.bucketIndex(otherBucket)
 					newT = self.__tensor.trace(ind0,ind1)
 					n = Node(newT,self.__network,children=[self])
-					self.setParent(n)
 					counter = 0
 					for bb in self.__buckets:
 						if bb.linked() and bb != b and bb != otherBucket:
@@ -142,6 +153,7 @@ class Node:
 					return
 
 	def merge(self, other):
+		print self.id(),other.id()
 		c =self.connectedHigh()
 		if other not in c:
 			raise ValueError # Only allow mergers between highest-level objects (so each Node has at most one parent).
@@ -160,8 +172,6 @@ class Node:
 
 		# Build new Node
 		n = Node(t,self.__network,children=[self,other])
-		self.setParent(n)
-		other.setParent(n)
 
 		# Link new Node
 		counter = 0
