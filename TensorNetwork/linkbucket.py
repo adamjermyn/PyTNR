@@ -118,8 +118,8 @@ class Link:
 		v = np.transpose(v)
 		v = np.reshape(v,[ind]+sh1m)
 		u = np.reshape(u,[ind]+sh2m)
-		v = np.swapaxes(0,ind0)
-		u = np.swapaxes(0,ind1)
+		v = np.swapaxes(v,0,ind0)
+		u = np.swapaxes(u,0,ind1)
 
 		t1m = Tensor(u.shape,u)
 		t2m = Tensor(v.shape,v)
