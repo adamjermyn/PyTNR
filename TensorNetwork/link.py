@@ -25,9 +25,10 @@ class Link:
 	lists of their buckets. They are also added to the link registry of their TensorNetwork.
 	'''
 
-	def __init__(self, b1, b2, network):
+	def __init__(self, b1, b2, network, compressed=False):
 		self.__b1 = b1
 		self.__b2 = b2
+		self.__compressed = compressed
 		self.__network = network
 		self.__network.registerLink(self)
 
@@ -36,6 +37,9 @@ class Link:
 
 	def bucket2(self):
 		return self.__b2
+
+	def compressed(self):
+		return self.__compressed
 
 	def mergeEntropy(self, reduction=0.75):
 		# Entropy is computed in base e.

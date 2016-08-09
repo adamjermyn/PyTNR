@@ -40,15 +40,14 @@ z.addLink(p, 3, 3)
 
 ### Trace
 
-x.trace()
-y.trace()
-z.trace()
-p.trace()
+n.trace()
 
 ### Merge tensors
 
 while len(n.topLevelLinks()) > 0:
 	n.merge()
+
+	n.compress()
 
 a = n.topLevelNodes()
 

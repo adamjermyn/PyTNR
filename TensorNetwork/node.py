@@ -113,11 +113,11 @@ class Node:
 		del self.__buckets
 		del self
 
-	def addLink(self, other, selfBucketIndex, otherBucketIndex):
+	def addLink(self, other, selfBucketIndex, otherBucketIndex, compressed=False):
 		selfBucket = self.bucket(selfBucketIndex)
 		otherBucket = other.bucket(otherBucketIndex)
 
-		l = Link(selfBucket,otherBucket,self.__network)
+		l = Link(selfBucket,otherBucket,self.__network,compressed=compressed)
 
 		selfBucket.addLink(l)
 		otherBucket.addLink(l)

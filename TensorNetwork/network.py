@@ -3,6 +3,7 @@ from link import Link
 from bucket import Bucket
 from node import Node
 import numpy as np
+from compress import compress
 
 class Network:
 	'''
@@ -17,6 +18,7 @@ class Network:
 	nextID				-	Returns the next ID number.
 	addNodeFromArray	-	Takes as input an array and constructs a Tensor and Node around it,
 							then adds the Node to this Network.
+	trace				-	Trace trivial loops in all top level Nodes.
 	merge				-	Performs the next best merger based on entropy heuristics.
 	topLevelNodes 		-	Returns all top level Nodes.
 	topLevelLinks 		-	Returns all top level Links.
@@ -83,6 +85,12 @@ class Network:
 		n = Node(t,self)
 		return n
 
+	def trace(self):
+		nodes = list(self.__topLevelNodes)
+
+		for n in nodes:
+			n.trace()
+
 	def merge(self):
 		links = list(self.__topLevelLinks)
 
@@ -93,3 +101,10 @@ class Network:
 		link = links[ind]
 
 		link.bucket1().node().merge(link.bucket2().node())
+
+	def compress(self,tol=1e-4):
+		links = list(self.__topLevelLinks)
+
+		for link in links:
+			if not link.compressed():
+				compress(link,tol)

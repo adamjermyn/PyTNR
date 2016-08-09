@@ -1,9 +1,10 @@
-import numpy as np
+from tensor import Tensor
 from node import Node
+import numpy as np
 
-def compress(self, tolerance, eps=1e-4):
-	n1 = self.__b1.node()
-	n2 = self.__b2.node()
+def compress(link, tolerance, eps=1e-4):
+	n1 = link.bucket1().node()
+	n2 = link.bucket2().node()
 
 	t1 = n1.tensor()
 	t2 = n2.tensor()
@@ -11,8 +12,8 @@ def compress(self, tolerance, eps=1e-4):
 	arr1 = t1.array()
 	arr2 = t2.array()
 
-	ind0 = n1.bucketIndex(self.__b1)
-	ind1 = n2.bucketIndex(self.__b2)
+	ind0 = n1.bucketIndex(link.bucket1())
+	ind1 = n2.bucketIndex(link.bucket2())
 
 	cont = t1.contract(ind0,t2,ind1)
 	arrN = cont.array()
@@ -68,4 +69,8 @@ def compress(self, tolerance, eps=1e-4):
 		if b.linked():
 			nn = b.otherNode(-1)
 			bb = b.otherBucket(-1)
-			n2m.addLink(nn,i,nn.bucketIndex(bb))
+			if n2m.bucket(i).linked():
+				# Means that this is the link with n1m
+				n2m.addLink(nn,i,nn.bucketIndex(bb),compressed = True)
+			else:
+				n2m.addLink(nn,i,nn.bucketIndex(bb))
