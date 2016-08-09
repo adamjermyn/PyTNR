@@ -19,6 +19,7 @@ class Node:
 						degree of an element in the list.
 	tensor 			-	Returns the Tensor underlying this Node.
 	bucket 			-	Returns the Bucket at the given index.
+	buckets 		-	Returns all Buckets.
 	bucketIndex 	-	Returns the index of the specified bucket.
 
 	There are functions which modify Nodes by linking them or by setting heirarchy attributes:
@@ -89,6 +90,9 @@ class Node:
 
 	def bucket(self, i):
 		return self.__buckets[i]
+
+	def buckets(self, i):
+		return self.__buckets
 
 	def delete(self):
 		if self.__parent is not None:

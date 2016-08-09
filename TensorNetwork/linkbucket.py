@@ -130,9 +130,19 @@ class Link:
 		n1.setParent(n1m)
 		n2.setParent(n2m)
 
-		### TODO: Link up n1m and n2m to existing network nodes
-
-		raise NotImplementedError
+		buckets1 = n1.buckets()
+		for i,b in enumerate(buckets1):
+			if b.linked():
+				nn = b.otherNode(-1)
+				bb = b.otherBucket(-1)
+				n1m.addLink(nn,i,nn.bucketIndex(bb))
+				
+		buckets2 = n2.buckets()
+		for i,b in enumerate(buckets2):
+			if b.linked():
+				nn = b.otherNode(-1)
+				bb = b.otherBucket(-1)
+				n2m.addLink(nn,i,nn.bucketIndex(bb))
 
 	def delete(self):
 		self.__network.deregisterLink(self)
