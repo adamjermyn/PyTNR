@@ -49,11 +49,11 @@ class Node:
 	def __init__(self, tens, network, children=[]):
 		self.__tensor = tens
 		self.__network = network
-		self.__network.registerTensor(self)
 		self.__id = self.__network.nextID()
 		self.__children = children
 		self.__parent = None
 		self.__buckets = [Bucket(self,i,self.__network) for i in range(len(self.__tensor.shape()))]
+		self.__network.registerNode(self)
 
 	def id(self):
 		return self.__id
@@ -73,14 +73,16 @@ class Node:
 	def connected(self):
 		c = []
 		for b in self.__buckets:
-			for i in range(len(b.numLinks())):
-				c.append(b.otherNode(i))
+			if b.linked():
+				for i in range(len(b.numLinks())):
+					c.append(b.otherNode(i))
 		return c
 
 	def connectedHigh(self):
 		c = []
 		for b in self.__buckets:
-			c.append(b.otherNode(b.numLinks()-1))
+			if b.linked():
+				c.append(b.otherNode(b.numLinks()-1))
 		return c
 
 	def tensor(self):
@@ -92,7 +94,7 @@ class Node:
 	def bucket(self, i):
 		return self.__buckets[i]
 
-	def buckets(self, i):
+	def buckets(self):
 		return self.__buckets
 
 	def delete(self):
@@ -106,7 +108,7 @@ class Node:
 		for c in self.children():
 			c.parent = None
 
-		self.__network.deregisterTensor(self)
+		self.__network.deregisterNode(self)
 
 		del self.__buckets
 		del self
@@ -122,20 +124,22 @@ class Node:
 
 	def trace(self):
 		for b in self.__buckets:
-			otherBucket = b.otherBucket(-1)
-			otherNode = otherBucket.node()
-			if otherNode == self:
-				ind0 = self.bucketIndex(b)
-				ind1 = self.bucketIndex(otherBucket)
-				newT = self.__tensor.trace(ind0,ind1)
-				n = Node(newT,self.__network,children=[self])
-				self.setParent(n)
-				counter = 0
-				for bb in self.__buckets:
-					if bb.linked() and bb != b and bb != otherBucket:
-						n.addLink(bb.otherNode(-1),counter,bb.otherNode(-1).bucketIndex(bb.otherBucket(-1)))
-				n.trace() # Keep going until there are no more repeated indices to trace.
-				return
+			if b.linked():
+				otherBucket = b.otherBucket(-1)
+				otherNode = otherBucket.node()
+				if otherNode == self:
+					ind0 = self.bucketIndex(b)
+					ind1 = self.bucketIndex(otherBucket)
+					newT = self.__tensor.trace(ind0,ind1)
+					n = Node(newT,self.__network,children=[self])
+					self.setParent(n)
+					counter = 0
+					for bb in self.__buckets:
+						if bb.linked() and bb != b and bb != otherBucket:
+							n.addLink(bb.otherNode(-1),counter,bb.otherNode(-1).bucketIndex(bb.otherBucket(-1)))
+							counter += 1
+					n.trace() # Keep going until there are no more repeated indices to trace.
+					return
 
 	def merge(self, other):
 		c =self.connectedHigh()
@@ -145,8 +149,9 @@ class Node:
 		# Find all links between self and other
 		links = []
 		for i,b in enumerate(self.__buckets):
-			if b.otherNode(-1) == other:
-				links.append((i,other.bucketIndex(b.otherBucket(-1))))
+			if b.linked():
+				if b.otherNode(-1) == other:
+					links.append((i,other.bucketIndex(b.otherBucket(-1))))
 
 		links = zip(*links)
 
@@ -160,16 +165,17 @@ class Node:
 
 		# Link new Node
 		counter = 0
+
 		for i in range(len(self.tensor().shape())):
 			b = self.bucket(i)
 			if i not in links[0]:
 				if b.linked():
-					n.addLink(b.otherNode(-1),n.bucket(counter),b.otherNode(-1).bucketIndex(b.otherBucket(-1)))
+					n.addLink(b.otherNode(-1),counter,b.otherNode(-1).bucketIndex(b.otherBucket(-1)))
 				counter += 1
 		for i in range(len(other.tensor().shape())):
 			b = other.bucket(i)
 			if i not in links[1]:
 				if b.linked():
-					n.addLink(b.otherNode(-1),n.bucket(counter),b.otherNode(-1).bucketIndex(b.otherBucket(-1)))
+					n.addLink(b.otherNode(-1),counter,b.otherNode(-1).bucketIndex(b.otherBucket(-1)))
 				counter += 1
 	

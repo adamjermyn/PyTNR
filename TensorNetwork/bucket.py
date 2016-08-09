@@ -32,16 +32,16 @@ class Bucket:
 		self.__index = index
 		self.__network = network
 
-		self.__links = None
+		self.__links = []
 
 	def node(self):
-		return self.node
+		return self.__node
 
 	def index(self):
-		return self.index
+		return self.__index
 
 	def network(self):
-		return self.network
+		return self.__network
 
 	def numLinks(self):
 		return len(self.__links)
@@ -56,9 +56,9 @@ class Bucket:
 		return (len(self.__links) > 0)
 
 	def otherBucket(self, index):
-		b = self.__links[index].bucket1
+		b = self.__links[index].bucket1()
 		if b == self:
-			b = self.__links[index].bucket2
+			b = self.__links[index].bucket2()
 		return b
 
 	def otherNode(self, index):

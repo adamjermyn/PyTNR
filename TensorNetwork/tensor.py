@@ -34,21 +34,11 @@ class Tensor:
 		return 'Tensor of shape '+str(self.shape())+'.'
 
 	def contract(self, ind, other, otherInd):
-		if self.__shape[ind] != other.__shape[otherInd]:
-			raise ValueError
-		arr = np.dot(self.array(),other.array(),axes=((ind,otherInd)))
-		sh1 = list(self.shape())
-		sh2 = list(other.shape())
-		sh = sh1[:ind] + sh1[ind+1:] + sh2[:otherInd] + sh2[otherInd+1:]
-		sh = tuple(sh)
-		return Tensor(sh,arr)
+		arr = np.tensordot(self.array(),other.array(),axes=((ind,otherInd)))
+		return Tensor(arr.shape,arr)
 
 	def trace(self, ind0, ind1):
 		if self.__shape[ind0] != self.__shape[ind1]:
 			raise ValueError
 		arr = np.trace(self.array(),axis1=ind0,axis2=ind1)
-		i0 = min(ind0,ind1)
-		i1 = max(ind0,ind1)
-		sh = list(self.shape())
-		sh = sh[:i0] + sh[i0+1:i1] + sh[i1+1:]
-		return Tensor(sh,arr)
+		return Tensor(arr.shape,arr)
