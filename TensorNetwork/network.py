@@ -1,7 +1,7 @@
 from tensor import Tensor
 from link import Link
 from bucket import Bucket
-from tensorNetworkNode import Node
+from node import Node
 
 class Network:
 	'''
