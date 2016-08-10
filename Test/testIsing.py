@@ -53,8 +53,8 @@ def IsingSolve(nX, nY, h, J):
 		network.merge()
 		network.linkMerge(compress=True)
 		network.trace()
-		
-		print len(network.topLevelNodes())
+
+		print network.topLevelSize(), network.largestTopLevelTensor()
 
 	return np.log(list(network.topLevelNodes())[0].tensor().array())
 

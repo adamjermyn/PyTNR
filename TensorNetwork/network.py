@@ -24,6 +24,10 @@ class Network:
 	topLevelLinks 		-	Returns all Links between top-level Nodes.
 	nodes 				-	Returns all nodes
 	checkLinks			-	Verify that all Links are between indices of the same length.
+	size				-	Returns the size of the Network
+	topLevelSize		-	Returns the top-leve size of the Network
+	largestTensor		-	Returns the shape of the largest Tensor.
+	largestTopLevelTensor	-	Returns the shape of the largest top-level Tensor.
 
 	Note that the logic for keeping track of top level nodes requires that
 	nodes be deregistered from the top-down. This is in keeping with the notion
@@ -38,6 +42,44 @@ class Network:
 		self.__allLinks = set()
 		self.__idDict = {}
 		self.__idCounter = 0
+
+	def size(self):
+		s = 0
+
+		for n in self.__nodes:
+			s += n.tensor().array().size
+
+		return s
+
+	def topLevelSize(self):
+		s = 0
+
+		for n in self.__topLevelNodes:
+			s += n.tensor().array().size
+
+		return s
+
+	def largestTensor(self):
+		s = 0
+		sh = None
+
+		for n in self.__nodes:
+			if n.tensor().array().size > s:
+				s = n.tensor().array().size
+				sh = n.tensor().shape()
+
+		return sh
+
+	def largestTopLevelTensor(self):
+		s = 0
+		sh = None
+
+		for n in self.__topLevelNodes:
+			if n.tensor().array().size > s:
+				s = n.tensor().array().size
+				sh = n.tensor().shape()
+
+		return sh
 
 	def registerLink(self, link):
 		self.__allLinks.add(link)
