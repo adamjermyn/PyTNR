@@ -3,28 +3,6 @@ from node import Node
 import numpy as np
 
 def compress(link, tolerance, eps=1e-4):
-
-	### TODO: Just flatten all the non-contraction axes to avoid reordering by mistake.
-
-	'''
-	So there's a problem with how this has been implemented.
-	The problem is that we generate a new level (which is fine) but then preserve
-	links between the previous level and this level *including the link between the two
-	nodes that we merge*. That is, if the nodes are A and B and after compression become
-	A' and B' then A' still links to B and B' still links to A. This is a problem because
-	they've undergone basis changes. If we just delete these connections (which seems reasonable)
-	we have a few other issues. The main of these is that it breaks the paradigm of having
-	every node see a reduced representation of the rest of the network. One option is to
-	simply perform replacement compression, in which case we have to remember to compress
-	each link as soon as something changes. That basically just makes it more complicated
-	to make changes (the main change of interest is merging, followed by optimizing for linear
-	optimization problems), as we have to build the re-compression into the changes... Doing
-	this also breaks the notion that Nodes are immutable, though that might not be too big a deal
-	because we can just build the compression into any change we make...
-
-
-	'''
-
 	n1 = link.bucket1().node()
 	n2 = link.bucket2().node()
 
@@ -99,5 +77,11 @@ def compress(link, tolerance, eps=1e-4):
 
 	newLink = n1m.findLink(n2m)
 	newLink.setCompressed()
+
+	badLink1 = n1m.findLink(n2)
+	badLink2 = n2m.findLink(n1)
+
+	badLink1.delete()
+	badLink2.delete()
 
 	return newLink
