@@ -178,13 +178,7 @@ class Node:
 					ind0 = self.bucketIndex(b)
 					ind1 = self.bucketIndex(otherBucket)
 					newT = self.__tensor.trace(ind0,ind1)
-					n = Node(newT,self.__network,children=[self])
-					counter = 0
-					for bb in self.__buckets:
-						if bb != b and bb != otherBucket:
-							if bb.linked():
-								n.addLink(bb.otherNode(-1),counter,bb.otherNode(-1).bucketIndex(bb.otherBucket(-1)))
-							counter += 1
+					n = self.modify(newT, preserveCompressed = False, delBuckets=[ind0,ind1])
 					n.trace() # Keep going until there are no more repeated indices to trace.
 					return
 
@@ -192,10 +186,10 @@ class Node:
 		c = self.connectedHigh()
 
 		for n in c:
-			links = self.linksConnecting(c)
+			links = self.linksConnecting(n)
 			if len(links) > 1:
-				n1, n2 = mergeLinks(self, c)
-				n1.mergeLinks(compress=compress)
+				n1, n2 = mergeLinks(self, n)
+				n1.linkMerge(compress=compress)
 		return
 
 	def merge(self, other):

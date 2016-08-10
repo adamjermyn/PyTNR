@@ -153,7 +153,7 @@ class Network:
 	def merge(self):
 		links = list(self.topLevelLinks())
 
-		s = [link.mergeEntropy() for link in links]
+		s = [link.mergeEntropy(reduction=0.5) for link in links]
 
 		ind = np.argmin(s)
 
