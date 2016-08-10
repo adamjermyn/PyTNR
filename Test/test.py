@@ -47,17 +47,14 @@ n.trace()
 while len(n.topLevelLinks()) > 0:
 	print 'merge'
 	n.merge()
-	print n.checkLinks()
 
 	print 'compress'
 	n.compress()
-	print n.checkLinks()
 
 	print 'trace'
 	n.trace()
-	print n.checkLinks()
 
 a = n.topLevelNodes()
 
-print list(a)[0].tensor().array()
-print arr
+print np.sum(np.abs(list(a)[0].tensor().array()-arr))/np.sum(np.abs(arr))
+print np.sum(np.abs(list(a)[0].tensor().array()-np.transpose(arr)))/np.sum(np.abs(arr))

@@ -175,7 +175,6 @@ class Node:
 					return
 
 	def merge(self, other):
-		print self.id(),other.id()
 		c =self.connectedHigh()
 		if other not in c:
 			raise ValueError # Only allow mergers between highest-level objects (so each Node has at most one parent).
@@ -188,10 +187,6 @@ class Node:
 					links.append((i,other.bucketIndex(b.otherBucket(-1))))
 
 		links = zip(*links)
-
-		print self.tensor().array().shape
-		print other.tensor().array().shape
-		print links
 
 		# Contract along common links
 		t = self.__tensor.contract(links[0],other.tensor(),links[1])

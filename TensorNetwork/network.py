@@ -21,6 +21,7 @@ class Network:
 	trace				-	Trace trivial loops in all top level Nodes.
 	merge				-	Performs the next best merger based on entropy heuristics.
 	topLevelNodes 		-	Returns all top level Nodes.
+	topLevelLinks 		-	Returns all Links between top-level Nodes.
 	nodes 				-	Returns all nodes
 	checkLinks			-	Verify that all Links are between indices of the same length.
 
@@ -35,7 +36,6 @@ class Network:
 		self.__nodes = set()
 		self.__topLevelNodes = set()
 		self.__allLinks = set()
-		self.__topLevelLinks = set()
 		self.__idDict = {}
 		self.__idCounter = 0
 
@@ -74,7 +74,12 @@ class Network:
 		return self.__topLevelNodes
 
 	def topLevelLinks(self):
-		return self.__topLevelLinks
+		n = self.__topLevelNodes
+		links = set()
+		for link in self.__allLinks:
+			if link.bucket1().node() in n and link.bucket2().node() in n:
+				links.add(link)
+		return links
 
 	def checkLinks(self):
 		for link in self.__allLinks:
@@ -98,7 +103,7 @@ class Network:
 			n.trace()
 
 	def merge(self):
-		links = list(self.__topLevelLinks)
+		links = list(self.topLevelLinks())
 
 		s = [link.mergeEntropy() for link in links]
 
@@ -108,16 +113,15 @@ class Network:
 
 		link.bucket1().node().merge(link.bucket2().node())
 
-	def compress(self,tol=1e-4):
+	def compress(self,eps=1e-12):
 		compressed = set()
 
-		for link in self.__topLevelLinks:
+		for link in self.topLevelLinks():
 			if link.compressed():
 				compressed.add(link)
 
-		while len(compressed) < len(self.__topLevelLinks):
-			todo = self.__topLevelLinks.difference(compressed)
+		while len(compressed) < len(self.topLevelLinks()):
+			todo = self.topLevelLinks().difference(compressed)
 			todo = list(todo)
-			link = compress(todo[0],tol)
-			print self.checkLinks()
+			link = compress(todo[0],eps=eps)
 			compressed.add(link)
