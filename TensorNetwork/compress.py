@@ -73,4 +73,4 @@ def compress(link, eps=1e-4):
 
 	badLink.delete()
 
-	return newLink
+	return newLink, n1m, n2m

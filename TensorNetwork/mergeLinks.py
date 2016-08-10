@@ -52,6 +52,6 @@ def mergeLinks(n1, n2, compressLink=False):
 	if compressLink:
 		links = n1m.findLink(n2m)
 		link = links[0]
-		compress(link)
+		_, n1m, n2m = compress(link)
 
 	return n1m, n2m

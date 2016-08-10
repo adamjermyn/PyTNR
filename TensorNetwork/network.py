@@ -94,15 +94,14 @@ class Network:
 		children = node.children()
 		for c in children:
 			self.__topLevelNodes.remove(c)
-			buckets = c.buckets()
 
 	def deregisterNode(self, node):
 		self.__nodes.remove(node)
+		self.__topLevelNodes.remove(node)
 
 		children = node.children()
 		for c in children:
 			self.__topLevelNodes.add(c)
-			buckets = c.buckets()
 
 	def nodes(self):
 		return self.__nodes
@@ -148,7 +147,9 @@ class Network:
 		nodes = list(self.__topLevelNodes)
 
 		for n in nodes:
-			n.linkMerge(compress=compress)		
+			n.linkMerge(compress=compress)
+			# There's a logic error with just iterating over this set, as link
+			# mergers will end up changing the set of top level nodes....
 
 	def merge(self):
 		links = list(self.topLevelLinks())
@@ -171,5 +172,5 @@ class Network:
 		while len(compressed) < len(self.topLevelLinks()):
 			todo = self.topLevelLinks().difference(compressed)
 			todo = list(todo)
-			link = compress(todo[0],eps=eps)
+			link, _, _ = compress(todo[0],eps=eps)
 			compressed.add(link)

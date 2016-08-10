@@ -67,8 +67,6 @@ class Node:
 		self.__parent = None
 		self.__children = children
 		self.__network.registerNode(self)
-		for c in children:
-			c.setParent(self)
 		self.__buckets = [Bucket(self,i,self.__network) for i in range(len(self.__tensor.shape()))]
 
 	def id(self):
