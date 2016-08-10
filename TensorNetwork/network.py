@@ -21,15 +21,13 @@ class Network:
 	trace				-	Trace trivial loops in all top level Nodes.
 	merge				-	Performs the next best merger based on entropy heuristics.
 	topLevelNodes 		-	Returns all top level Nodes.
-	topLevelLinks 		-	Returns all top level Links.
 	nodes 				-	Returns all nodes
 	checkLinks			-	Verify that all Links are between indices of the same length.
 
 	Note that the logic for keeping track of top level nodes requires that
 	nodes be deregistered from the top-down. This is in keeping with the notion
 	that the Network should always be valid (there shouldn't be missing interior
-	levels in the heirarchy).
-
+	levels in the heirarchy). Links may be deregistered in any fashion.
 	'''
 
 
@@ -43,11 +41,9 @@ class Network:
 
 	def registerLink(self, link):
 		self.__allLinks.add(link)
-		self.__topLevelLinks.add(link)
 
 	def deregisterLink(self, link):
 		self.__allLinks.remove(link)
-		self.__topLevelLinks.remove(link)
 
 	def registerNode(self, node):
 		self.__nodes.add(node)
@@ -57,9 +53,6 @@ class Network:
 		for c in children:
 			self.__topLevelNodes.remove(c)
 			buckets = c.buckets()
-			for b in buckets:
-				if b.linked() and b.link(-1) in self.__topLevelLinks:
-					self.__topLevelLinks.remove(b.link(-1))
 
 	def deregisterNode(self, node):
 		self.__nodes.remove(node)
@@ -68,9 +61,6 @@ class Network:
 		for c in children:
 			self.__topLevelNodes.add(c)
 			buckets = c.buckets()
-			for b in buckets:
-				if b.linked():
-					self.__topLevelLinks.add(b.link(-1))
 
 	def nodes(self):
 		return self.__nodes

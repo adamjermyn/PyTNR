@@ -78,10 +78,8 @@ def compress(link, tolerance, eps=1e-4):
 	newLink = n1m.findLink(n2m)
 	newLink.setCompressed()
 
-	badLink1 = n1m.findLink(n2)
-	badLink2 = n2m.findLink(n1)
+	badLink = n1m.findLink(n2)
 
-	badLink1.delete()
-	badLink2.delete()
+	badLink.delete()
 
 	return newLink
