@@ -23,6 +23,7 @@ class Network:
 	topLevelNodes 		-	Returns all top level Nodes.
 	topLevelLinks 		-	Returns all top level Links.
 	nodes 				-	Returns all nodes
+	checkLinks			-	Verify that all Links are between indices of the same length.
 
 	Note that the logic for keeping track of top level nodes requires that
 	nodes be deregistered from the top-down. This is in keeping with the notion
@@ -54,7 +55,6 @@ class Network:
 
 		children = node.children()
 		for c in children:
-			print c.id()
 			self.__topLevelNodes.remove(c)
 			buckets = c.buckets()
 			for b in buckets:
@@ -85,6 +85,16 @@ class Network:
 
 	def topLevelLinks(self):
 		return self.__topLevelLinks
+
+	def checkLinks(self):
+		for link in self.__allLinks:
+			n1 = link.bucket1().node()
+			n2 = link.bucket2().node()
+			ind1 = n1.bucketIndex(link.bucket1())
+			ind2 = n2.bucketIndex(link.bucket2())
+			if n1.tensor().shape()[ind1] != n2.tensor().shape()[ind2]:
+				return False, n1.id(),n1.tensor().shape(), ind1, n2.id(), n2.tensor().shape(), ind2
+		return True
 
 	def addNodeFromArray(self, arr):
 		t = Tensor(arr.shape,arr)
@@ -118,7 +128,6 @@ class Network:
 		while len(compressed) < len(self.__topLevelLinks):
 			todo = self.__topLevelLinks.difference(compressed)
 			todo = list(todo)
-			print 'lt',len(todo)
 			link = compress(todo[0],tol)
+			print self.checkLinks()
 			compressed.add(link)
-			

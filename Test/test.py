@@ -5,10 +5,10 @@ import numpy as np
 
 ### Initialize random arrays
 
-x = np.random.randn(3,3,3,3)
-y = np.random.randn(3,3,3,3)
-z = np.random.randn(3,3,3,3)
-p = np.random.randn(3,3,3,3)
+x = np.random.randn(6,6,6,6)
+y = np.random.randn(6,6,6,6)
+z = np.random.randn(6,6,6,6)
+p = np.random.randn(6,6,6,6)
 
 ### Compute final answer
 
@@ -47,10 +47,15 @@ n.trace()
 while len(n.topLevelLinks()) > 0:
 	print 'merge'
 	n.merge()
+	print n.checkLinks()
+
 	print 'compress'
 	n.compress()
+	print n.checkLinks()
+
 	print 'trace'
 	n.trace()
+	print n.checkLinks()
 
 a = n.topLevelNodes()
 

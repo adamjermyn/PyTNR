@@ -22,6 +22,8 @@ class Node:
 	bucket 			-	Returns the Bucket at the given index.
 	buckets 		-	Returns all Buckets.
 	bucketIndex 	-	Returns the index of the specified bucket.
+	findLink		-	Takes as input another Node and finds the Link between this Node that,
+						if one exists. If none exists returns None.
 
 	There are functions which modify Nodes by linking them or by setting heirarchy attributes:
 
@@ -33,6 +35,11 @@ class Node:
 	There are additional functions which create modified copies of Nodes, listed below.
 	These may be called only if the node is parentless.
 
+	modify			-	Creates a copy of this Node with the provided Tensor instead. The copy is
+	 					one level up in the heirarchy, such that the copy is the parent of this Node.
+	 					This also properly links the copy to the rest of the Network. Also takes as
+	 					input a boolean indicating whether or not to preserve the compressed status of
+	 					Links.
 	trace			-	Searches for indices which are linked to one another and produces a new Node
 						with them traced out. The new Node is then the parent of this Node.
 	merge 			-	Takes as input another Node and merges this Node with it. The net result is that
@@ -45,14 +52,10 @@ class Node:
 
 	delete			-	Delete the Node and all associated Links. Recursively deletes all parents.
 
-	TODO: 	Add method for copying a node to a higher level (so it can be modified in some fashion).
-			This method needs to preserve compressed status for links. This does mean that methods which
-			violate compressed status (merge, mergeLinks) need to have a modifier method they can
-			use to do so.
-
 	TODO:	Add method mergeLinks, which copies two tensors to a higher level and merges the multiple
 			links between them.
 
+	TODO:	Implement tostr method for this and for network so that printing can be sensible.
 	'''
 	def __init__(self, tens, network, children=[]):
 		self.__tensor = tens
@@ -95,6 +98,13 @@ class Node:
 				c.append(b.otherNode(b.numLinks()-1))
 		return c
 
+	def findLink(self, other):
+		for b in self.__buckets:
+			for i in range(b.numLinks()):
+				if b.otherNode(i) == other:
+					return b.link(i)
+		return None
+
 	def tensor(self):
 		return self.__tensor
 
@@ -134,6 +144,17 @@ class Node:
 
 		return l
 
+	def modify(self, tens, preserveCompressed):
+		n = Node(tens,self.__network,children=[self])
+		counter = 0
+		for i,b in enumerate(self.__buckets):
+			if b.linked():
+				if preserveCompressed:
+					n.addLink(b.otherNode(-1),i,b.otherNode(-1).bucketIndex(b.otherBucket(-1)),compressed=b.link(-1).compressed())
+				else:
+					n.addLink(b.otherNode(-1),i,b.otherNode(-1).bucketIndex(b.otherBucket(-1)),compressed=False)
+		return n
+
 	def trace(self):
 		for b in self.__buckets:
 			if b.linked():
@@ -146,8 +167,9 @@ class Node:
 					n = Node(newT,self.__network,children=[self])
 					counter = 0
 					for bb in self.__buckets:
-						if bb.linked() and bb != b and bb != otherBucket:
-							n.addLink(bb.otherNode(-1),counter,bb.otherNode(-1).bucketIndex(bb.otherBucket(-1)))
+						if bb != b and bb != otherBucket:
+							if bb.linked():
+								n.addLink(bb.otherNode(-1),counter,bb.otherNode(-1).bucketIndex(bb.otherBucket(-1)))
 							counter += 1
 					n.trace() # Keep going until there are no more repeated indices to trace.
 					return
@@ -166,6 +188,10 @@ class Node:
 					links.append((i,other.bucketIndex(b.otherBucket(-1))))
 
 		links = zip(*links)
+
+		print self.tensor().array().shape
+		print other.tensor().array().shape
+		print links
 
 		# Contract along common links
 		t = self.__tensor.contract(links[0],other.tensor(),links[1])

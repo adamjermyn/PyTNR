@@ -41,6 +41,9 @@ class Link:
 	def compressed(self):
 		return self.__compressed
 
+	def setCompressed(self):
+		self.__compressed = True
+
 	def mergeEntropy(self, reduction=0.75):
 		# Entropy is computed in base e.
 		# As a heuristic we assume that merging a bond of

@@ -29,16 +29,12 @@ class Bucket:
 
 	def __init__(self, node, index, network):
 		self.__node = node
-		self.__index = index
 		self.__network = network
 
 		self.__links = []
 
 	def node(self):
 		return self.__node
-
-	def index(self):
-		return self.__index
 
 	def network(self):
 		return self.__network
