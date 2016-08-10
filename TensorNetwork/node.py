@@ -1,6 +1,7 @@
 from link import Link
 from bucket import Bucket
 from tensor import Tensor
+from mergeLinks import mergeLinks
 
 class Node:
 	'''
@@ -18,6 +19,7 @@ class Node:
 						That is, the list such that no element of the set has a parent which is connected
 						to this Node, and such that all Nodes connected to this one are children to some
 						degree of an element in the list.
+	linksConnecting	-	Returns the Links connecting this Node to another (given as input).
 	tensor 			-	Returns the Tensor underlying this Node.
 	bucket 			-	Returns the Bucket at the given index.
 	buckets 		-	Returns all Buckets.
@@ -47,13 +49,14 @@ class Node:
 						all of their Links preserved. The rest of the network's Nodes will have Links both
 						to these and to the new Node, with Links to the new Node appearing later in their
 						Link lists.
+	linkMerge		-	Searches for linked Nodes at the top level which have multiple Links between them and
+						this one and produces a new pair of nodes as their parents with the Links merged into
+						a single higher-dimensional Link.
+
 
 	Finally, nodes may be deleted:
 
 	delete			-	Delete the Node and all associated Links. Recursively deletes all parents.
-
-	TODO:	Add method mergeLinks, which copies two tensors to a higher level and merges the multiple
-			links between them.
 
 	TODO:	Implement tostr method for this and for network so that printing can be sensible.
 	'''
@@ -111,6 +114,13 @@ class Node:
 	def bucketIndex(self, b):
 		return self.__buckets.index(b)
 
+	def linksConnecting(self, other):
+		links = []
+		for b in self.__buckets:
+			if b.otherNode(-1) == other:
+				links.append(b.link(-1))
+		return links
+
 	def bucket(self, i):
 		return self.__buckets[i]
 
@@ -144,15 +154,19 @@ class Node:
 
 		return l
 
-	def modify(self, tens, preserveCompressed):
+	def modify(self, tens, preserveCompressed = False, delBuckets=[]):
+		# delBuckets must have length equal to len(self.tensor().shape()) - len(tens.shape())
 		n = Node(tens,self.__network,children=[self])
 		counter = 0
 		for i,b in enumerate(self.__buckets):
-			if b.linked():
-				if preserveCompressed:
-					n.addLink(b.otherNode(-1),i,b.otherNode(-1).bucketIndex(b.otherBucket(-1)),compressed=b.link(-1).compressed())
-				else:
-					n.addLink(b.otherNode(-1),i,b.otherNode(-1).bucketIndex(b.otherBucket(-1)),compressed=False)
+			if i not in delBuckets:
+				if b.linked():
+					if preserveCompressed:
+						n.addLink(b.otherNode(-1),counter,b.otherNode(-1).bucketIndex(b.otherBucket(-1)),compressed=b.link(-1).compressed())
+					else:
+						n.addLink(b.otherNode(-1),counter,b.otherNode(-1).bucketIndex(b.otherBucket(-1)),compressed=False)
+				counter += 1
+
 		return n
 
 	def trace(self):
@@ -173,6 +187,16 @@ class Node:
 							counter += 1
 					n.trace() # Keep going until there are no more repeated indices to trace.
 					return
+
+	def linkMerge(self,compress=False):
+		c = self.connectedHigh()
+
+		for n in c:
+			links = self.linksConnecting(c)
+			if len(links) > 1:
+				n1, n2 = mergeLinks(self, c)
+				n1.mergeLinks(compress=compress)
+		return
 
 	def merge(self, other):
 		c =self.connectedHigh()

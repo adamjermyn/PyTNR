@@ -1,5 +1,4 @@
 from tensor import Tensor
-from node import Node
 import numpy as np
 
 def compress(link, eps=1e-4):

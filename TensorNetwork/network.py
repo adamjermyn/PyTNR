@@ -102,6 +102,12 @@ class Network:
 		for n in nodes:
 			n.trace()
 
+	def linkMerge(self,compress=False):
+		nodes = list(self.__topLevelNodes)
+
+		for n in nodes:
+			n.linkMerge(compress=compress)		
+
 	def merge(self):
 		links = list(self.topLevelLinks())
 

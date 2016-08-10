@@ -50,18 +50,13 @@ def IsingSolve(nX, nY, h, J):
 
 
 	while len(network.topLevelLinks()) > 0:
-		print 'merge'
 		network.merge()
-
-		print 'compress'
-		network.compress()
-
-		print 'trace'
+		network.linkMerge(compress=True)
 		network.trace()
-
+		
 		print len(network.topLevelNodes())
 
-	return np.log(network.topLevelNodes()[0].tensor().array())
+	return np.log(list(network.topLevelNodes())[0].tensor().array())
 
 def exactIsing(J):
 	k = 1/np.sinh(2*J)**2
