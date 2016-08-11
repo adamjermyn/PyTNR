@@ -72,6 +72,9 @@ class Node:
 	def id(self):
 		return self.__id
 
+	def __str__(self):
+		return 'Node with ID: ' + str(self.__id) + '  and tensor shape ' + str(self.__tensor.shape())
+
 	def children(self):
 		return self.__children
 
@@ -115,8 +118,9 @@ class Node:
 	def linksConnecting(self, other):
 		links = []
 		for b in self.__buckets:
-			if b.otherNode(-1) == other:
-				links.append(b.link(-1))
+			if b.numLinks() > 0:
+				if b.otherNode(-1) == other:
+					links.append(b.link(-1))
 		return links
 
 	def bucket(self, i):
@@ -188,7 +192,9 @@ class Node:
 			if len(links) > 1:
 				n1, n2 = mergeLinks(self, n)
 				n1.linkMerge(compress=compress)
-		return
+				return True, n
+
+		return False, None
 
 	def merge(self, other):
 		c =self.connectedHigh()

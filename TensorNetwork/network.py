@@ -146,12 +146,17 @@ class Network:
 	def linkMerge(self,compress=False):
 		nodes = list(self.__topLevelNodes)
 
-		for n in nodes:
-			n.linkMerge(compress=compress)
-			# There's a logic error with just iterating over this set, as link
-			# mergers will end up changing the set of top level nodes....
+		done = set()
+
+		while len(done) < len(self.__topLevelNodes):
+			n = list(self.__topLevelNodes.difference(done))[0]
+			merged, otherNode = n.linkMerge(compress=compress)
+			if not merged:
+				done.add(n)
 
 	def merge(self):
+		### Something is broken here, allowing a link to count as top-level when the nodes on either end aren't.
+		### (or they aren't connected to one another).
 		links = list(self.topLevelLinks())
 
 		s = [link.mergeEntropy(reduction=0.5) for link in links]
