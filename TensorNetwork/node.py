@@ -19,18 +19,19 @@ class Node:
 						That is, the list such that no element of the set has a parent which is connected
 						to this Node, and such that all Nodes connected to this one are children to some
 						degree of an element in the list.
-	linksConnecting	-	Returns the Links connecting this Node to another (given as input).
 	tensor 			-	Returns the Tensor underlying this Node.
 	bucket 			-	Returns the Bucket at the given index.
 	buckets 		-	Returns all Buckets.
 	bucketIndex 	-	Returns the index of the specified bucket.
 	findLink		-	Takes as input another Node and finds the Link between this Node that,
 						if one exists. If none exists returns None.
+	linksConnecting	-	Returns all Links connecting this Node and another (provided as input).
 
 	There are functions which modify Nodes by linking them or by setting heirarchy attributes:
 
 	addLink			-	Takes as input another Node as well as the index of the Bucket on this Node
-						and the index of the Bucket on the other Node. Links them.
+						and the index of the Bucket on the other Node. Links them. If they are already
+						Linked this raises a ValueError.
 
 	setParent		-	Sets the parent of this Node to the reference given.
 
@@ -39,9 +40,7 @@ class Node:
 
 	modify			-	Creates a copy of this Node with the provided Tensor instead. The copy is
 	 					one level up in the heirarchy, such that the copy is the parent of this Node.
-	 					This also properly links the copy to the rest of the Network. Also takes as
-	 					input a boolean indicating whether or not to preserve the compressed status of
-	 					Links.
+	 					This also properly links the copy to the rest of the Network.
 	trace			-	Searches for indices which are linked to one another and produces a new Node
 						with them traced out. The new Node is then the parent of this Node.
 	merge 			-	Takes as input another Node and merges this Node with it. The net result is that
@@ -60,14 +59,14 @@ class Node:
 
 	TODO:	Implement tostr method for this and for network so that printing can be sensible.
 	'''
-	def __init__(self, tens, network, children=[]):
+	def __init__(self, tens, network, children=[], Buckets=[]):
 		self.__tensor = tens
 		self.__network = network
 		self.__id = self.__network.nextID()
 		self.__parent = None
 		self.__children = children
 		self.__network.registerNode(self)
-		self.__buckets = [Bucket(self,i,self.__network) for i in range(len(self.__tensor.shape()))]
+		self.__buckets = Buckets
 
 	def id(self):
 		return self.__id
@@ -91,37 +90,34 @@ class Node:
 		c = []
 		for b in self.__buckets:
 			if b.linked():
-				for i in range(len(b.numLinks())):
-					c.append(b.otherNode(i))
+				c.extend(b.otherNodes())
 		return c
 
 	def connectedHigh(self):
 		c = []
 		for b in self.__buckets:
 			if b.linked():
-				c.append(b.otherNode(-1))
+				c.append(b.topNode())
 		return c
 
 	def findLink(self, other):
 		for b in self.__buckets:
-			for i in range(b.numLinks()):
-				if b.otherNode(i) == other:
-					return b.link(i)
+			if other in b.otherNodes():
+				return b.link()
 		return None
+
+	def linksConnecting(self, other):
+		links = []
+		for b in self.__buckets:
+			if other in b.otherNode():
+				links.append(b.link())
+		return links
 
 	def tensor(self):
 		return self.__tensor
 
 	def bucketIndex(self, b):
 		return self.__buckets.index(b)
-
-	def linksConnecting(self, other):
-		links = []
-		for b in self.__buckets:
-			if b.numLinks() > 0:
-				if b.otherNode(-1) == other:
-					links.append(b.link(-1))
-		return links
 
 	def bucket(self, i):
 		return self.__buckets[i]
@@ -134,53 +130,68 @@ class Node:
 			self.__parent.delete()
 
 		for b in self.__buckets:
-			for l in b.links():
-				l.delete()
+			if b.linked() and b.numNodes() == 1:
+				# We only delete a Link if this is the last Node its Bucket connects to.
+				b.link().delete()
 
 		for c in self.children():
 			c.parent = None
 
 		self.__network.deregisterNode(self)
 
-		del self.__buckets
 		del self
 
 	def addLink(self, other, selfBucketIndex, otherBucketIndex, compressed=False):
 		selfBucket = self.bucket(selfBucketIndex)
 		otherBucket = other.bucket(otherBucketIndex)
 
+		if selfBucket.linked():
+			raise ValueError
+		if otherBucket.linked():
+			raise ValueError
+
 		l = Link(selfBucket,otherBucket,self.__network,compressed=compressed)
 
-		selfBucket.addLink(l)
-		otherBucket.addLink(l)
+		selfBucket.setLink(l)
+		otherBucket.setLink(l)
 
 		return l
 
-	def modify(self, tens, preserveCompressed = False, delBuckets=[]):
-		# delBuckets must have length equal to len(self.tensor().shape()) - len(tens.shape())
-		n = Node(tens,self.__network,children=[self])
+	def modify(self, tens, delBuckets=[], repBuckets=[]):
+		'''
+		len(delBuckets) + len(tens.shape()) - len(newBuckets) == len(self.tensor().shape())
+		Creates a copy of this Node with tens as its Tensor.  Omits buckets at indices listed in
+		delBuckets. Replaces Buckets at indices listed in repBuckets with new Bucket objects.
+		Raises a ValueError if repBuckets and delBuckets contain overlapping elements.
+		'''
+		if len(set(delBuckets).intersection(set(repBuckets))) > 0:
+			raise ValueError
+
+		Buckets = []
+
 		counter = 0
-		for i,b in enumerate(self.__buckets):
+		for i,b in enumerate(self.buckets()):
 			if i not in delBuckets:
-				if b.linked():
-					if preserveCompressed:
-						n.addLink(b.otherNode(-1),counter,b.otherNode(-1).bucketIndex(b.otherBucket(-1)),compressed=b.link(-1).compressed())
-					else:
-						n.addLink(b.otherNode(-1),counter,b.otherNode(-1).bucketIndex(b.otherBucket(-1)),compressed=False)
+				if i not in repBuckets:
+					Buckets.append(b)
+				else:
+					Buckets.append(Bucket(counter, self.network()))
 				counter += 1
+
+		n = Node(tens, self.__network, children=[self], Buckets=Buckets)
 
 		return n
 
 	def trace(self):
 		for b in self.__buckets:
 			if b.linked():
-				otherBucket = b.otherBucket(-1)
-				otherNode = otherBucket.node()
+				otherBucket = b.otherBucket()
+				otherNode = otherBucket.topNode()
 				if otherNode == self:
 					ind0 = self.bucketIndex(b)
 					ind1 = self.bucketIndex(otherBucket)
-					newT = self.__tensor.trace(ind0,ind1)
-					n = self.modify(newT, preserveCompressed = False, delBuckets=[ind0,ind1])
+					newT = self.__tensor.trace(ind0, ind1)
+					n = self.modify(newT, delBuckets=[ind0,ind1])
 					n.trace() # Keep going until there are no more repeated indices to trace.
 					return
 
@@ -200,19 +211,15 @@ class Node:
 		c =self.connectedHigh()
 		cc = other.connectedHigh()
 
-		print (other in c)
-		print (self in cc)
-		print other.id(), other.parent(), self.findLink(other), self.findLink(other).bucket1().link(-1)
-		print map(str,c)
 		if other not in c:
 			raise ValueError # Only allow mergers between highest-level objects (so each Node has at most one parent).
 
-		# Find all links between self and other
+		# Find all links between self and other and store their indices
 		links = []
 		for i,b in enumerate(self.__buckets):
 			if b.linked():
-				if b.otherNode(-1) == other:
-					links.append((i,other.bucketIndex(b.otherBucket(-1))))
+				if b.otherTopNode() == other:
+					links.append((i,other.bucketIndex(b.otherBucket())))
 
 		links = zip(*links)
 
@@ -220,21 +227,6 @@ class Node:
 		t = self.__tensor.contract(links[0],other.tensor(),links[1])
 
 		# Build new Node
-		n = Node(t,self.__network,children=[self,other])
-
-		# Link new Node
-		counter = 0
-
-		for i in range(len(self.tensor().shape())):
-			b = self.bucket(i)
-			if i not in links[0]:
-				if b.linked():
-					n.addLink(b.otherNode(-1),counter,b.otherNode(-1).bucketIndex(b.otherBucket(-1)))
-				counter += 1
-		for i in range(len(other.tensor().shape())):
-			b = other.bucket(i)
-			if i not in links[1]:
-				if b.linked():
-					n.addLink(b.otherNode(-1),counter,b.otherNode(-1).bucketIndex(b.otherBucket(-1)))
-				counter += 1
-	
+		Buckets = [b for b in self.buckets() if b.otherTopNode() != other] + [b for b in other.buckets() if b.otherTopNode() != self]
+		# Build new Node
+		n = Node(t,self.__network,children=[self,other], Buckets=Buckets)	
