@@ -56,7 +56,8 @@ def mergeLinks(n1, n2, compressLink=False):
 	# Add back in the link between n1m and n2m
 	n1m.addLink(n2m, m1, m2, compressed = False)
 
-	# Remove bad Link
+	# Remove bad Link. This will actually need to propagate through all children of n1 and n2
+	# once the rest of the link inheritance code is written.
 	badLink = n1m.findLink(n2)
 	badLink.delete()
 	badLink = n2m.findLink(n1)

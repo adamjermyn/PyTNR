@@ -13,6 +13,8 @@ class Link:
 
 	bucket1			-	Returns the first Bucket this link connects to.
 	bucket2			-	Returns the second Bucket this link connects to.
+	otherBucket		-	Takes as input a Bucket. Raises a ValueError if it is not one of the
+						Buckets associated with this Link. If it is one of them, returns the other.
 	mergeEentropy	-	Returns the expected change in the entropy of the network
 						were the link to be contracted. Heuristics are used on the
 						assumption that links are being compressed regularly.
@@ -30,7 +32,7 @@ class Link:
 		This will require some additional metadata tracking, as currently it's a nightmare to
 		figure out which buckets go with which children. The best way to do this is probably to
 		just explicitly track that data through mergers. Then you can recurse into each of the childrens'
-		buckets to add the appropriate Links. Note that 
+		buckets to add the appropriate Links. 
 	'''
 
 	def __init__(self, b1, b2, network, compressed=False):
