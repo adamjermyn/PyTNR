@@ -99,7 +99,7 @@ class Node:
 		c = []
 		for b in self.__buckets:
 			if b.linked():
-				c.append(b.topNode())
+				c.append(b.otherTopNode())
 		return c
 
 	def findLink(self, other):
@@ -111,7 +111,7 @@ class Node:
 	def linksConnecting(self, other):
 		links = []
 		for b in self.__buckets:
-			if other in b.otherNode():
+			if other in b.otherNodes():
 				links.append(b.link())
 		return links
 
@@ -229,6 +229,17 @@ class Node:
 		t = self.__tensor.contract(links[0],other.tensor(),links[1])
 
 		# Build new Node
-		Buckets = [b for b in self.buckets() if b.otherTopNode() != other] + [b for b in other.buckets() if b.otherTopNode() != self]
+		Buckets = []
+		for b in self.buckets():
+			if not b.linked():
+				Buckets.append(b)
+			elif b.otherTopNode() != other:
+				Buckets.append(b)
+		for b in other.buckets():
+			if not b.linked():
+				Buckets.append(b)
+			elif b.otherTopNode() != self:
+				Buckets.append(b)
+
 		# Build new Node
 		n = Node(t,self.__network,children=[self,other], Buckets=Buckets)	

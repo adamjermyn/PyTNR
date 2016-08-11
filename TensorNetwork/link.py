@@ -20,6 +20,7 @@ class Link:
 						assumption that links are being compressed regularly. Assumes compression
 						would be performed on top-Level nodes.
 	compressed 		-	Returns True if this Link was the result of a compression operation, False otherwise.
+	setCompressed	-	Sets the Link compress variable to True.
 	delete			-	Removes this link from both 
 
 	Links are instantiated with the buckets they connect, and are added to the end of the Link
@@ -57,6 +58,9 @@ class Link:
 
 	def compressed(self):
 		return self.__compressed
+
+	def setCompressed(self):
+		self.__compressed = True
 
 	def mergeEntropy(self, reduction=0.75):
 		# Entropy is computed in base e.

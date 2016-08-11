@@ -36,7 +36,7 @@ def compress(link, eps=1e-4):
 
 	if ind == len(cp):
 		link.setCompressed()
-		return link
+		return link, n1, n2
 
 	u = np.transpose(u)
 
@@ -67,8 +67,5 @@ def compress(link, eps=1e-4):
 	n2m = n2.modify(t2m, repBuckets=[ind2])
 
 	newLink = n1m.addLink(n2m, ind1, ind2, compressed=True)
-	
-	newLink = n1m.findLink(n2m)
-	newLink.setCompressed()
 
 	return newLink, n1m, n2m
