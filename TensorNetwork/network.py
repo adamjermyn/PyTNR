@@ -117,7 +117,7 @@ class Network:
 		n = self.__topLevelNodes
 		links = set()
 		for link in self.__allLinks:
-			if link.bucket1().node() in n and link.bucket2().node() in n:
+			if link.bucket1().topNode() in n and link.bucket2().topNode() in n:
 				links.add(link)
 		return links
 

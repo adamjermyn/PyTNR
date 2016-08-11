@@ -58,7 +58,7 @@ class Link:
 	def compressed(self):
 		return self.__compressed
 
-	def mergeEntropy(self, index0, index1, reduction=0.75):
+	def mergeEntropy(self, reduction=0.75):
 		# Entropy is computed in base e.
 		# As a heuristic we assume that merging a bond of
 		# size S with a bond of size S' produces a bond of
@@ -77,7 +77,7 @@ class Link:
 
 		length = n1.tensor().shape()[n1.bucketIndex(self.__b1)]
 
-		if self.__b1.node() == self.__b2.node():
+		if self.__b1.topNode() == self.__b2.topNode():
 			raise ValueError		# You should always trace out self-loops before examining entropy.
 
 		s1 = arr1.size*entF
