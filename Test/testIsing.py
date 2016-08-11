@@ -3,6 +3,7 @@ sys.path.append('../TensorNetwork/')
 from network import Network
 import numpy as np
 from scipy.integrate import quad
+import cProfile
 
 def IsingSolve(nX, nY, h, J):
 	network = Network()
@@ -66,7 +67,11 @@ def exactIsing(J):
 
 	return np.log(2)/2 + (1/(2*np.pi))*inte
 
+#print cProfile.run('IsingSolve(7,7,2.0,0)/49,np.log(np.exp(2) + np.exp(-2))')
+
 print IsingSolve(7,7,2.0,0)/49,np.log(np.exp(2) + np.exp(-2))
+
+exit()
 
 print IsingSolve(7,7,4.0,0)/49,np.log(np.exp(4) + np.exp(-4))
 

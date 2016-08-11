@@ -33,16 +33,8 @@ def mergeLinks(n1, n2, compressLink=False):
 	arr1 = n1.tensor().array()
 	arr2 = n2.tensor().array()
 
-	print arr1.shape
-	print arr2.shape
-
 	arr1m = np.transpose(arr1, axes=perm1)
 	arr2m = np.transpose(arr2, axes=perm2)
-
-	print indices1, indices2
-	print arr1m.shape, list(arr1m.shape[:m1]) + [np.product([arr1.shape[i] for i in indices1])] + list(arr1m.shape[m1+len(indices1):])
-	print arr2m.shape, list(arr2m.shape[:m2]) + [np.product([arr2.shape[i] for i in indices2])] + list(arr2m.shape[m2+len(indices2):])
-
 
 	arr1m = np.reshape(arr1m, list(arr1m.shape[:m1]) + [np.product([arr1.shape[i] for i in indices1])] + list(arr1m.shape[m1+len(indices1):]))
 	arr2m = np.reshape(arr2m, list(arr2m.shape[:m2]) + [np.product([arr2.shape[i] for i in indices2])] + list(arr2m.shape[m2+len(indices2):]))
@@ -64,8 +56,7 @@ def mergeLinks(n1, n2, compressLink=False):
 	n1m.addLink(n2m, m1, m2, compressed = False)
 
 	if compressLink:
-		links = n1m.findLink(n2m)
-		link = links[0]
+		link = n1m.findLink(n2m)
 		_, n1m, n2m = compress(link)
 
 	return n1m, n2m

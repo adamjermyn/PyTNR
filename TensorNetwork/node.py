@@ -2,6 +2,7 @@ from link import Link
 from bucket import Bucket
 from tensor import Tensor
 from mergeLinks import mergeLinks
+from collections import Counter
 
 class Node:
 	'''
@@ -13,6 +14,7 @@ class Node:
 	id 				-	Returns the id number of the Node. These numbers are unique within a network.
 	children		-	Returns the children Nodes (if any) which merged to form this Node.
 	parent			-	Returns the Node (if any) which this merges to form.
+	topParent		-	Returns the highest-level ancestor of this Node.
 	network 		-	Returns the Network this Node belongs to.
 	connected		-	Returns the Nodes this one is connected to.
 	connectedHigh	-	Returns the Nodes this one is connected to, giving the highest-level list possible.
@@ -81,6 +83,12 @@ class Node:
 
 	def parent(self):
 		return self.__parent
+
+	def topParent(self):
+		if self.parent() is None:
+			return self
+		else:
+			return self.parent().topParent()
 
 	def setParent(self, parent):
 		self.__parent = parent
@@ -198,16 +206,24 @@ class Node:
 					return
 
 	def linkMerge(self,compress=False):
-		c = self.connectedHigh()
+		todo = set()
+
+		c = Counter(self.connectedHigh())
 
 		for n in c:
-			links = self.linksConnecting(n)
-			if len(links) > 1:
-				n1, n2 = mergeLinks(self, n)
-				n1.linkMerge(compress=compress)
-				return True, n
+			if c[n] > 1:
+				todo.add(n)
 
-		return False, None
+		n1 = self
+
+		while len(todo) > 0:
+			n = todo.pop()
+			n1, n2 = mergeLinks(n1, n.topParent(), compressLink = compress)
+			if n2.children()[0] in todo:
+				todo.remove(n2.children()[0])
+				todo.add(n2)
+
+		return n1
 
 	def merge(self, other):
 		c =self.connectedHigh()

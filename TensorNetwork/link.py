@@ -41,6 +41,7 @@ class Link:
 		self.__compressed = compressed
 		self.__network = network
 		self.__network.registerLink(self)
+		self.__mergeEntropy = self.mergeEntropy()
 
 	def bucket1(self):
 		return self.__b1

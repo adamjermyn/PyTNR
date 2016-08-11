@@ -137,9 +137,8 @@ class Network:
 
 		while len(done) < len(self.__topLevelNodes):
 			n = list(self.__topLevelNodes.difference(done))[0]
-			merged, otherNode = n.linkMerge(compress=compress)
-			if not merged:
-				done.add(n)
+			nn = n.linkMerge(compress=compress)
+			done.add(nn)
 
 	def merge(self):
 		# This logic might make more sense being handled by the Link.
@@ -153,12 +152,14 @@ class Network:
 
 		link.bucket1().topNode().merge(link.bucket2().topNode())
 
-	def compress(self,eps=1e-12):
+	def compress(self,eps=1e-4):
 		compressed = set()
 
 		for link in self.topLevelLinks():
 			if link.compressed():
 				compressed.add(link)
+
+		print len(compressed), len(self.topLevelLinks()), 'hi'
 
 		while len(compressed) < len(self.topLevelLinks()):
 			todo = self.topLevelLinks().difference(compressed)

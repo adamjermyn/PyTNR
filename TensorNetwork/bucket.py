@@ -49,8 +49,8 @@ class Bucket:
 	def __init__(self, index, network):
 		self.__nodes = []
 		self.__network = network
-
 		self.__link = None
+		self.__otherBucket = None
 
 	def link(self):
 		return self.__link
@@ -59,7 +59,7 @@ class Bucket:
 		return (self.__link is not None)
 
 	def node(self, index):
-		return self.nodes()[index]
+		return self.__nodes[index]
 
 	def nodes(self):
 		return self.__nodes
@@ -68,21 +68,18 @@ class Bucket:
 		return len(self.__nodes)
 
 	def topNode(self):
-		return self.node(-1)
+		return self.__nodes[-1]
 
 	def network(self):
 		return self.__network
 
 	def otherBucket(self):
-		if self.linked():
-			return self.__link.otherBucket(self)
-		else:
-			return None
+		return self.__otherBucket
 
 	def otherNodes(self):
 		if not self.linked():
 			raise ValueError
-		return self.otherBucket().nodes()
+		return self.__otherBucket.nodes()
 
 	def otherNode(self, index):
 		return self.otherNodes()[index]
@@ -100,6 +97,11 @@ class Bucket:
 
 	def setLink(self, link):
 		self.__link = link
+		self.__otherBucket = link.otherBucket(self)
+			# A condition of this logic for otherBucket is that we never change which Bucket
+			# a Link points to once we set it. This is fine, as there are no modifier methods
+			# in the Link class for the Buckets it points to.
 
 	def removeLink(self, link):
-		self.setLink(None)
+		self.__link = None
+		self.__otherBucket = None
