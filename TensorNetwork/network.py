@@ -23,7 +23,6 @@ class Network:
 	topLevelNodes 		-	Returns all top level Nodes.
 	topLevelLinks 		-	Returns all Links between top-level Nodes.
 	nodes 				-	Returns all nodes
-	checkLinks			-	Verify that all Links are between indices of the same length.
 	size				-	Returns the size of the Network
 	topLevelSize		-	Returns the top-leve size of the Network
 	largestTensor		-	Returns the shape of the largest Tensor.
@@ -122,30 +121,18 @@ class Network:
 				links.add(link)
 		return links
 
-	def checkLinks(self):
-		for link in self.__allLinks:
-			n1 = link.bucket1().node()
-			n2 = link.bucket2().node()
-			ind1 = n1.bucketIndex(link.bucket1())
-			ind2 = n2.bucketIndex(link.bucket2())
-			if n1.tensor().shape()[ind1] != n2.tensor().shape()[ind2]:
-				return False, n1.id(),n1.tensor().shape(), ind1, n2.id(), n2.tensor().shape(), ind2
-		return True
-
 	def addNodeFromArray(self, arr):
 		t = Tensor(arr.shape,arr)
 		n = Node(t,self)
 		return n
 
 	def trace(self):
-		nodes = list(self.__topLevelNodes)
+		nodes = list(self.topLevelNodes())
 
 		for n in nodes:
 			n.trace()
 
 	def linkMerge(self,compress=False):
-		nodes = list(self.__topLevelNodes)
-
 		done = set()
 
 		while len(done) < len(self.__topLevelNodes):
@@ -155,8 +142,7 @@ class Network:
 				done.add(n)
 
 	def merge(self):
-		### Something is broken here, allowing a link to count as top-level when the nodes on either end aren't.
-		### (or they aren't connected to one another).
+		# This logic might make more sense being handled by the Link.
 		links = list(self.topLevelLinks())
 
 		s = [link.mergeEntropy(reduction=0.5) for link in links]
@@ -165,7 +151,7 @@ class Network:
 
 		link = links[ind]
 
-		link.bucket1().node().merge(link.bucket2().node())
+		link.bucket1().topNode().merge(link.bucket2().topNode())
 
 	def compress(self,eps=1e-12):
 		compressed = set()

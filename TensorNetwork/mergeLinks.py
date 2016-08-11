@@ -50,18 +50,10 @@ def mergeLinks(n1, n2, compressLink=False):
 	ind2m = list(indices2)
 	ind2m.remove(m2)
 
-	n1m = n1.modify(t1m, preserveCompressed=False, delBuckets=ind1m)
-	n2m = n2.modify(t2m, preserveCompressed=False, delBuckets=ind2m)
+	n1m = n1.modify(t1m, delBuckets=[ind1m], repBuckets=[m1])
+	n2m = n2.modify(t2m, delBuckets=[ind2m], repBuckets=[m2])
 
-	# Add back in the link between n1m and n2m
 	n1m.addLink(n2m, m1, m2, compressed = False)
-
-	# Remove bad Link. This will actually need to propagate through all children of n1 and n2
-	# once the rest of the link inheritance code is written.
-	badLink = n1m.findLink(n2)
-	badLink.delete()
-	badLink = n2m.findLink(n1)
-	badLink.delete()
 
 	if compressLink:
 		links = n1m.findLink(n2m)

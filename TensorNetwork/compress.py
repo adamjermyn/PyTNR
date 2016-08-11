@@ -2,8 +2,8 @@ from tensor import Tensor
 import numpy as np
 
 def compress(link, eps=1e-4):
-	n1 = link.bucket1().node()
-	n2 = link.bucket2().node()
+	n1 = link.bucket1().topNode()
+	n2 = link.bucket2().topNode()
 
 	t1 = n1.tensor()
 	t2 = n2.tensor()
@@ -63,17 +63,12 @@ def compress(link, eps=1e-4):
 	t1m = Tensor(u.shape,u)
 	t2m = Tensor(v.shape,v)
 
-	n1m = n1.modify(t1m, preserveCompressed=True)
-	n2m = n2.modify(t2m, preserveCompressed=True)
+	n1m = n1.modify(t1m, repBuckets=[ind1])
+	n2m = n2.modify(t2m, repBuckets=[ind2])
+
+	newLink = n1m.addLink(n2m, ind1, ind2, compressed=True)
 	
 	newLink = n1m.findLink(n2m)
 	newLink.setCompressed()
-
-	# Remove bad Link. This will actually need to propagate through all children of n1 and n2
-	# once the rest of the link inheritance code is written.
-	badLink = n1m.findLink(n2)
-	badLink.delete()
-	badLink = n2m.findLink(n1)
-	badLink.delete()
 
 	return newLink, n1m, n2m
