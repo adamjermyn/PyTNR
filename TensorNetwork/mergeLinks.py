@@ -14,7 +14,7 @@ def mergeLinks(n1, n2, compressLink=False):
 	indices2 = []
 
 	for link in links:
-		if link.bucket1().node() == n1:
+		if link.bucket1().topNode() == n1:
 			indices1.append(n1.bucketIndex(link.bucket1()))
 			indices2.append(n2.bucketIndex(link.bucket2()))
 		else:
@@ -50,8 +50,8 @@ def mergeLinks(n1, n2, compressLink=False):
 	ind2m = list(indices2)
 	ind2m.remove(m2)
 
-	n1m = n1.modify(t1m, delBuckets=[ind1m], repBuckets=[m1])
-	n2m = n2.modify(t2m, delBuckets=[ind2m], repBuckets=[m2])
+	n1m = n1.modify(t1m, delBuckets=ind1m, repBuckets=[m1])
+	n2m = n2.modify(t2m, delBuckets=ind2m, repBuckets=[m2])
 
 	n1m.addLink(n2m, m1, m2, compressed = False)
 
