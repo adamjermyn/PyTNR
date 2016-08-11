@@ -49,11 +49,11 @@ def IsingSolve(nX, nY, h, J):
 			lattice[i][j].addLink(bondH[i][j],3,0)
 			lattice[i][j].addLink(bondH[(i+1)%nX][j],4,1)
 
+	network.trace()
 
 	while len(network.topLevelLinks()) > 0:
 		network.merge()
 		network.linkMerge(compress=True)
-		network.trace()
 
 		print network.topLevelSize(), network.largestTopLevelTensor()
 

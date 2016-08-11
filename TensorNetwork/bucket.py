@@ -94,6 +94,8 @@ class Bucket:
 
 	def addNode(self, node):
 		self.__nodes.append(node)
+		if self.linked():
+			self.__link.updateMergeEntropy()
 
 	def setLink(self, link):
 		self.__link = link

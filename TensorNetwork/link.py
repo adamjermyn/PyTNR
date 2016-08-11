@@ -35,13 +35,14 @@ class Link:
 		buckets to add the appropriate Links. 
 	'''
 
-	def __init__(self, b1, b2, network, compressed=False):
+	def __init__(self, b1, b2, network, compressed=False, reduction=0.75):
 		self.__b1 = b1
 		self.__b2 = b2
 		self.__compressed = compressed
 		self.__network = network
 		self.__network.registerLink(self)
-		self.__mergeEntropy = self.mergeEntropy()
+		self.__reduction = reduction
+		self.__mergeEntropy = None
 
 	def bucket1(self):
 		return self.__b1
@@ -64,6 +65,11 @@ class Link:
 		self.__compressed = True
 
 	def mergeEntropy(self, reduction=0.75):
+		if self.__mergeEntropy is None:
+			self.updateMergeEntropy()
+		return self.__mergeEntropy
+
+	def updateMergeEntropy(self):
 		# Entropy is computed in base e.
 		# As a heuristic we assume that merging a bond of
 		# size S with a bond of size S' produces a bond of
@@ -94,11 +100,11 @@ class Link:
 
 		commonNodes = list(commonNodes)
 
-		sN *= reduction**len(commonNodes)
+		sN *= self.__reduction**len(commonNodes)
 
 		dS = sN - s1 - s2
 
-		return dS
+		self.__mergeEntropy = dS
 
 	def delete(self):
 		self.__network.deregisterLink(self)

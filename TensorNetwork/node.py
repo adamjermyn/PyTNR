@@ -259,3 +259,6 @@ class Node:
 
 		# Build new Node
 		n = Node(t,self.__network,children=[self,other], Buckets=Buckets)	
+
+		# Trace out any self-loops
+		n.trace()
