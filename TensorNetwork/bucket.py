@@ -41,6 +41,7 @@ class Bucket:
 	numOtherNodes	-	Returns the number of Nodes associated with the other Bucket associated with the
 						Link associated with this Node. If there is no Link reutnrs 0.
 	addNode		-	Takes as input a Node and adds it to the end of the list of Nodes.
+	removeNove	-	Removes the top Node from the list.
 	setLink		-	Takes as input a Link and sets it as the one associated with this Bucket.
 	removeLink	-	Removes the Link associated with this Bucket.
 					Raises a ValueError if the Link is not present.
@@ -95,11 +96,17 @@ class Bucket:
 	def addNode(self, node):
 		self.__nodes.append(node)
 		if self.linked():
-			self.__link.updateMergeEntropy()
+			self.__link.update()
+
+	def removeNode(self):
+		self.__nodes = self.__nodes[:-1]
+		if self.linked():
+			self.__link.update()
 
 	def setLink(self, link):
 		self.__link = link
 		self.__otherBucket = link.otherBucket(self)
+		self.__link.update()
 			# A condition of this logic for otherBucket is that we never change which Bucket
 			# a Link points to once we set it. This is fine, as there are no modifier methods
 			# in the Link class for the Buckets it points to.

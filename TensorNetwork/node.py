@@ -67,8 +67,8 @@ class Node:
 		self.__id = self.__network.nextID()
 		self.__parent = None
 		self.__children = children
-		self.__network.registerNode(self)
 		self.__buckets = Buckets
+		self.__network.registerNode(self)
 		for b in Buckets:
 			b.addNode(self)
 
@@ -143,6 +143,8 @@ class Node:
 			if b.linked() and b.numNodes() == 1:
 				# We only delete a Link if this is the last Node its Bucket connects to.
 				b.link().delete()
+			else:
+				b.removeNode() # We only ever delete top-level nodes
 
 		for c in self.children():
 			c.parent = None
@@ -151,7 +153,7 @@ class Node:
 
 		del self
 
-	def addLink(self, other, selfBucketIndex, otherBucketIndex, compressed=False):
+	def addLink(self, other, selfBucketIndex, otherBucketIndex, compressed=False, children=[]):
 		selfBucket = self.bucket(selfBucketIndex)
 		otherBucket = other.bucket(otherBucketIndex)
 
@@ -160,7 +162,7 @@ class Node:
 		if otherBucket.linked():
 			raise ValueError
 
-		l = Link(selfBucket,otherBucket,self.__network,compressed=compressed)
+		l = Link(selfBucket,otherBucket,self.__network,compressed=compressed,children=children)
 
 		selfBucket.setLink(l)
 		otherBucket.setLink(l)
@@ -202,6 +204,7 @@ class Node:
 					ind1 = self.bucketIndex(otherBucket)
 					newT = self.__tensor.trace(ind0, ind1)
 					n = self.modify(newT, delBuckets=[ind0,ind1])
+					self.__network.deregisterLinkTop(b.link())
 					n.trace() # Keep going until there are no more repeated indices to trace.
 					return
 
@@ -238,6 +241,7 @@ class Node:
 			if b.linked():
 				if b.otherTopNode() == other:
 					links.append((i,other.bucketIndex(b.otherBucket())))
+					self.__network.deregisterLinkTop(b.link())
 
 		links = zip(*links)
 

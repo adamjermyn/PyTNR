@@ -66,6 +66,6 @@ def compress(link, eps=1e-4):
 	n1m = n1.modify(t1m, repBuckets=[ind1])
 	n2m = n2.modify(t2m, repBuckets=[ind2])
 
-	newLink = n1m.addLink(n2m, ind1, ind2, compressed=True)
+	newLink = n1m.addLink(n2m, ind1, ind2, compressed=True, children=[link])
 
 	return newLink, n1m, n2m

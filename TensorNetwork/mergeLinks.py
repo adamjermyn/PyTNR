@@ -53,7 +53,7 @@ def mergeLinks(n1, n2, compressLink=False):
 	n1m = n1.modify(t1m, delBuckets=ind1m, repBuckets=[m1])
 	n2m = n2.modify(t2m, delBuckets=ind2m, repBuckets=[m2])
 
-	n1m.addLink(n2m, m1, m2, compressed = False)
+	n1m.addLink(n2m, m1, m2, compressed = False, children=links)
 
 	if compressLink:
 		link = n1m.findLink(n2m)

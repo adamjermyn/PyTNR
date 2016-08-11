@@ -11,31 +11,29 @@ class Link:
 
 	Links have the following functions:
 
-	bucket1			-	Returns the first Bucket this link connects to.
-	bucket2			-	Returns the second Bucket this link connects to.
+	bucket1			-	Returns the first Bucket this Link connects to.
+	bucket2			-	Returns the second Bucket this Link connects to.
+	parent 			-	Returns the parent of this Link.
+	children 		-	Returns the children of this Link.
+	setParent		-	Takes as input a Link and sets it as the parent of this Link.
 	otherBucket		-	Takes as input a Bucket. Raises a ValueError if it is not one of the
 						Buckets associated with this Link. If it is one of them, returns the other.
-	mergeEentropy	-	Returns the expected change in the entropy of the network
+	mergeEntropy	-	Returns the expected change in the entropy of the network
 						were the link to be contracted. Heuristics are used on the
 						assumption that links are being compressed regularly. Assumes compression
 						would be performed on top-Level nodes.
+	updateMergeEntropy	-	Updates the stored merge entropy. Should only be called from the update() method.
+	update 			-	Called whenever a Bucket this Link points to gains or loses a Node. Updates merged
+						entropy and corrects/registers the top/not top status of the Link.
 	compressed 		-	Returns True if this Link was the result of a compression operation, False otherwise.
 	setCompressed	-	Sets the Link compress variable to True.
 	delete			-	Removes this link from both 
 
 	Links are instantiated with the buckets they connect, and are added to the end of the Link
 	lists of their buckets. They are also added to the link registry of their TensorNetwork.
-
-	TODO:
-		Make it so that links are added to all tensors below you in a chain when applicable.
-		This ought to be handled by the addLink method to make it automatic.
-		This will require some additional metadata tracking, as currently it's a nightmare to
-		figure out which buckets go with which children. The best way to do this is probably to
-		just explicitly track that data through mergers. Then you can recurse into each of the childrens'
-		buckets to add the appropriate Links. 
 	'''
 
-	def __init__(self, b1, b2, network, compressed=False, reduction=0.75):
+	def __init__(self, b1, b2, network, compressed=False, reduction=0.75, children=[]):
 		self.__b1 = b1
 		self.__b2 = b2
 		self.__compressed = compressed
@@ -43,12 +41,26 @@ class Link:
 		self.__network.registerLink(self)
 		self.__reduction = reduction
 		self.__mergeEntropy = None
+		self.__parent = None
+		self.__children = children
+		for c in self.__children:
+			c.setParent(self)
+			self.__network.deregisterLinkTop(c)
 
 	def bucket1(self):
 		return self.__b1
 
 	def bucket2(self):
 		return self.__b2
+
+	def parent(self):
+		return self.__parent
+
+	def setParent(self, parent):
+		self.__parent = parent
+
+	def children(self):
+		return self.__children
 
 	def otherBucket(self, bucket):
 		if bucket == self.__b1:
@@ -105,6 +117,9 @@ class Link:
 		dS = sN - s1 - s2
 
 		self.__mergeEntropy = dS
+
+	def update(self):
+		self.updateMergeEntropy()
 
 	def delete(self):
 		self.__network.deregisterLink(self)

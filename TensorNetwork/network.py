@@ -39,6 +39,7 @@ class Network:
 		self.__nodes = set()
 		self.__topLevelNodes = set()
 		self.__allLinks = set()
+		self.__topLevelLinks = set()
 		self.__idDict = {}
 		self.__idCounter = 0
 
@@ -82,9 +83,14 @@ class Network:
 
 	def registerLink(self, link):
 		self.__allLinks.add(link)
+		self.__topLevelLinks.add(link)
 
 	def deregisterLink(self, link):
 		self.__allLinks.remove(link)
+		self.__topLevelLinks.remove(link)	# We should only ever remove top-level Links
+
+	def deregisterLinkTop(self, link):
+		self.__topLevelLinks.remove(link)
 
 	def registerNode(self, node):
 		self.__nodes.add(node)
@@ -114,12 +120,7 @@ class Network:
 		return self.__topLevelNodes
 
 	def topLevelLinks(self):
-		n = self.__topLevelNodes
-		links = set()
-		for link in self.__allLinks:
-			if link.bucket1().topNode() in n and link.bucket2().topNode() in n:
-				links.add(link)
-		return links
+		return self.__topLevelLinks
 
 	def addNodeFromArray(self, arr):
 		t = Tensor(arr.shape,arr)
@@ -144,7 +145,7 @@ class Network:
 		# This logic might make more sense being handled by the Link.
 		links = list(self.topLevelLinks())
 
-		s = [link.mergeEntropy(reduction=0.5) for link in links]
+		s = [link.mergeEntropy() for link in links]
 
 		ind = np.argmin(s)
 
@@ -158,8 +159,6 @@ class Network:
 		for link in self.topLevelLinks():
 			if link.compressed():
 				compressed.add(link)
-
-		print len(compressed), len(self.topLevelLinks()), 'hi'
 
 		while len(compressed) < len(self.topLevelLinks()):
 			todo = self.topLevelLinks().difference(compressed)
