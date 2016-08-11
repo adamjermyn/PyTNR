@@ -40,8 +40,7 @@ class Bucket:
 						associated with this Bucket.
 	numOtherNodes	-	Returns the number of Nodes associated with the other Bucket associated with the
 						Link associated with this Node. If there is no Link reutnrs 0.
-	addLink		-	Takes as input another Bucket and constructs a Link between this one and the other.
-					Note that if a Link already exists a ValueError will be raised.
+	setLink		-	Takes as input a Link and sets it as the one associated with this Bucket.
 	removeLink	-	Removes the Link associated with this Bucket.
 					Raises a ValueError if the Link is not present.
 	'''
@@ -79,7 +78,7 @@ class Bucket:
 		else:
 			return None
 
-	def otherNodes(self, index):
+	def otherNodes(self):
 		if not self.linked():
 			raise ValueError
 		return self.otherBucket().nodes()
@@ -95,13 +94,8 @@ class Bucket:
 			raise ValueError
 		return self.otherBucket().numNodes()
 
-	def addLink(self, )
-
-	def addLink(self, link):
-		self.__links.append(link)
+	def setLink(self, link):
+		self.__link = link
 
 	def removeLink(self, link):
-		if link in self.__links:
-			self.__links.remove(link)
-		else:
-			raise ValueError
+		self.setLink(None)
