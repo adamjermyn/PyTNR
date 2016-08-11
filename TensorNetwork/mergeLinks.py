@@ -45,15 +45,22 @@ def mergeLinks(n1, n2, compressLink=False):
 	t2m = Tensor(arr2m.shape, arr2m)
 
 	# We can delete the buckets associated with the removed indices
+	ind1m = list(indices1)
+	ind1m.remove(m1)
+	ind2m = list(indices2)
+	ind2m.remove(m2)
 
-	n1m = n1.modify(t1m, preserveCompressed=False, delBuckets=indices1)
-	n2m = n2.modify(t2m, preserveCompressed=False, delBuckets=indices2)
+	n1m = n1.modify(t1m, preserveCompressed=False, delBuckets=ind1m)
+	n2m = n2.modify(t2m, preserveCompressed=False, delBuckets=ind2m)
 
 	# Add back in the link between n1m and n2m
-
 	n1m.addLink(n2m, m1, m2, compressed = False)
 
-	# No need to delete the bad Link because delBuckets did it for us!
+	# Remove bad Link
+	badLink = n1m.findLink(n2)
+	badLink.delete()
+	badLink = n2m.findLink(n1)
+	badLink.delete()
 
 	if compressLink:
 		links = n1m.findLink(n2m)

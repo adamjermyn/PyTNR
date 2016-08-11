@@ -99,7 +99,7 @@ class Node:
 		c = []
 		for b in self.__buckets:
 			if b.linked():
-				c.append(b.otherNode(b.numLinks()-1))
+				c.append(b.otherNode(-1))
 		return c
 
 	def findLink(self, other):
@@ -198,6 +198,12 @@ class Node:
 
 	def merge(self, other):
 		c =self.connectedHigh()
+		cc = other.connectedHigh()
+
+		print (other in c)
+		print (self in cc)
+		print other.id(), other.parent(), self.findLink(other), self.findLink(other).bucket1().link(-1)
+		print map(str,c)
 		if other not in c:
 			raise ValueError # Only allow mergers between highest-level objects (so each Node has at most one parent).
 

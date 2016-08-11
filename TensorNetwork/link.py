@@ -23,6 +23,14 @@ class Link:
 
 	Links are instantiated with the buckets they connect, and are added to the end of the Link
 	lists of their buckets. They are also added to the link registry of their TensorNetwork.
+
+	TODO:
+		Make it so that links are added to all tensors below you in a chain when applicable.
+		This ought to be handled by the addLink method to make it automatic.
+		This will require some additional metadata tracking, as currently it's a nightmare to
+		figure out which buckets go with which children. The best way to do this is probably to
+		just explicitly track that data through mergers. Then you can recurse into each of the childrens'
+		buckets to add the appropriate Links. Note that 
 	'''
 
 	def __init__(self, b1, b2, network, compressed=False):

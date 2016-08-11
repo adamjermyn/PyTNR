@@ -69,8 +69,11 @@ def compress(link, eps=1e-4):
 	newLink = n1m.findLink(n2m)
 	newLink.setCompressed()
 
+	# Remove bad Link. This will actually need to propagate through all children of n1 and n2
+	# once the rest of the link inheritance code is written.
 	badLink = n1m.findLink(n2)
-
+	badLink.delete()
+	badLink = n2m.findLink(n1)
 	badLink.delete()
 
 	return newLink, n1m, n2m
