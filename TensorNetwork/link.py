@@ -17,10 +17,9 @@ class Link:
 						Buckets associated with this Link. If it is one of them, returns the other.
 	mergeEentropy	-	Returns the expected change in the entropy of the network
 						were the link to be contracted. Heuristics are used on the
-						assumption that links are being compressed regularly.
-	compress		-	Compresses the Link uses Singular Value Decomposition. This produces a new Node on
-						either side of the Link, one level up the heirarchy. This is done instead of modifying
-						the original Tensors so that subsequent optimization may be done.
+						assumption that links are being compressed regularly. Assumes compression
+						would be performed on top-Level nodes.
+	compressed 		-	Returns True if this Link was the result of a compression operation, False otherwise.
 	delete			-	Removes this link from both 
 
 	Links are instantiated with the buckets they connect, and are added to the end of the Link
@@ -48,13 +47,18 @@ class Link:
 	def bucket2(self):
 		return self.__b2
 
+	def otherBucket(self, bucket):
+		if bucket == self.__b1:
+			return self.__b2
+		elif bucket == self.__b2:
+			return self.__b1
+		else:
+			raise ValueError
+
 	def compressed(self):
 		return self.__compressed
 
-	def setCompressed(self):
-		self.__compressed = True
-
-	def mergeEntropy(self, reduction=0.75):
+	def mergeEntropy(self, index0, index1, reduction=0.75):
 		# Entropy is computed in base e.
 		# As a heuristic we assume that merging a bond of
 		# size S with a bond of size S' produces a bond of
@@ -62,8 +66,8 @@ class Link:
 
 		entF = 8*np.log(2)		# Entropy in a 64-bit float
 
-		n1 = self.__b1.node()
-		n2 = self.__b2.node()
+		n1 = self.__b1.topNode()
+		n2 = self.__b2.topNode()
 
 		t1 = n1.tensor()
 		t2 = n2.tensor()
