@@ -67,6 +67,8 @@ class Node:
 		self.__children = children
 		self.__network.registerNode(self)
 		self.__buckets = Buckets
+		for b in Buckets:
+			b.addNode(self)
 
 	def id(self):
 		return self.__id
