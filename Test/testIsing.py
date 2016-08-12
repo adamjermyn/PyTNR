@@ -53,8 +53,7 @@ def IsingSolve(nX, nY, h, J):
 
 	counter = 0
 	while len(network.topLevelLinks()) > 0:
-		network.merge()
-		network.linkMerge(compress=True)
+		network.merge(mergeL=True,compress=True)
 
 		if counter%5 == 0:
 			print network.topLevelSize(), network.largestTopLevelTensor()
@@ -71,7 +70,7 @@ def exactIsing(J):
 
 #print cProfile.run('IsingSolve(7,7,2.0,0)/49,np.log(np.exp(2) + np.exp(-2))')
 
-print IsingSolve(7,7,2.0,0)/49,np.log(np.exp(2) + np.exp(-2))
+print IsingSolve(15,15,2.0,0)/225,np.log(np.exp(2) + np.exp(-2))
 
 exit()
 

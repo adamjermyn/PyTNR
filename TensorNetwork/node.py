@@ -228,7 +228,7 @@ class Node:
 
 		return n1
 
-	def merge(self, other):
+	def merge(self, other, mergeL=True, compress=True):
 		c =self.connectedHigh()
 		cc = other.connectedHigh()
 
@@ -266,3 +266,8 @@ class Node:
 
 		# Trace out any self-loops
 		n.trace()
+
+		if mergeL:
+			# Merge any links that need it
+			n = n.topParent()
+			n.linkMerge(compress=compress)

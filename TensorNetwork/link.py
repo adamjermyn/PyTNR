@@ -13,6 +13,7 @@ class Link:
 
 	bucket1			-	Returns the first Bucket this Link connects to.
 	bucket2			-	Returns the second Bucket this Link connects to.
+	network 		-	Returns the Network this link belongs to.
 	parent 			-	Returns the parent of this Link.
 	children 		-	Returns the children of this Link.
 	setParent		-	Takes as input a Link and sets it as the parent of this Link.
@@ -38,7 +39,6 @@ class Link:
 		self.__b2 = b2
 		self.__compressed = compressed
 		self.__network = network
-		self.__network.registerLink(self)
 		self.__reduction = reduction
 		self.__mergeEntropy = None
 		self.__parent = None
@@ -46,12 +46,16 @@ class Link:
 		for c in self.__children:
 			c.setParent(self)
 			self.__network.deregisterLinkTop(c)
+		self.__network.registerLink(self)
 
 	def bucket1(self):
 		return self.__b1
 
 	def bucket2(self):
 		return self.__b2
+
+	def network(self):
+		return self.__network
 
 	def parent(self):
 		return self.__parent
@@ -76,7 +80,7 @@ class Link:
 	def setCompressed(self):
 		self.__compressed = True
 
-	def mergeEntropy(self, reduction=0.75):
+	def mergeEntropy(self):
 		if self.__mergeEntropy is None:
 			self.updateMergeEntropy()
 		return self.__mergeEntropy
@@ -120,8 +124,14 @@ class Link:
 
 	def update(self):
 		self.updateMergeEntropy()
+		if self.__parent is None:
+			self.__network.updateSortedLinkList(self)
 
 	def delete(self):
 		self.__network.deregisterLink(self)
 		self.__b1.removeLink(self)
 		self.__b2.removeLink(self)
+
+		for c in self.__children:
+			c.setParent(None)
+			self.__network.registerLinkTop(c)

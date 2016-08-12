@@ -34,38 +34,55 @@ def compress(link, eps=1e-4):
 	ind = np.searchsorted(cp, eps, side='left')
 	ind = len(cp) - ind
 
-	if ind == len(cp):
+	if ind == len(cp): 	# Means we won't actually compress it
 		link.setCompressed()
 		return link, n1, n2
+	else:				# Means we will compress it
+		u = np.transpose(u)
 
-	u = np.transpose(u)
+		lam = lam[:ind]
+		u = u[:ind,:]
+		v = v[:ind,:]
 
-	lam = lam[:ind]
-	u = u[:ind,:]
-	v = v[:ind,:]
+		u *= np.sqrt(lam[:,np.newaxis])
+		v *= np.sqrt(lam[:,np.newaxis])
 
-	u *= np.sqrt(lam[:,np.newaxis])
-	v *= np.sqrt(lam[:,np.newaxis])
+		if ind > 1:
+			u = np.reshape(u,[ind] + sh1m)
+			v = np.reshape(v,[ind] + sh2m)
 
-	u = np.reshape(u,[ind] + sh1m)
-	v = np.reshape(v,[ind] + sh2m)
+			perm1 = range(len(arr1.shape))
+			perm1 = perm1[1:]
+			perm1.insert(ind1,0)
+			perm2 = range(len(arr2.shape))
+			perm2 = perm2[1:]
+			perm2.insert(ind2,0)
 
-	perm1 = range(len(arr1.shape))
-	perm1 = perm1[1:]
-	perm1.insert(ind1,0)
-	perm2 = range(len(arr2.shape))
-	perm2 = perm2[1:]
-	perm2.insert(ind2,0)
+			u = np.transpose(u,axes=perm1)
+			v = np.transpose(v,axes=perm2)
 
-	u = np.transpose(u,axes=perm1)
-	v = np.transpose(v,axes=perm2)
+			t1m = Tensor(u.shape,u)
+			t2m = Tensor(v.shape,v)
 
-	t1m = Tensor(u.shape,u)
-	t2m = Tensor(v.shape,v)
+			n1m = n1.modify(t1m, repBuckets=[ind1])
+			n2m = n2.modify(t2m, repBuckets=[ind2])
 
-	n1m = n1.modify(t1m, repBuckets=[ind1])
-	n2m = n2.modify(t2m, repBuckets=[ind2])
+			newLink = n1m.addLink(n2m, ind1, ind2, compressed=True, children=[link])
+		else:	# Means we're just cutting the bond
+			u = np.reshape(u,sh1m)
+			v = np.reshape(v,sh2m)
 
-	newLink = n1m.addLink(n2m, ind1, ind2, compressed=True, children=[link])
+			t1m = Tensor(u.shape,u)
+			t2m = Tensor(v.shape,v)
+
+			n1m = n1.modify(t1m, delBuckets=[ind1])
+			n2m = n2.modify(t2m, delBuckets=[ind2])
+
+			link.setCompressed()
+			link.setParent(link) # So it isn't considered top-level
+			link.network().deregisterLinkTop(link) # So it's removed from the top-level.
+			link.update() # So it's up to date.
+
+			newLink = link
 
 	return newLink, n1m, n2m

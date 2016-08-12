@@ -4,6 +4,7 @@ from bucket import Bucket
 from node import Node
 import numpy as np
 from compress import compress
+from priorityQueue import PriorityList
 
 class Network:
 	'''
@@ -15,6 +16,8 @@ class Network:
 	registerNode		-	Registers the given Node. Also handles tracking top level Links and Nodes.
 	deregisterLink		-	Deregisters the given Link.
 	deregisterNode		-	Deregisters the given Node. Also handles tracking top level Links and Nodes.
+	registerLinkTop		-	Registers the Link as being in the top level.
+	deregisterLinkTop	-	Deregisters the Link from the top level.
 	nextID				-	Returns the next ID number.
 	addNodeFromArray	-	Takes as input an array and constructs a Tensor and Node around it,
 							then adds the Node to this Network.
@@ -40,6 +43,7 @@ class Network:
 		self.__topLevelNodes = set()
 		self.__allLinks = set()
 		self.__topLevelLinks = set()
+		self.__sortedLinks = PriorityList()
 		self.__idDict = {}
 		self.__idCounter = 0
 
@@ -84,13 +88,24 @@ class Network:
 	def registerLink(self, link):
 		self.__allLinks.add(link)
 		self.__topLevelLinks.add(link)
+		self.__sortedLinks.add(link, link.mergeEntropy())
 
 	def deregisterLink(self, link):
 		self.__allLinks.remove(link)
 		self.__topLevelLinks.remove(link)	# We should only ever remove top-level Links
+		self.__sortedLinks.remove(link)
 
 	def deregisterLinkTop(self, link):
 		self.__topLevelLinks.remove(link)
+		self.__sortedLinks.remove(link)
+
+	def registerLinkTop(self, link):
+		self.__topLevelLinks.add(link)
+		self.__sortedLinks.add(link, link.mergeEntropy())
+
+	def updateSortedLinkList(self, link):
+		self.__sortedLinks.remove(link)
+		self.__sortedLinks.add(link, link.mergeEntropy())
 
 	def registerNode(self, node):
 		self.__nodes.add(node)
@@ -141,17 +156,19 @@ class Network:
 			nn = n.linkMerge(compress=compress)
 			done.add(nn)
 
-	def merge(self):
+	def merge(self, mergeL=True, compress=True):
 		# This logic might make more sense being handled by the Link.
 		links = list(self.topLevelLinks())
 
-		s = [link.mergeEntropy() for link in links]
+		link = self.__sortedLinks.list[0]
 
-		ind = np.argmin(s)
+#		s = [link.mergeEntropy() for link in links]
 
-		link = links[ind]
+#		ind = np.argmin(s)
 
-		link.bucket1().topNode().merge(link.bucket2().topNode())
+#		link = links[ind]
+
+		link.bucket1().topNode().merge(link.bucket2().topNode(), mergeL=mergeL, compress=compress)
 
 	def compress(self,eps=1e-4):
 		compressed = set()
