@@ -10,7 +10,7 @@ class PriorityList:
 
 		self.list.insert(ind, item)
 		self.vals.insert(ind, val)
-					
+
 	def remove(self, item):
 		ind = self.list.index(item)
 

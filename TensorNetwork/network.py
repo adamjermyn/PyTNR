@@ -162,12 +162,6 @@ class Network:
 
 		link = self.__sortedLinks.list[0]
 
-#		s = [link.mergeEntropy() for link in links]
-
-#		ind = np.argmin(s)
-
-#		link = links[ind]
-
 		link.bucket1().topNode().merge(link.bucket2().topNode(), mergeL=mergeL, compress=compress)
 
 	def compress(self,eps=1e-4):
