@@ -58,8 +58,6 @@ class Node:
 	Finally, nodes may be deleted:
 
 	delete			-	Delete the Node and all associated Links. Recursively deletes all parents.
-
-	TODO:	Implement tostr method for this and for network so that printing can be sensible.
 	'''
 	def __init__(self, tens, network, children=[], Buckets=[]):
 		self.__tensor = tens
