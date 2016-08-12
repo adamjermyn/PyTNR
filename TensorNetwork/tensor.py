@@ -17,6 +17,8 @@ class Tensor:
 					of this tensor with the shape of the other, with the two specified indices removed.
 	trace		-	Takes as input two indices with the same size and returns a Tensor which is the result
 					of tracing over those indices.
+	makeUnity 	-	Divides the Tensor through by the quantity needed to make the largest entry +-1.
+					Returns the log of this quantity.
 	'''
 
 	def __init__(self, shape, tens):
@@ -42,3 +44,8 @@ class Tensor:
 			raise ValueError
 		arr = np.trace(self.array(),axis1=ind0,axis2=ind1)
 		return Tensor(arr.shape,arr)
+
+	def makeUnity(self):
+		m = np.max(np.abs(self.__array))
+		self.__array /= m
+		return m

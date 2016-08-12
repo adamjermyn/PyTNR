@@ -3,6 +3,7 @@ from bucket import Bucket
 from tensor import Tensor
 from mergeLinks import mergeLinks
 from collections import Counter
+import numpy as np
 
 class Node:
 	'''
@@ -22,6 +23,7 @@ class Node:
 						to this Node, and such that all Nodes connected to this one are children to some
 						degree of an element in the list.
 	tensor 			-	Returns the Tensor underlying this Node.
+	logScalar 		-	Returns the log of the scalar component that has been divided out from this Tensor.
 	bucket 			-	Returns the Bucket at the given index.
 	buckets 		-	Returns all Buckets.
 	bucketIndex 	-	Returns the index of the specified bucket.
@@ -59,15 +61,15 @@ class Node:
 
 	delete			-	Delete the Node and all associated Links. Recursively deletes all parents.
 	'''
-	def __init__(self, tens, network, children=[], Buckets=[]):
+	def __init__(self, tens, network, children=[], Buckets=[], logScalar = 0):
 		self.__tensor = tens
+		self.__logScalar = logScalar + np.log(self.__tensor.makeUnity())
 		self.__network = network
 		self.__id = self.__network.nextID()
 		self.__parent = None
 		self.__children = children
 		self.__buckets = Buckets
 		self.__network.registerNode(self)
-		self.__logScalar = 1.
 		for b in Buckets:
 			b.addNode(self)
 
@@ -124,6 +126,9 @@ class Node:
 
 	def tensor(self):
 		return self.__tensor
+
+	def logScalar(self):
+		return self.__logScalar
 
 	def bucketIndex(self, b):
 		return self.__buckets.index(b)
@@ -189,7 +194,7 @@ class Node:
 					Buckets.append(Bucket(counter, self.network()))
 				counter += 1
 
-		n = Node(tens, self.__network, children=[self], Buckets=Buckets)
+		n = Node(tens, self.__network, children=[self], Buckets=Buckets, logScalar=self.__logScalar)
 
 		return n
 
@@ -261,7 +266,7 @@ class Node:
 				Buckets.append(b)
 
 		# Build new Node
-		n = Node(t,self.__network,children=[self,other], Buckets=Buckets)	
+		n = Node(t,self.__network,children=[self,other], Buckets=Buckets, logScalar = self.logScalar() + other.logScalar())	
 
 		# Trace out any self-loops
 		n.trace()
