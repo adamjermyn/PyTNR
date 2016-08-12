@@ -125,6 +125,7 @@ class Link:
 	def update(self):
 		self.updateMergeEntropy()
 		if self.__parent is None:
+			# I have a feeling there's a more elegant way to handle this, but I'm not sure what it is.
 			self.__network.updateSortedLinkList(self)
 
 	def delete(self):

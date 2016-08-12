@@ -1,5 +1,12 @@
 from bisect import bisect_left
 
+'''
+This class is currently the bottleneck.
+More specifically, list insertions and removals
+called by this class account for 75% of the total runtime.
+Clearly optimization is called for...
+'''
+
 class PriorityList:
 	def __init__(self):
 		self.list = []

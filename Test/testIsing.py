@@ -68,9 +68,9 @@ def exactIsing(J):
 
 	return np.log(2)/2 + (1/(2*np.pi))*inte
 
-#print cProfile.run('IsingSolve(7,7,2.0,0)/49,np.log(np.exp(2) + np.exp(-2))')
+print cProfile.run('IsingSolve(20,20,2.0,0)/400,np.log(np.exp(2) + np.exp(-2))')
 
-print IsingSolve(15,15,2.0,0)/225,np.log(np.exp(2) + np.exp(-2))
+#print IsingSolve(15,15,2.0,0)/225,np.log(np.exp(2) + np.exp(-2))
 
 exit()
 
