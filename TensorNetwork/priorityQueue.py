@@ -1,27 +1,33 @@
-from bisect import bisect_left
+from heapq import heappush, heappop
+import itertools
 
-'''
-This class is currently the bottleneck.
-More specifically, list insertions and removals
-called by this class account for 75% of the total runtime.
-Clearly optimization is called for...
-'''
-
-class PriorityList:
+class PriorityQueue:
 	def __init__(self):
-		self.list = []
-		self.vals = []
+		self.pq = []
+		self.entry_finder = {}
+		self.REMOVED = '<removed-task>'      # placeholder for a removed task
+		self.counter = itertools.count()     # unique sequence count
 
-	def add(self, item, val):
-		ind = bisect_left(self.vals, val)
+	def add(self, task, priority=0):
+	    'Add a new task or update the priority of an existing task'
+	    if task in self.entry_finder:
+	        self.remove_task(task)
+	    count = next(self.counter)
+	    entry = [priority, count, task]
+	    self.entry_finder[task] = entry
+	    heappush(self.pq, entry)
 
-		self.list.insert(ind, item)
-		self.vals.insert(ind, val)
+	def remove(self, task):
+	    'Mark an existing task as REMOVED.  Raise KeyError if not found.'
+	    if task in self.entry_finder: # Silently fail if trying to remove something that isn't there.
+		    entry = self.entry_finder.pop(task)
+		    entry[-1] = self.REMOVED
 
-	def remove(self, item):
-		ind = self.list.index(item)
-
-		self.list.remove(item)
-
-		del self.vals[ind]
-
+	def pop(self):
+	    'Remove and return the lowest priority task. Raise KeyError if empty.'
+	    while self.pq:
+	        priority, count, task = heappop(self.pq)
+	        if task is not self.REMOVED:
+	            del self.entry_finder[task]
+	            return task
+	    raise KeyError('pop from an empty priority queue')

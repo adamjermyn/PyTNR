@@ -69,6 +69,7 @@ class Node:
 		self.__children = children
 		self.__buckets = Buckets
 		self.__network.registerNode(self)
+		self.__logScalar = 1.
 		for b in Buckets:
 			b.addNode(self)
 

@@ -1,5 +1,16 @@
 from tensor import Tensor
 import numpy as np
+from scipy.sparse.linalg import svds
+
+def bigSVD(matrix):
+	err = 1
+	k = 2
+	while err > 1e-4:
+		u, s, v = svds(matrix, k=k)
+		err = np.sum(np.abs(matrix - np.einsum('ij,j,jk->ik',u,s,v)))/np.sum(np.abs(matrix))
+		k += 4
+	print 'k=',k-4,np.abs(s)/np.sum(s)
+	return u, s, v
 
 def compress(link, eps=1e-4):
 	n1 = link.bucket1().topNode()
@@ -25,6 +36,7 @@ def compress(link, eps=1e-4):
 
 	arrN = np.reshape(arrN,(np.product(sh1m),np.product(sh2m)))
 
+#	u, lam, v = bigSVD(arrN)
 	u, lam, v = np.linalg.svd(arrN,full_matrices=0)
 
 	p = lam**2

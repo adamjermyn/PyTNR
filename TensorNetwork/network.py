@@ -4,7 +4,7 @@ from bucket import Bucket
 from node import Node
 import numpy as np
 from compress import compress
-from priorityQueue import PriorityList
+from priorityQueue import PriorityQueue
 
 class Network:
 	'''
@@ -43,7 +43,7 @@ class Network:
 		self.__topLevelNodes = set()
 		self.__allLinks = set()
 		self.__topLevelLinks = set()
-		self.__sortedLinks = PriorityList()
+		self.__sortedLinks = PriorityQueue()
 		self.__idDict = {}
 		self.__idCounter = 0
 
@@ -160,16 +160,16 @@ class Network:
 		# This logic might make more sense being handled by the Link.
 		links = list(self.topLevelLinks())
 
-		link = self.__sortedLinks.list[0]
+		link = self.__sortedLinks.pop()
 
 		link.bucket1().topNode().merge(link.bucket2().topNode(), mergeL=mergeL, compress=compress)
 
 	def compress(self,eps=1e-4):
 		compressed = set()
 
-		for link in self.topLevelLinks():
-			if link.compressed():
-				compressed.add(link)
+#		for link in self.topLevelLinks():
+#			if link.compressed():
+#				compressed.add(link)
 
 		while len(compressed) < len(self.topLevelLinks()):
 			todo = self.topLevelLinks().difference(compressed)

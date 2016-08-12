@@ -57,6 +57,7 @@ def IsingSolve(nX, nY, h, J):
 
 		if counter%5 == 0:
 			print network.topLevelSize(), network.largestTopLevelTensor()
+		counter += 1
 
 	return np.log(list(network.topLevelNodes())[0].tensor().array())
 
@@ -68,7 +69,7 @@ def exactIsing(J):
 
 	return np.log(2)/2 + (1/(2*np.pi))*inte
 
-print cProfile.run('IsingSolve(20,20,2.0,0)/400,np.log(np.exp(2) + np.exp(-2))')
+print cProfile.run('IsingSolve(30,30,2.0,0)/900,np.log(np.exp(2) + np.exp(-2))')
 
 #print IsingSolve(15,15,2.0,0)/225,np.log(np.exp(2) + np.exp(-2))
 
