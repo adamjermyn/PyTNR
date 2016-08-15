@@ -9,6 +9,7 @@ class Tensor:
 	shape 		-	This returns a tuple of the same dimension (rank) as the tensor. All entries must be
 					integers. The entries may be thought of as specifying the length of
 					a multidimensional array along a given axis.
+	size		-	Returns the number of elements in the array.
 	contract	-	This is a function which takes as input an index, another tensor, and another index,
 					and returns a new tensor corresponding to the contraction of this tensor along the
 					first index and the other tensor along the second index. This method checks that the
@@ -23,11 +24,14 @@ class Tensor:
 
 	def __init__(self, shape, tens):
 		self.__shape = shape
-
 		self.__array = np.copy(tens)
+		self.__size = self.__array.size
 
 	def shape(self):
 		return tuple(self.__shape)
+
+	def size(self):
+		return self.__size
 
 	def array(self):
 		return self.__array

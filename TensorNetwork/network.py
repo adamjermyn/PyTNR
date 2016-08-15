@@ -56,7 +56,7 @@ class Network:
 		s = 0
 
 		for n in self.__nodes:
-			s += n.tensor().array().size
+			s += n.tensor().size()
 
 		return s
 
@@ -64,7 +64,7 @@ class Network:
 		s = 0
 
 		for n in self.__topLevelNodes:
-			s += n.tensor().array().size
+			s += n.tensor().size()
 
 		return s
 
@@ -73,8 +73,9 @@ class Network:
 		sh = None
 
 		for n in self.__nodes:
-			if n.tensor().array().size > s:
-				s = n.tensor().array().size
+			ss = n.tensor().size()
+			if ss > s:
+				s = ss
 				sh = n.tensor().shape()
 
 		return sh
@@ -84,8 +85,9 @@ class Network:
 		sh = None
 
 		for n in self.__topLevelNodes:
-			if n.tensor().array().size > s:
-				s = n.tensor().array().size
+			ss = n.tensor().size()
+			if ss > s:
+				s = ss
 				sh = n.tensor().shape()
 
 		return sh

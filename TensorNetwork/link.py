@@ -91,31 +91,25 @@ class Link:
 		# size S with a bond of size S' produces a bond of
 		# size reduction*S*S'.
 
-		entF = 8*np.log(2)		# Entropy in a 64-bit float
-
 		n1 = self.__b1.topNode()
 		n2 = self.__b2.topNode()
 
 		t1 = n1.tensor()
 		t2 = n2.tensor()
 
-		arr1 = t1.array()
-		arr2 = t2.array()
+		length = t1.shape()[n1.bucketIndex(self.__b1)]
 
-		length = n1.tensor().shape()[n1.bucketIndex(self.__b1)]
-
-		if self.__b1.topNode() == self.__b2.topNode():
+		if n1 == n2:
 			raise ValueError		# You should always trace out self-loops before examining entropy.
 
-		s1 = arr1.size*entF
-		s2 = arr2.size*entF
+		s1 = t1.size()
+		s2 = t2.size()
 
-		sN = s1*s2/(entF*length**2)	# Estimate based on no merging of links
+		sN = s1*s2/length**2	# Estimate based on no merging of Links
 
+
+		# Correction based on number of merging Links
 		commonNodes = set(n1.connectedHigh()).intersection(set(n2.connectedHigh()))
-
-		commonNodes = list(commonNodes)
-
 		sN *= self.__reduction**len(commonNodes)
 
 		dS = sN - s1 - s2
