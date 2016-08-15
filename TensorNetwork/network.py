@@ -30,6 +30,11 @@ class Network:
 	topLevelSize		-	Returns the top-leve size of the Network
 	largestTensor		-	Returns the shape of the largest Tensor.
 	largestTopLevelTensor	-	Returns the shape of the largest top-level Tensor.
+	topView				-	Takes as input a list of bottom-level Nodes and returns the highest-level
+							representation of the Network which includes these Nodes. This is constructed
+							by recursively adding the highest-level neighbor of a Node currently in the set
+							of interest which is not a parent of any Node in the set of interest until the
+							new Network is constructed. 
 
 	Note that the logic for keeping track of top level nodes requires that
 	nodes be deregistered from the top-down. This is in keeping with the notion
@@ -136,6 +141,10 @@ class Network:
 
 	def topLevelLinks(self):
 		return self.__topLevelLinks
+
+	def topView(self, nodes):
+		# nodes must be a set
+
 
 	def addNodeFromArray(self, arr):
 		t = Tensor(arr.shape,arr)
