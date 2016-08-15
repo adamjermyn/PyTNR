@@ -96,11 +96,6 @@ def compress(link, eps=1e-4):
 		arr22 = np.transpose(arr2, axes=perm)
 		arr22 = np.reshape(arr22,[shI,np.product(sh2m)])
 
-#		op1 = aslinearoperator(arr11)
-#		op2 = aslinearoperator(arr22)
-
-#		opN = op1.dot(op2)
-
 		opN = makeLinearOperator(arr11, arr22)
 
 		u, lam, v = bigSVD(opN, min(sh1[ind1], min(opN.shape)-1))
