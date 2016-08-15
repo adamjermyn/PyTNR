@@ -1,6 +1,7 @@
 from tensor import Tensor
 import numpy as np
 from scipy.sparse.linalg import svds
+from scipy.sparse.linalg import aslinearoperator
 
 def cutBond(u, v, n1, n2, ind1, ind2, link, sh1m, sh2m):
 	u = np.reshape(u,sh1m)
@@ -27,8 +28,6 @@ def cutBond(u, v, n1, n2, ind1, ind2, link, sh1m, sh2m):
 	return link, n1m, n2m
 
 def bigSVD(matrix, k):
-	if k == 0:
-		return np.linalg.svd(matrix)
 	u, s, v = svds(matrix, k=k)
 	inds = np.argsort(s)
 	inds = inds[::-1]
@@ -56,16 +55,35 @@ def compress(link, eps=1e-4):
 	sh1m = sh1[:ind1] + sh1[ind1+1:]
 	sh2m = sh2[:ind2] + sh2[ind2+1:]
 
-	if arr1.shape[ind1] == 1: # Means we just cut the bond
+	shI = arr1.shape[ind1] # Must be the same as arr2.shape[ind2]
+
+	if shI == 1: # Means we just cut the bond
 		return cutBond(np.copy(arr1), np.copy(arr2), n1, n2, ind1, ind2, link, sh1m, sh2m)
 
-	cont = t1.contract(ind1,t2,ind2)
-	arrN = cont.array()
+	if np.product(sh1m) > shI and np.product(sh2m) > shI: # Required so sparse bond is properly represented
+		perm = range(len(arr1.shape))
+		perm.remove(ind1)
+		perm.append(ind1)
+		arr11 = np.transpose(arr1, axes=perm)
+		arr11 = np.reshape(arr11,[np.product(sh1m),shI])
 
-	arrN = np.reshape(arrN,(np.product(sh1m),np.product(sh2m)))
+		perm = range(len(arr2.shape))
+		perm.remove(ind2)
+		perm.insert(0, ind2)
+		arr22 = np.transpose(arr2, axes=perm)
+		arr22 = np.reshape(arr22,[shI,np.product(sh2m)])
 
-	u, lam, v = bigSVD(arrN, min(sh1[ind1], min(arrN.shape)-1))
-#	u, lam, v = np.linalg.svd(arrN,full_matrices=0)
+		op1 = aslinearoperator(arr11)
+		op2 = aslinearoperator(arr22)
+
+		opN = op1.dot(op2)
+
+		u, lam, v = bigSVD(opN, min(sh1[ind1], min(opN.shape)-1))
+	else:
+		cont = t1.contract(ind1,t2,ind2)
+		arrN = cont.array()
+		arrN = np.reshape(arrN,(np.product(sh1m),np.product(sh2m)))
+		u, lam, v = np.linalg.svd(arrN,full_matrices=0)
 
 	p = lam**2
 	p /= np.sum(p)

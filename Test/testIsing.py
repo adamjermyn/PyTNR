@@ -71,7 +71,8 @@ def exactIsing(J):
 
 #print IsingSolve(40,40,2.0,0)/1600,np.log(np.exp(2) + np.exp(-2))
 
-print IsingSolve(40,40,0,0.5)/1600
+print IsingSolve(40,40,0,0.5)/1600,exactIsing(0.5)
+#print IsingSolve(10,10,0,0.5)/100,exactIsing(0.5)
 
 #print cProfile.run('IsingSolve(30,30,2.0,0)/900,np.log(np.exp(2) + np.exp(-2))')
 
