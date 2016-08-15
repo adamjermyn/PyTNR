@@ -144,7 +144,7 @@ class Network:
 
 	def topView(self, nodes):
 		# nodes must be a set
-
+		raise NotImplementedError
 
 	def addNodeFromArray(self, arr):
 		t = Tensor(arr.shape,arr)

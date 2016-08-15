@@ -72,6 +72,6 @@ def IsingSolve(nX, nY, nZ, h, J):
 
 #print IsingSolve(10,10,10,0,0.5)/1000
 #print IsingSolve(10,10,0,0.5)/100
-
-print cProfile.run('IsingSolve(30,30,30,2.0,0)/(30*30*30)')
+IsingSolve(20,20,20,0.0,1.0)/(20)**3
+#print cProfile.run('IsingSolve(20,20,20,0.0,1.0)/(20)**3')
 

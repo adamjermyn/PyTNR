@@ -2,6 +2,29 @@ from tensor import Tensor
 import numpy as np
 from scipy.sparse.linalg import svds
 from scipy.sparse.linalg import aslinearoperator
+from scipy.sparse.linalg import LinearOperator
+
+def makeLinearOperator(matrix1, matrix2):
+	'''
+	The reason we implement our own function here is that the dot product
+	associated with the standard LinearOperator class has an extremely slow
+	type-checking stage which has to be performed every time a product is calculated.
+	'''
+
+	shape = (matrix1.shape[0],matrix2.shape[1])
+
+	def matvec(v):
+		return np.dot(matrix1,np.dot(matrix2,v))
+
+	def matmat(m):
+		return np.dot(matrix1,np.dot(matrix2,m))
+
+	def rmatvec(v):
+		return np.dot(np.transpose(matrix2),np.dot(np.transpose(matrix1),v))
+
+	return LinearOperator(shape, matvec=matvec, matmat=matmat, rmatvec=rmatvec)
+
+
 
 def cutBond(u, v, n1, n2, ind1, ind2, link, sh1m, sh2m):
 	u = np.reshape(u,sh1m)
@@ -73,10 +96,12 @@ def compress(link, eps=1e-4):
 		arr22 = np.transpose(arr2, axes=perm)
 		arr22 = np.reshape(arr22,[shI,np.product(sh2m)])
 
-		op1 = aslinearoperator(arr11)
-		op2 = aslinearoperator(arr22)
+#		op1 = aslinearoperator(arr11)
+#		op2 = aslinearoperator(arr22)
 
-		opN = op1.dot(op2)
+#		opN = op1.dot(op2)
+
+		opN = makeLinearOperator(arr11, arr22)
 
 		u, lam, v = bigSVD(opN, min(sh1[ind1], min(opN.shape)-1))
 	else:
