@@ -73,6 +73,8 @@ class Node:
 		self.__network.registerNode(self)
 		for b in Buckets:
 			b.addNode(self)
+		for c in self.__children:
+			c.setParent(self)
 
 	def id(self):
 		return self.__id
@@ -93,8 +95,6 @@ class Node:
 			return self.parent().topParent()
 
 	def allNChildren(self):
-		if len(self.__children) == 0:
-			return set()
 		ch = set(self.__children)
 		for c in self.__children:
 			ch = ch | set(c.allNChildren())
@@ -122,15 +122,17 @@ class Node:
 
 	def findLink(self, other):
 		for b in self.__buckets:
-			if other in b.otherNodes():
-				return b.link()
+			if b.linked():
+				if other in b.otherNodes():
+					return b.link()
 		return None
 
 	def linksConnecting(self, other):
 		links = []
 		for b in self.__buckets:
-			if other in b.otherNodes():
-				links.append(b.link())
+			if b.linked():
+				if other in b.otherNodes():
+					links.append(b.link())
 		return links
 
 	def tensor(self):

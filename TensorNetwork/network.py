@@ -52,6 +52,12 @@ class Network:
 		self.__idDict = {}
 		self.__idCounter = 0
 
+	def __str__(self):
+		s = 'Network\n'
+		for n in self.__nodes:
+			s = s + str(n) + '\n'
+		return s
+
 	def size(self):
 		s = 0
 
@@ -166,10 +172,21 @@ class Network:
 		to banned, and ignore these when we remove them from todo. Any Node not in banned
 		may be added if it comes up as a connectedHigh of a Node in done.
 
+		Somehow this method still doesn't work (argggg).
+		It's possible it produces correct representations in terms of finding the right nodes
+		but doesn't hook them up correctly.
+		When I try to contract a view of a Network the thing just explodes.
+		This is in line with the large number of unlinked bucket errors I was getting before I added
+		an explicit check for that.
 		'''
 		todo = set(nodes)
 		done = set()
 		banned = set()
+
+		net = Network()
+
+		for n in todo:
+			print n.parent()
 
 		while len(todo) > 0:
 
@@ -177,16 +194,53 @@ class Network:
 
 			if n not in banned:
 				done.add(n)
-				for c in n.connectedHigh():
-					if not c in banned and c not in done:
-						todo.add(c)
-				m = n
-				while not m.parent() is None:
-					banned.add(m.parent())
+
+				m = n.parent()
+				while not m is None:
+					banned.add(m)
 					m = m.parent()
 				banned = banned | n.allNChildren()
+	
+				for c in n.connectedHigh():
+					if c not in banned and c not in done:
+						todo.add(c)
+	
+		net = Network()
+		new = {}
 
-		return done
+		for n in done:
+			for b in n.buckets():
+				print len(set(b.otherNodes()).intersection(done))
+				print len(set(b.otherNodes()).intersection(banned))
+				print len(set(b.otherNodes()))
+				print '---'
+		exit()
+
+		for n in done:
+			nn = net.addNodeFromArray(n.tensor().array())
+			new[n] = nn
+
+		for n in done:
+			nn = new[n]
+			for c in n.connected():
+				if c in done:
+					newC = new[c]
+					if newC not in nn.connected():
+						link = n.findLink(c)
+						b1 = link.bucket1()
+						b2 = link.bucket2()
+						if b1 in n.buckets():
+							indN = n.bucketIndex(b1)
+							indOther = c.bucketIndex(b2)
+						else:
+							indN = n.bucketIndex(b2)
+							indOther = c.bucketIndex(b1)
+						nn.addLink(newC,indN,indOther)
+			for b in nn.buckets():
+				print b.linked()
+
+
+		return net
 
 
 	def addNodeFromArray(self, arr):
@@ -218,10 +272,6 @@ class Network:
 
 	def compress(self,eps=1e-4):
 		compressed = set()
-
-#		for link in self.topLevelLinks():
-#			if link.compressed():
-#				compressed.add(link)
 
 		while len(compressed) < len(self.topLevelLinks()):
 			todo = self.topLevelLinks().difference(compressed)

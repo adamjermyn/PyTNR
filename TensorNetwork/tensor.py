@@ -53,3 +53,7 @@ class Tensor:
 		m = np.max(np.abs(self.__array))
 		self.__array /= m
 		return m
+
+	def deepcopy(self):
+		arr = np.copy(self.__array)
+		return Tensor(arr.shape, arr)

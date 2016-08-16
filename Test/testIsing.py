@@ -60,7 +60,16 @@ def IsingSolve(nX, nY, h, J):
 		counter += 1
 
 	print '----'
-	print len(network.topView([lattice[0][0],lattice[-1][-1]]))
+
+	net = network.topView([lattice[0][0],lattice[-1][-1]])
+	print net
+	counter = 0
+	while len(net.topLevelLinks()) > 0:
+		net.merge(mergeL=True,compress=True)
+		counter += 1
+		print len(net.topLevelNodes()),net.topLevelSize(), net.largestTopLevelTensor(), len(net.topLevelLinks())
+	print np.log(list(net.topLevelNodes())[0].tensor().array()) + list(net.topLevelNodes())[0].logScalar()
+
 
 	return np.log(list(network.topLevelNodes())[0].tensor().array()) + list(network.topLevelNodes())[0].logScalar()
 
