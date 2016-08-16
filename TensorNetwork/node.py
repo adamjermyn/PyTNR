@@ -16,6 +16,7 @@ class Node:
 	children		-	Returns the children Nodes (if any) which merged to form this Node.
 	parent			-	Returns the Node (if any) which this merges to form.
 	topParent		-	Returns the highest-level ancestor of this Node.
+	allNChildren	-	Returns all Nodes for which topParent returns this Node.
 	network 		-	Returns the Network this Node belongs to.
 	connected		-	Returns the Nodes this one is connected to.
 	connectedHigh	-	Returns the Nodes this one is connected to, giving the highest-level list possible.
@@ -90,6 +91,14 @@ class Node:
 			return self
 		else:
 			return self.parent().topParent()
+
+	def allNChildren(self):
+		if len(self.__children) == 0:
+			return set()
+		ch = set(self.__children)
+		for c in self.__children:
+			ch = ch | set(c.allNChildren())
+		return ch
 
 	def setParent(self, parent):
 		self.__parent = parent

@@ -145,8 +145,49 @@ class Network:
 		return self.__topLevelLinks
 
 	def topView(self, nodes):
-		# nodes must be a set
-		raise NotImplementedError
+		'''
+		The idea is the following: given a set of bottom-level Nodes, we want to find
+		the highest-level set of Nodes which represents the Network which includes these
+		Nodes.
+
+		Conditions which must be satisfied by the set we want:
+		1. No Node in the set is the ancestor of any other Node in the set.
+		2. No Node has all of its siblings present.
+		3. All of the specified Nodes are present.
+		4. The Network must be connected.
+
+		To get there, we maintain three sets: todo, banned, and done.
+		We initialize todo both with the nodes in our set.
+		We then pop a node off of todo.
+		If the node isn't in banned, we add it to done.
+		We then add all of its connectedHigh to todo if they are not in banned.
+
+		Whenever we add a Node to done, we add all ancestors and N-children of the Node
+		to banned, and ignore these when we remove them from todo. Any Node not in banned
+		may be added if it comes up as a connectedHigh of a Node in done.
+
+		'''
+		todo = set(nodes)
+		done = set()
+		banned = set()
+
+		while len(todo) > 0:
+
+			n = todo.pop()
+
+			if n not in banned:
+				done.add(n)
+				for c in n.connectedHigh():
+					if not c in banned and c not in done:
+						todo.add(c)
+				m = n
+				while not m.parent() is None:
+					banned.add(m.parent())
+					m = m.parent()
+				banned = banned | n.allNChildren()
+
+		return done
+
 
 	def addNodeFromArray(self, arr):
 		t = Tensor(arr.shape,arr)

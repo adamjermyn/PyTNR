@@ -7,7 +7,7 @@ import cProfile
 network = Network()
 
 n = 100
-nB = 4
+nB = 5
 
 links = []
 
