@@ -11,7 +11,7 @@ class PriorityQueue:
 	def add(self, task, priority=0):
 	    'Add a new task or update the priority of an existing task'
 	    if task in self.entry_finder:
-	        self.remove_task(task)
+	        self.remove(task)
 	    count = next(self.counter)
 	    entry = [priority, count, task]
 	    self.entry_finder[task] = entry
