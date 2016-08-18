@@ -47,7 +47,7 @@ class Bucket:
 					Raises a ValueError if the Link is not present.
 	'''
 
-	def __init__(self, index, network):
+	def __init__(self, network):
 		self.__nodes = []
 		self.__network = network
 		self.__link = None

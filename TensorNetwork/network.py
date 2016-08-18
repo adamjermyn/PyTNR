@@ -152,7 +152,7 @@ class Network:
 
 	def addNodeFromArray(self, arr):
 		t = Tensor(arr.shape,arr)
-		n = Node(t,self, Buckets=[Bucket(i,self) for i in range(len(arr.shape))])
+		n = Node(t,self, Buckets=[Bucket(self) for i in range(len(arr.shape))])
 		return n
 
 	def trace(self):

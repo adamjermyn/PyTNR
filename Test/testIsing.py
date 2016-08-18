@@ -1,6 +1,7 @@
 import sys
 sys.path.append('../TensorNetwork/')
 from network import Network
+from latticeNode import latticeNode
 import numpy as np
 from scipy.integrate import quad
 import cProfile
@@ -17,9 +18,7 @@ def IsingSolve(nX, nY, h, J):
 	# Each lattice site has seven indices of width five, and returns zero if they are unequal and one otherwise.
 	for i in range(nX):
 		for j in range(nY):
-			arr = np.zeros((2,2,2,2,2))
-			np.fill_diagonal(arr,1.0)
-			lattice[i].append(network.addNodeFromArray(arr))
+			lattice[i].append(latticeNode(2,network))
 
 	# Each on-site term has one index of width two, and returns exp(-h) or exp(h) for 0 or 1 respectively.
 	for i in range(nX):
@@ -28,7 +27,7 @@ def IsingSolve(nX, nY, h, J):
 			arr[0] = np.exp(-h)
 			arr[1] = np.exp(h)
 			onSite[i].append(network.addNodeFromArray(arr))
-			lattice[i][j].addLink(onSite[i][j],0,0)
+			lattice[i][j].addLink(onSite[i][j],0)
 
 	# Each bond term has two indices of width two and returns exp(-J*(1+delta(index0,index1))/2).
 	for i in range(nX):
@@ -44,10 +43,10 @@ def IsingSolve(nX, nY, h, J):
 	# Attach bond terms
 	for i in range(nX):
 		for j in range(nY):
-			lattice[i][j].addLink(bondV[i][j],1,0)
-			lattice[i][j].addLink(bondV[i][(j+1)%nY],2,1)
-			lattice[i][j].addLink(bondH[i][j],3,0)
-			lattice[i][j].addLink(bondH[(i+1)%nX][j],4,1)
+			lattice[i][j].addLink(bondV[i][j],0)
+			lattice[i][j].addLink(bondV[i][(j+1)%nY],1)
+			lattice[i][j].addLink(bondH[i][j],0)
+			lattice[i][j].addLink(bondH[(i+1)%nX][j],1)
 
 	network.trace()
 
@@ -59,19 +58,17 @@ def IsingSolve(nX, nY, h, J):
 			print len(network.topLevelNodes()),network.topLevelSize(), network.largestTopLevelTensor()
 		counter += 1
 
-	print '----'
+	lattice[0][0].addDim()
+	while len(network.topLevelLinks()) > 0:
+		network.merge(mergeL=True,compress=True)
 
-	net = network.topView([lattice[0][0],lattice[-1][-1]])
-	print net
-	counter = 0
-	while len(net.topLevelLinks()) > 0:
-		net.merge(mergeL=True,compress=True)
+		if counter%20 == 0:
+			print len(network.topLevelNodes()),network.topLevelSize(), network.largestTopLevelTensor()
 		counter += 1
-		print len(net.topLevelNodes()),net.topLevelSize(), net.largestTopLevelTensor(), len(net.topLevelLinks())
-	print np.log(list(net.topLevelNodes())[0].tensor().array()) + list(net.topLevelNodes())[0].logScalar()
 
+	print np.exp(list(network.topLevelNodes())[0].logScalar())*list(network.topLevelNodes())[0].tensor().array()
 
-	return np.log(list(network.topLevelNodes())[0].tensor().array()) + list(network.topLevelNodes())[0].logScalar()
+#	return np.log(list(network.topLevelNodes())[0].tensor().array()) + list(network.topLevelNodes())[0].logScalar()
 
 def exactIsing(J):
 	k = 1/np.sinh(2*J)**2
@@ -81,12 +78,10 @@ def exactIsing(J):
 
 	return np.log(2)/2 + (1/(2*np.pi))*inte
 
-#print IsingSolve(40,40,2.0,0)/1600,np.log(np.exp(2) + np.exp(-2))
+#print IsingSolve(20,20,0,0.5)/400,exactIsing(0.5)
+IsingSolve(10,10,0,0.5)/100,exactIsing(0.5)
 
-print IsingSolve(10,10,0,0.5)/100,exactIsing(0.5)
-#print IsingSolve(10,10,0,0.5)/100,exactIsing(0.5)
-
-#print cProfile.run('IsingSolve(30,30,2.0,0)/900,np.log(np.exp(2) + np.exp(-2))')
+#print cProfile.run('print IsingSolve(10,10,0,0.5)/100')
 
 exit()
 
