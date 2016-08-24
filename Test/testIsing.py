@@ -55,7 +55,8 @@ def IsingSolve(nX, nY, h, J):
 		network.merge(mergeL=True,compress=True)
 
 		if counter%20 == 0:
-			print len(network.topLevelNodes()),network.topLevelSize(), network.largestTopLevelTensor()
+			t = network.largestTopLevelTensor()
+			print len(network.topLevelNodes()),network.topLevelSize(), t.tensor().shape()
 		counter += 1
 
 	lattice[0][0].addDim()

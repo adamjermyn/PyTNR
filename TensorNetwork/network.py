@@ -89,14 +89,16 @@ class Network:
 	def largestTopLevelTensor(self):
 		s = 0
 		sh = None
+		nn = None
 
 		for n in self.__topLevelNodes:
 			ss = n.tensor().size()
 			if ss > s:
 				s = ss
 				sh = n.tensor().shape()
+				nn = n
 
-		return sh
+		return nn
 
 	def registerLink(self, link):
 		self.__allLinks.add(link)
