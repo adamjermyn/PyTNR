@@ -128,6 +128,7 @@ class Network:
 
 		children = node.children()
 		for c in children:
+			print 'Removing',c
 			self.__topLevelNodes.remove(c)
 
 	def deregisterNode(self, node):
@@ -136,7 +137,13 @@ class Network:
 
 		children = node.children()
 		for c in children:
+			print 'Adding',c
 			self.__topLevelNodes.add(c)
+
+		if len(children) == 2:
+			links = children[0].linksConnecting(children[1])
+			for l in links:
+				self.registerLinkTop(l)
 
 	def nodes(self):
 		return self.__nodes
