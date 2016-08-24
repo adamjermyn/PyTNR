@@ -59,6 +59,9 @@ def IsingSolve(nX, nY, h, J):
 		counter += 1
 
 	lattice[0][0].addDim()
+
+
+	print 'bbbbb'
 	while len(network.topLevelLinks()) > 0:
 		network.merge(mergeL=True,compress=True)
 
