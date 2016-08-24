@@ -15,6 +15,9 @@ class latticeNode(Node):
 		return self.__dim
 
 	def addDim(self):
+		'''
+		Should probably implement self-factoring so that memory usage doesn't become an issue.
+		'''
 		self.__dim += 1
 
 		if self.__dim > 1:
@@ -34,4 +37,8 @@ class latticeNode(Node):
 	def addLink(self, other, otherIndex):
 		self.addDim()
 
-		return Node.addLink(self, other, self.dim()-1,otherIndex)
+		if hasattr(other, 'addDim'):
+			other.addDim()
+			return Node.addLink(self, other, self.dim()-1,other.dim()-1)
+		else:
+			return Node.addLink(self, other, self.dim()-1,otherIndex)
