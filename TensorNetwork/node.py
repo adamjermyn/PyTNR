@@ -155,23 +155,42 @@ class Node:
 		I think the error we're still getting is due to the lack of case handling for
 		links which get compressed....
 		'''
+
+		print self
+
 		if self.__parent is not None:
 			self.__parent.delete()
 
 		for b in self.__buckets:
 			if b.linked() and b.numNodes() == 1:
 				# We only delete a Link if this is the last Node its Bucket connects to.
-				b.link().delete()
-			else:
-				b.removeNode() # We only ever delete top-level nodes
+				link = b.link()
+				if len(link.children()) > 0:
+					# Means the link we're about to delete is a compressed or merged link.
+					# This means we need to delete the Node on the other end too.
+					bo = b.otherTopNode()
+					link.delete()
+					bo.delete() # We have to do it in this order so bo isn't linked to this Node
+								# (which would cause an infinite loop).
+				else:
+					link.delete()
+			b.removeNode() # We only ever delete top-level nodes
 
 		for c in self.children():
-			c.parent = None
+			c.setParent(None)
 
+		print '---'
+		print self
 		self.__network.deregisterNode(self)
 		print self
-
-		del self
+		print 'Successful deletion.'
+		print '---'
+		
+		import sys
+		import gc
+		print sys.getrefcount(self)
+		for i in gc.get_referrers(self):
+			print gc.get_referrers(self)
 
 	def addLink(self, other, selfBucketIndex, otherBucketIndex, compressed=False, children=[]):
 		selfBucket = self.bucket(selfBucketIndex)
