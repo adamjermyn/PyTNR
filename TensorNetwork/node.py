@@ -151,17 +151,16 @@ class Node:
 		return self.__buckets
 
 	def delete(self):
+		'''
+		I think the error we're still getting is due to the lack of case handling for
+		links which get compressed....
+		'''
 		if self.__parent is not None:
 			self.__parent.delete()
 
 		for b in self.__buckets:
 			if b.linked() and b.numNodes() == 1:
 				# We only delete a Link if this is the last Node its Bucket connects to.
-				link = b.link()
-				print link,len(link.children()), b.numNodes(), b.otherBucket().numNodes()
-				for c in link.children():
-					self.__network.registerLinkTop(c)
-
 				b.link().delete()
 			else:
 				b.removeNode() # We only ever delete top-level nodes
@@ -170,6 +169,7 @@ class Node:
 			c.parent = None
 
 		self.__network.deregisterNode(self)
+		print self
 
 		del self
 
@@ -201,14 +201,12 @@ class Node:
 
 		Buckets = []
 
-		counter = 0
 		for i,b in enumerate(self.buckets()):
 			if i not in delBuckets:
 				if i not in repBuckets:
 					Buckets.append(b)
 				else:
 					Buckets.append(Bucket(self.network()))
-				counter += 1
 
 		n = Node(tens, self.__network, children=[self], Buckets=Buckets, logScalar=self.__logScalar)
 
@@ -255,7 +253,8 @@ class Node:
 		if other not in c:
 			raise ValueError # Only allow mergers between highest-level objects (so each Node has at most one parent).
 
-		# Find all links between self and other and store their indices
+		# Find all links between self and other, store their indices, and
+		# deregister them from the top level
 		links = []
 		for i,b in enumerate(self.__buckets):
 			if b.linked():
