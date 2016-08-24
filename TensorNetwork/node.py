@@ -189,13 +189,19 @@ class Node:
 
 		return l
 
-	def modify(self, tens, delBuckets=[], repBuckets=[]):
+	def modify(self, tens, delBuckets=None, repBuckets=None):
 		'''
 		len(delBuckets) + len(tens.shape()) - len(newBuckets) == len(self.tensor().shape())
 		Creates a copy of this Node with tens as its Tensor.  Omits buckets at indices listed in
 		delBuckets. Replaces Buckets at indices listed in repBuckets with new Bucket objects.
 		Raises a ValueError if repBuckets and delBuckets contain overlapping elements.
 		'''
+		if delBuckets is None:
+			delBuckets = []
+
+		if repBuckets is None:
+			repBuckets = []
+
 		if len(set(delBuckets).intersection(set(repBuckets))) > 0:
 			raise ValueError
 
