@@ -34,7 +34,9 @@ class Link:
 	lists of their buckets. They are also added to the link registry of their TensorNetwork.
 	'''
 
-	def __init__(self, b1, b2, network, compressed=False, reduction=0.75, children=[]):
+	def __init__(self, b1, b2, network, compressed=False, reduction=0.75, children=None):
+		if children is None:
+			children = []
 		self.__b1 = b1
 		self.__b2 = b2
 		self.__compressed = compressed
