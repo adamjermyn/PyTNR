@@ -248,11 +248,18 @@ class Node:
 					newT = self.__tensor.trace(ind0, ind1)
 					n = self.modify(newT, delBuckets=[ind0,ind1])
 					self.__network.deregisterLinkTop(b.link())
-					n.trace() # Keep going until there are no more repeated indices to trace.
-					return
+					n = n.trace() # Keep going until there are no more repeated indices to trace.
+					return n
+		return self
 
 	def linkMerge(self,compress=False):
+		if self.__parent is not None:
+			print 'Error: Cannot merge links on a Node outside of the top level.'
+			raise ValueError
+
 		todo = set()
+		done = set()
+		new = set()
 
 		c = Counter(self.connectedHigh())
 
@@ -264,12 +271,13 @@ class Node:
 
 		while len(todo) > 0:
 			n = todo.pop()
-			n1, n2 = mergeLinks(n1, n.topParent(), compressLink = compress)
-			if n2.children()[0] in todo:
-				todo.remove(n2.children()[0])
-				todo.add(n2)
+			done.add(n)
 
-		return n1
+			n1, n2 = mergeLinks(n1, n, compressLink = compress)
+
+			new.add(n2)
+
+		return n1, done, new
 
 	def merge(self, other, mergeL=True, compress=True):
 		c =self.connectedHigh()
@@ -309,9 +317,11 @@ class Node:
 		n = Node(t,self.__network,children=[self,other], Buckets=Buckets, logScalar = self.logScalar() + other.logScalar())	
 
 		# Trace out any self-loops
-		n.trace()
+		n = n.trace()
 
 		if mergeL:
-			# Merge any links that need it
+			# Merge any links that need it. The next line is probably redundant given that trace now returns the top level.
 			n = n.topParent()
-			n.linkMerge(compress=compress)
+			n, _, _= n.linkMerge(compress=compress)
+
+		return n

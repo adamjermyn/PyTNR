@@ -172,10 +172,17 @@ class Network:
 
 	def linkMerge(self,compress=False):
 		done = set()
+		todo = set(self.__topLevelNodes)
 
-		while len(done) < len(self.__topLevelNodes):
-			n = list(self.__topLevelNodes.difference(done))[0]
-			nn = n.linkMerge(compress=compress)
+		l = len(todo)
+
+		while len(todo) > 0:
+			n = todo.pop()
+			nn, d, new = n.linkMerge(compress=compress)
+
+			todo = todo.difference(d)
+			todo = todo | new
+
 			done.add(nn)
 
 	def merge(self, mergeL=True, compress=True):
