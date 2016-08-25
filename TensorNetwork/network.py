@@ -54,7 +54,7 @@ class Network:
 
 	def __str__(self):
 		s = 'Network\n'
-		for n in self.__nodes:
+		for n in self.__topLevelNodes:
 			s = s + str(n) + '\n'
 		return s
 
