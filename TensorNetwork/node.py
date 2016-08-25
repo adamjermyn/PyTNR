@@ -162,19 +162,25 @@ class Node:
 			self.__parent.delete()
 
 		for b in self.__buckets:
-			if b.linked() and b.numNodes() == 1:
-				# We only delete a Link if this is the last Node its Bucket connects to.
+			if b.linked():
 				link = b.link()
-				if len(link.children()) > 0:
-					# Means the link we're about to delete is a compressed or merged link.
-					# This means we need to delete the Node on the other end too.
-					bo = b.otherTopNode()
+
+				bo = b.otherTopNode()
+
+				numC = len(link.children())
+
+				if b.numNodes() == 1:
+					# We only delete a Link if this is the last Node its Bucket connects to.
 					link.delete()
-					bo.delete() # We have to do it in this order so bo isn't linked to this Node
-								# (which would cause an infinite loop).
-				else:
-					link.delete()
-			b.removeNode() # We only ever delete top-level nodes
+
+					if numC > 0:
+						# Means the link we're about to delete is a compressed or merged link.
+						# This means we need to delete the Node on the other end too.
+						# We have to do it in this order so bo isn't linked to this Nodes
+						# (which would cause an infinite loop).
+						bo.delete() 
+			else:
+				b.removeNode() # We only ever delete top-level nodes
 
 		for c in self.children():
 			c.setParent(None)
@@ -190,7 +196,7 @@ class Node:
 		import gc
 		print sys.getrefcount(self)
 		for i in gc.get_referrers(self):
-			print gc.get_referrers(self)
+			print i
 
 	def addLink(self, other, selfBucketIndex, otherBucketIndex, compressed=False, children=[]):
 		selfBucket = self.bucket(selfBucketIndex)

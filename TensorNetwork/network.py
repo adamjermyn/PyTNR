@@ -133,6 +133,7 @@ class Network:
 
 	def deregisterNode(self, node):
 		self.__nodes.remove(node)
+		print 'Removingg',node
 		self.__topLevelNodes.remove(node)
 
 		children = node.children()
