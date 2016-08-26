@@ -204,9 +204,6 @@ class Network:
 			done.add(nn)
 
 	def merge(self, mergeL=True, compress=True):
-		# This logic might make more sense being handled by the Link.
-		links = list(self.topLevelLinks())
-
 		link = self.__sortedLinks.pop()
 
 		link.bucket1().topNode().merge(link.bucket2().topNode(), mergeL=mergeL, compress=compress)
