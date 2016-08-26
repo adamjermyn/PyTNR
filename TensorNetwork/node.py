@@ -238,6 +238,12 @@ class Node:
 		if len(set(delBuckets).intersection(set(repBuckets))) > 0:
 			raise ValueError
 
+		if self not in self.__network.topLevelNodes():
+			print 'Error: Attempting to modify node below the top level!'
+			print 'ID',self.id()
+			print 'Parent ID',self.__parent.id()
+			raise ValueError
+
 		Buckets = []
 
 		for i,b in enumerate(self.buckets()):
@@ -269,9 +275,7 @@ class Node:
 		return self
 
 	def linkMerge(self,compress=False):
-		if self.__parent is not None:
-			print 'Error: Cannot merge links on a Node outside of the top level.'
-			raise ValueError
+		assert self.__parent is None
 
 		todo = set()
 		done = set()
