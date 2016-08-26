@@ -23,6 +23,8 @@ class Tensor:
 	'''
 
 	def __init__(self, shape, tens):
+		assert shape == tens.shape
+
 		self.__shape = shape
 		self.__array = np.copy(tens)
 		self.__size = self.__array.size
