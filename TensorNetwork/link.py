@@ -126,8 +126,8 @@ class Link:
 
 	def delete(self):
 		self.__network.deregisterLink(self)
-		self.__b1.removeLink(self)
-		self.__b2.removeLink(self)
+		self.__b1.removeLink()
+		self.__b2.removeLink()
 
 		for c in self.__children:
 			c.setParent(None)
