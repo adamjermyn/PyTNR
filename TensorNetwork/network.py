@@ -106,16 +106,26 @@ class Network:
 		self.__sortedLinks.add(link, link.mergeEntropy())
 
 	def deregisterLink(self, link):
+		assert link in self.__allLinks
+		assert link in self.__topLevelLinks
+
 		self.__allLinks.remove(link)
 		self.__topLevelLinks.remove(link)	# We should only ever remove top-level Links
 		self.__sortedLinks.remove(link)
 
 	def deregisterLinkTop(self, link):
+		assert link in self.__allLinks
+		assert link in self.__topLevelLinks
+
 		self.__topLevelLinks.remove(link)
 		self.__sortedLinks.remove(link)
 
 	def registerLinkTop(self, link):
-		self.__topLevelLinks.add(link)
+		assert link not in self.__topLevelLinks
+		assert link.bucket1().topNode() in self.__topLevelNodes
+		assert link.bucket2().topNode() in self.__topLevelNodes
+
+ 		self.__topLevelLinks.add(link)
 		self.__sortedLinks.add(link, link.mergeEntropy())
 
 	def updateSortedLinkList(self, link):
@@ -123,6 +133,10 @@ class Network:
 		self.__sortedLinks.add(link, link.mergeEntropy())
 
 	def registerNode(self, node):
+		assert node not in self.__nodes
+		assert node not in self.__topLevelNodes
+		assert len(set(node.children()).intersection(self.__topLevelNodes)) == len(node.children())
+
 		self.__nodes.add(node)
 		self.__topLevelNodes.add(node)
 
@@ -130,6 +144,9 @@ class Network:
 		for c in children:
 			print 'Removing',c
 			self.__topLevelNodes.remove(c)
+
+		assert len(set(node.children()).intersection(self.__topLevelNodes)) == 0
+
 
 	def deregisterNode(self, node):
 		self.__nodes.remove(node)
