@@ -63,6 +63,8 @@ def compress(link, eps=1e-4):
 	n1 = link.bucket1().topNode()
 	n2 = link.bucket2().topNode()
 
+	print 'Compressing',n1,n2
+
 	t1 = n1.tensor()
 	t2 = n2.tensor()
 
@@ -146,6 +148,7 @@ def compress(link, eps=1e-4):
 			n2m = n2.modify(t2m, repBuckets=[ind2])
 
 			newLink = n1m.addLink(n2m, ind1, ind2, compressed=True, children=[link])
+
 		else:	# Means we're just cutting the bond
 			return cutBond(u, v, n1, n2, ind1, ind2, link, sh1m, sh2m)
 
