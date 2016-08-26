@@ -65,8 +65,6 @@ def compress(link, eps=1e-4):
 	n1 = link.bucket1().topNode()
 	n2 = link.bucket2().topNode()
 
-	print 'Compressing',n1,n2
-
 	t1 = n1.tensor()
 	t2 = n2.tensor()
 
