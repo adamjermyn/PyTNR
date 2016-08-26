@@ -65,6 +65,8 @@ def IsingSolve(nX, nY, h, J):
 
 	print 'bbbbb'
 
+	counter = 0
+
 	while len(network.topLevelLinks()) > 0:
 		network.merge(mergeL=True,compress=True)
 
@@ -85,7 +87,10 @@ def exactIsing(J):
 	return np.log(2)/2 + (1/(2*np.pi))*inte
 
 #print IsingSolve(20,20,0,0.5)/400,exactIsing(0.5)
-IsingSolve(10,10,0,0.5)/100,exactIsing(0.5)
+IsingSolve(4,4,0,0.5)
+IsingSolve(4,4,1.0,0)
+
+print 2*np.exp(1.0)/np.cosh(1.0)
 
 #print cProfile.run('print IsingSolve(10,10,0,0.5)/100')
 
