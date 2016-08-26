@@ -59,8 +59,11 @@ def IsingSolve(nX, nY, h, J):
 			print len(network.topLevelNodes()),network.topLevelSize(), t.tensor().shape()
 		counter += 1
 
-	lattice[0][0].addDim()
-	lattice[0][1].addDim()
+	return lattice, network
+
+def correlator(lattice, network, i,j,k,l):
+	lattice[i][j].addDim()
+	lattice[k][l].addDim()
 
 	counter = 0
 
@@ -71,32 +74,35 @@ def IsingSolve(nX, nY, h, J):
 			print len(network.topLevelNodes()),network.topLevelSize(), network.largestTopLevelTensor()
 		counter += 1
 
-	return np.exp(list(network.topLevelNodes())[0].logScalar())*list(network.topLevelNodes())[0].tensor().array()
+	if len(network.topLevelNodes()) == 1:
+		ret = np.exp(list(network.topLevelNodes())[0].logScalar())*list(network.topLevelNodes())[0].tensor().array()
+	elif len(network.topLevelNodes()) == 2:
+		r1 = np.exp(list(network.topLevelNodes())[0].logScalar())*list(network.topLevelNodes())[0].tensor().array()
+		r2 = np.exp(list(network.topLevelNodes())[1].logScalar())*list(network.topLevelNodes())[1].tensor().array()
+		ret = np.einsum('a,b->ab',r1,r2)
 
-#	return np.log(list(network.topLevelNodes())[0].tensor().array()) + list(network.topLevelNodes())[0].logScalar()
+	lattice[i][j].removeDim()
+	lattice[k][l].removeDim()	
 
-def exactIsing(J):
-	k = 1/np.sinh(2*J)**2
-	def f(x):
-		return np.log(np.cosh(2*J)**2 + (1/k)*np.sqrt(1+k**2-2*k*np.cos(2*x)))
-	inte = quad(f,0,np.pi)[0]
-
-	return np.log(2)/2 + (1/(2*np.pi))*inte
+	return ret
 
 
+lattice, network = IsingSolve(20,20,0,-0.2)
 
-#print IsingSolve(20,20,0,0.5)/400,exactIsing(0.5)
-corr = IsingSolve(4,4,0,0.5)
+data = np.zeros((20,20))
 
-print corr/np.sum(corr)
+for i in range(20):
+	for j in range(20):
+		if i==0 and j==0:
+			data[i,j] = 1.0
+		else:
+			corr = correlator(lattice, network, i, j, 0, 0)
+			corr /= np.sum(corr)
+			data[i,j] = corr[0][0]+corr[1][1]-corr[0][1]-corr[1][0]
 
-#print cProfile.run('print IsingSolve(10,10,0,0.5)/100')
 
-exit()
+import matplotlib.pyplot as plt
 
-print IsingSolve(7,7,4.0,0)/49,np.log(np.exp(4) + np.exp(-4))
-
-for j in np.linspace(-1,1,num=10):
-	q = IsingSolve(10,10,0,j)/100
-	print(j,q,exactIsing(j))
+plt.imshow(data)
+plt.show()
 
