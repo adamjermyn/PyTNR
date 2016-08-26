@@ -295,6 +295,8 @@ class Node:
 
 			n1, n2 = mergeLinks(n1, n, compressLink = compress)
 
+			assert len(n1.children()) == len(n2.children())
+
 			new.add(n2)
 
 		return n1, done, new
