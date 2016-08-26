@@ -3,10 +3,10 @@ import numpy as np
 from compress import compress
 
 def mergeLinks(n1, n2, compressLink=False):
-	c = n1.connectedHigh()
-
-	if n2 not in c:
-		raise ValueError
+	assert n1 in n2.connectedHigh()
+	assert n2 in n1.connectedHigh()
+	assert n1 in n1.network().topLevelNodes()
+	assert n2 in n2.network().topLevelNodes()
 
 	links = n1.linksConnecting(n2)
 
