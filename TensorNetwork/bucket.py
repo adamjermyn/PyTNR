@@ -72,6 +72,10 @@ class Bucket:
 		assert len(self.__nodes) > 0
 		return self.__nodes[-1]
 
+	def bottomNode(self):
+		assert len(self.__nodes) > 0
+		return self.__nodes[0]
+
 	def network(self):
 		return self.__network
 
@@ -89,6 +93,10 @@ class Bucket:
 	def otherTopNode(self):
 		assert len(self.otherNodes()) > 0
 		return self.otherNode(-1)
+
+	def otherBottomNode(self):
+		assert len(self.__nodes) > 0
+		return self.otherNode(0)
 
 	def numOtherNodes(self):
 		if not self.linked():
