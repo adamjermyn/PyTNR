@@ -125,9 +125,18 @@ class Link:
 			self.__network.updateSortedLinkList(self)
 
 	def delete(self):
+		# This method assumes you want to delete the nodes on either side!
+		assert len(self.__children) > 0
+
 		self.__network.deregisterLink(self)
 		self.__b1.removeLink()
 		self.__b2.removeLink()
+
+		# This means that if we remove the references to these buckets in the Nodes then
+		# the buckets will be deleted (there will be no remaining references to them
+		# assuming they are in fact only referenced by a single Node each).
+		self.__b1 = None
+		self.__b2 = None
 
 		for c in self.__children:
 			c.setParent(None)
