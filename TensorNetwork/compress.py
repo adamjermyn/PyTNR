@@ -36,18 +36,8 @@ def cutBond(u, v, n1, n2, ind1, ind2, link, sh1m, sh2m):
 	n1m = n1.modify(t1m, delBuckets=[ind1])
 	n2m = n2.modify(t2m, delBuckets=[ind2])
 
-	# These four lines make me a bit nervous. In particular,
-	# there should be a more elegant way to say that this link is not top-level without
-	# incurring infinite recursion in the inheritance. Not that I mind, but doing this
-	# could introduce obnoxious edge cases if I'm not careful. It might be better to have
-	# an explicit list of no-parent-yet-top cases and just exclude them from top-level
-	# things... but that might be slow. Anyway, I also can't quite figure
-	# out whether or not the update call is necessary.
-
-	# For what it's worth, this did induce obnoxious edge cases.
+	link.network().registerLinkCut(link)
 	link.setCompressed()
-	link.setParent(link) # So it isn't considered top-level
-	link.network().deregisterLinkTop(link) # So it's removed from the top-level.
 	link.update() # So it's up to date.
 
 	return link, n1m, n2m
