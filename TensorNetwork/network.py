@@ -48,6 +48,7 @@ class Network:
 		self.__topLevelNodes = set()
 		self.__allLinks = set()
 		self.__topLevelLinks = set()
+		self.__cutLinks = set()
 		self.__sortedLinks = PriorityQueue()
 		self.__idDict = {}
 		self.__idCounter = 0
@@ -130,6 +131,22 @@ class Network:
 
  		self.__topLevelLinks.add(link)
 		self.__sortedLinks.add(link, link.mergeEntropy())
+
+	def registerLinkCut(self, link):
+		assert link not in self.__cutLinks
+		assert link in self.__topLevelLinks
+		assert link in self.__allLinks
+
+		self.__cutLinks.add(link)
+		self.deregisterLinkTop(link)
+
+	def deregisterLinkCut(self, link):
+		assert link in self.__cutLinks
+		assert link in self.__allLinks
+		assert link not in self.__topLevelLinks
+
+		self.__cutLinks.remove(link)
+		self.registerLinkTop(link)
 
 	def updateSortedLinkList(self, link):
 		self.__sortedLinks.remove(link)
