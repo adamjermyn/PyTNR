@@ -202,6 +202,9 @@ class Node:
 		assert self in self.__network.topLevelNodes()
 		assert other in self.__network.topLevelNodes()
 
+		if children is None:
+			children = []
+
 		selfBucket = self.bucket(selfBucketIndex)
 		otherBucket = other.bucket(otherBucketIndex)
 
