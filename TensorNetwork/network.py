@@ -110,7 +110,7 @@ class Network:
 		assert link in self.__topLevelLinks
 
 		self.__allLinks.remove(link)
-		self.__topLevelLinks.remove(link)	# We should only ever remove top-level Links
+		self.__topLevelLinks.remove(link)
 		self.__sortedLinks.remove(link)
 
 	def deregisterLinkTop(self, link):
@@ -142,7 +142,6 @@ class Network:
 
 		children = node.children()
 		for c in children:
-			print 'Removing',c
 			self.__topLevelNodes.remove(c)
 
 		assert len(set(node.children()).intersection(self.__topLevelNodes)) == 0
@@ -150,13 +149,14 @@ class Network:
 
 	def deregisterNode(self, node):
 		self.__nodes.remove(node)
-		print 'Removingg',node
 		self.__topLevelNodes.remove(node)
 
 		children = node.children()
 		for c in children:
-			print 'Adding',c
 			self.__topLevelNodes.add(c)
+
+		for b in node.buckets():
+			assert b.topNode() == node
 
 		if len(children) == 2:
 			links = children[0].linksConnecting(children[1])

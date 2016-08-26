@@ -221,8 +221,6 @@ class Node:
 		return l
 
 	def modify(self, tens, delBuckets=None, repBuckets=None):
-		assert self in self.__network.topLevelNodes()
-
 		'''
 		len(delBuckets) + len(tens.shape()) - len(newBuckets) == len(self.tensor().shape())
 		Creates a copy of this Node with tens as its Tensor.  Omits buckets at indices listed in
@@ -235,14 +233,9 @@ class Node:
 		if repBuckets is None:
 			repBuckets = []
 
-		if len(set(delBuckets).intersection(set(repBuckets))) > 0:
-			raise ValueError
-
-		if self not in self.__network.topLevelNodes():
-			print 'Error: Attempting to modify node below the top level!'
-			print 'ID',self.id()
-			print 'Parent ID',self.__parent.id()
-			raise ValueError
+		assert self in self.__network.topLevelNodes()
+		assert len(set(delBuckets).intersection(set(repBuckets))) == 0
+		assert len(delBuckets) + len(tens.shape()) - len(self.tensor().shape()) >= 0
 
 		Buckets = []
 
@@ -304,12 +297,8 @@ class Node:
 	def merge(self, other, mergeL=True, compress=True):
 		assert self in self.__network.topLevelNodes()
 		assert other in self.__network.topLevelNodes()
-
-		c =self.connectedHigh()
-		cc = other.connectedHigh()
-
-		if other not in c:
-			raise ValueError # Only allow mergers between highest-level objects (so each Node has at most one parent).
+		assert self in other.connectedHigh()
+		assert other in self.connectedHigh()
 
 		# Find all links between self and other, store their indices, and
 		# deregister them from the top level
