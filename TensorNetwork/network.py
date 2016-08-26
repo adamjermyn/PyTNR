@@ -100,7 +100,28 @@ class Network:
 
 		return nn
 
+	def checkLinks(self):
+		counter = 0
+		for l in self.__topLevelLinks:
+			b1 = l.bucket1()
+			b2 = l.bucket2()
+			n1 = b1.topNode()
+			n2 = b2.topNode()
+			if n1 not in self.__topLevelNodes:
+				print n1,counter
+			if n2 not in self.__topLevelNodes:
+				print n2,counter
+			counter += 1
+
+	def checkNodes(self):
+		for n in self.__topLevelNodes:
+			if n.parent() is not None:
+				print n
+
 	def registerLink(self, link):
+		assert link not in self.__allLinks
+		assert link not in self.__topLevelLinks
+
 		self.__allLinks.add(link)
 		self.__topLevelLinks.add(link)
 		self.__sortedLinks.add(link, link.mergeEntropy())
