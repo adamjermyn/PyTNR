@@ -150,50 +150,84 @@ class Node:
 	def buckets(self):
 		return self.__buckets
 
-	def delete(self):
-		'''
-		I think the error we're still getting is due to the lack of case handling for
-		links which get compressed....
-		'''
-
-		print self
 	def removeBucket(self, b):
 		assert b in self.__buckets
 		self.__buckets.remove(b)
 
+	def delete(self, linksToDelete=None):
+		# Delete parents
 		if self.__parent is not None:
 			self.__parent.delete()
+
+		assert self.__parent is None
+
+		# Delete buckets whose links ought to be deleted,
+		# and keep track of those links.
+		if linksToDelete is None:
+			linksToDelete = []
 
 		for b in self.__buckets:
 			if b.linked():
 				link = b.link()
-
-				bo = b.otherTopNode()
-
+				bo = link.otherBucket(b)
 				numC = len(link.children())
+				if b.numNodes() == 1 and numC > 0:
+					# Means we're about to delete a link which is compressed or merged.
+					no = b.otherBottomNode()
+					bo = link.otherBucket(b)
 
-				if b.numNodes() == 1:
-					# We only delete a Link if this is the last Node its Bucket connects to.
-					link.delete()
+					if no.parent() is not None:
+						no.parent().delete()
 
-					if numC > 0:
-						# Means the link we're about to delete is a compressed or merged link.
-						# This means we need to delete the Node on the other end too.
-						# We have to do it in this order so bo isn't linked to this Nodes
-						# (which would cause an infinite loop).
-						bo.delete() 
-			else:
-				b.removeNode() # We only ever delete top-level nodes
+					# Now the other Node has no parents, so we've got a simple case
+					# of two top-level Nodes on either side of a link, each with buckets that
+					# have one node a piece.
 
+					self.removeBucket(b)
+					no.removeBucket(bo)
+
+					linksToDelete.append(link)
+
+					# The order here matters: whichever we delete last has to get the
+					# list of links to be deleted, so that we can delete both nodes before
+					# we delete the link.
+					self.delete()
+					no.delete(linksToDelete=linksToDelete)
+					return
+
+		# At this stage we have no buckets pointing to links which were compressed or merged.
+		for b in self.__buckets:
+			if b.linked():
+				assert len(b.link().children()) == 0 or b.numNodes() > 1
+
+		# We deregister the node before we handle any link deletion.
+		self.__network.deregisterNode(self)
+		assert self not in self.__network.nodes()
+		assert self not in self.__network.topLevelNodes()
 		for c in self.children():
-			c.setParent(None)
+			assert c in self.__network.topLevelNodes()
+
+		# Now we delete the links
+		for link in linksToDelete:
+			assert self in [link.bucket1().topNode(),link.bucket2().topNode()]
+			assert len(set([link.bucket1().topNode(),link.bucket2().topNode()]).intersection(self.__network.topLevelNodes())) == 0
+			assert link.parent() is None
+			link.delete()
+
+		# Note that we don't need to delete the buckets associated with the Links
+		# we deleted, as those Links no longer refer to them and the Nodes no longer
+		# refer to them either.
 
 		for b in self.__buckets:
 			b.removeNode()
 
-	def addLink(self, other, selfBucketIndex, otherBucketIndex, compressed=False, children=[]):
+		for c in self.children():
+			c.setParent(None)
+
+	def addLink(self, other, selfBucketIndex, otherBucketIndex, compressed=False, children=None):
 		assert self in self.__network.topLevelNodes()
 		assert other in self.__network.topLevelNodes()
+		assert children is None or len(self.children()) == len(other.children())
 
 		if children is None:
 			children = []
