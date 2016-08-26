@@ -37,6 +37,7 @@ def cutBond(u, v, n1, n2, ind1, ind2, link, sh1m, sh2m):
 	n2m = n2.modify(t2m, delBuckets=[ind2])
 
 	link.network().registerLinkCut(link)
+	link.setParent(link) # So it is unambiguously not top-level.
 	link.setCompressed()
 	link.update() # So it's up to date.
 

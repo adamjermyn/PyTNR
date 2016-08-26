@@ -211,7 +211,7 @@ class Node:
 		for link in linksToDelete:
 			assert self in [link.bucket1().topNode(),link.bucket2().topNode()]
 			assert len(set([link.bucket1().topNode(),link.bucket2().topNode()]).intersection(self.__network.topLevelNodes())) == 0
-			assert link.parent() is None
+			assert link.parent() is None or link.parent() == link
 			link.delete()
 
 		# Note that we don't need to delete the buckets associated with the Links

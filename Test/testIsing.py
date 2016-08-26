@@ -59,22 +59,19 @@ def IsingSolve(nX, nY, h, J):
 			print len(network.topLevelNodes()),network.topLevelSize(), t.tensor().shape()
 		counter += 1
 
-	print 'bbbbb'
-
 	lattice[0][0].addDim()
-
-	print 'bbbbb'
+	lattice[0][1].addDim()
 
 	counter = 0
 
 	while len(network.topLevelLinks()) > 0:
 		network.merge(mergeL=True,compress=True)
 
-		if counter%20 == 0:
+		if counter%1 == 0:
 			print len(network.topLevelNodes()),network.topLevelSize(), network.largestTopLevelTensor()
 		counter += 1
 
-	print np.exp(list(network.topLevelNodes())[0].logScalar())*list(network.topLevelNodes())[0].tensor().array()
+	return np.exp(list(network.topLevelNodes())[0].logScalar())*list(network.topLevelNodes())[0].tensor().array()
 
 #	return np.log(list(network.topLevelNodes())[0].tensor().array()) + list(network.topLevelNodes())[0].logScalar()
 
@@ -87,10 +84,9 @@ def exactIsing(J):
 	return np.log(2)/2 + (1/(2*np.pi))*inte
 
 #print IsingSolve(20,20,0,0.5)/400,exactIsing(0.5)
-IsingSolve(4,4,0,0.5)
-IsingSolve(4,4,1.0,0)
+corr = IsingSolve(4,4,0,0.5)
 
-print 2*np.exp(1.0)/np.cosh(1.0)
+print corr/np.sum(corr)
 
 #print cProfile.run('print IsingSolve(10,10,0,0.5)/100')
 

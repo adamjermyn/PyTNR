@@ -111,10 +111,13 @@ class Network:
 
 	def deregisterLink(self, link):
 		assert link in self.__allLinks
-		assert link in self.__topLevelLinks
+		assert link in self.__topLevelLinks or link in self.__cutLinks
 
 		self.__allLinks.remove(link)
-		self.__topLevelLinks.remove(link)
+		if link in self.__topLevelLinks:
+			self.__topLevelLinks.remove(link)
+		else:
+			self.__cutLinks.remove(link)
 		self.__sortedLinks.remove(link)
 
 	def deregisterLinkTop(self, link):
