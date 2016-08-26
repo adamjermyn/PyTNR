@@ -157,6 +157,9 @@ class Node:
 		'''
 
 		print self
+	def removeBucket(self, b):
+		assert b in self.__buckets
+		self.__buckets.remove(b)
 
 		if self.__parent is not None:
 			self.__parent.delete()
