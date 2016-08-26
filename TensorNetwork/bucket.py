@@ -96,6 +96,9 @@ class Bucket:
 		return self.otherBucket().numNodes()
 
 	def addNode(self, node):
+		# Shouldn't modify buckets once there are buckets higher up.
+		# TODO: Add Bucket parent/child relationships.
+		assert not self.linked() or self.link().parent() is None 
 		self.__nodes.append(node)
 		if self.linked():
 			self.__link.update()
