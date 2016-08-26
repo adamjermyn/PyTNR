@@ -188,18 +188,8 @@ class Node:
 		for c in self.children():
 			c.setParent(None)
 
-		print '---'
-		print self
-		self.__network.deregisterNode(self)
-		print self
-		print 'Successful deletion.'
-		print '---'
-		
-		import sys
-		import gc
-		print sys.getrefcount(self)
-		for i in gc.get_referrers(self):
-			print i
+		for b in self.__buckets:
+			b.removeNode()
 
 	def addLink(self, other, selfBucketIndex, otherBucketIndex, compressed=False, children=[]):
 		assert self in self.__network.topLevelNodes()
