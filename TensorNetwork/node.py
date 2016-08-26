@@ -199,6 +199,9 @@ class Node:
 			print i
 
 	def addLink(self, other, selfBucketIndex, otherBucketIndex, compressed=False, children=[]):
+		assert self in self.__network.topLevelNodes()
+		assert other in self.__network.topLevelNodes()
+
 		selfBucket = self.bucket(selfBucketIndex)
 		otherBucket = other.bucket(otherBucketIndex)
 
@@ -215,6 +218,8 @@ class Node:
 		return l
 
 	def modify(self, tens, delBuckets=None, repBuckets=None):
+		assert self in self.__network.topLevelNodes()
+
 		'''
 		len(delBuckets) + len(tens.shape()) - len(newBuckets) == len(self.tensor().shape())
 		Creates a copy of this Node with tens as its Tensor.  Omits buckets at indices listed in
@@ -244,6 +249,8 @@ class Node:
 		return n
 
 	def trace(self):
+		assert self in self.__network.topLevelNodes()
+
 		for b in self.__buckets:
 			if b.linked():
 				otherBucket = b.otherBucket()
@@ -286,6 +293,9 @@ class Node:
 		return n1, done, new
 
 	def merge(self, other, mergeL=True, compress=True):
+		assert self in self.__network.topLevelNodes()
+		assert other in self.__network.topLevelNodes()
+
 		c =self.connectedHigh()
 		cc = other.connectedHigh()
 
