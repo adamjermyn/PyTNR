@@ -69,6 +69,7 @@ class Bucket:
 		return len(self.__nodes)
 
 	def topNode(self):
+		assert len(self.__nodes) > 0
 		return self.__nodes[-1]
 
 	def network(self):
@@ -86,6 +87,7 @@ class Bucket:
 		return self.otherNodes()[index]
 
 	def otherTopNode(self):
+		assert len(self.otherNodes()) > 0
 		return self.otherNode(-1)
 
 	def numOtherNodes(self):
@@ -111,6 +113,6 @@ class Bucket:
 			# a Link points to once we set it. This is fine, as there are no modifier methods
 			# in the Link class for the Buckets it points to.
 
-	def removeLink(self, link):
+	def removeLink(self):
 		self.__link = None
 		self.__otherBucket = None
