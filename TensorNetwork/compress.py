@@ -43,6 +43,8 @@ def cutBond(u, v, n1, n2, ind1, ind2, link, sh1m, sh2m):
 	# an explicit list of no-parent-yet-top cases and just exclude them from top-level
 	# things... but that might be slow. Anyway, I also can't quite figure
 	# out whether or not the update call is necessary.
+
+	# For what it's worth, this did induce obnoxious edge cases.
 	link.setCompressed()
 	link.setParent(link) # So it isn't considered top-level
 	link.network().deregisterLinkTop(link) # So it's removed from the top-level.
