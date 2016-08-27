@@ -147,8 +147,8 @@ class Network:
 		self.__topLevelNodes.remove(node)
 
 		children = node.children()
-		for c in children:
-			self.__topLevelNodes.add(c)
+
+		self.__topLevelNodes.update(children)
 
 		for b in node.buckets():
 			assert b.topNode() == node
