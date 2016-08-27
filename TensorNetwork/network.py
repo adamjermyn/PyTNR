@@ -60,46 +60,18 @@ class Network:
 		return s
 
 	def size(self):
-		s = 0
-
-		for n in self.__nodes:
-			s += n.tensor().size()
-
-		return s
+		return sum(n.tensor().size() for n in self.__nodes)
 
 	def topLevelSize(self):
-		s = 0
-
-		for n in self.__topLevelNodes:
-			s += n.tensor().size()
-
-		return s
+		return sum(n.tensor().size() for n in self.__topLevelNodes)
 
 	def largestTensor(self):
-		s = 0
-		sh = None
-
-		for n in self.__nodes:
-			ss = n.tensor().size()
-			if ss > s:
-				s = ss
-				sh = n.tensor().shape()
-
-		return sh
+		sizeGetter = lambda n: n.tensor().size()
+		return max(self.__nodes,key=sizeGetter)
 
 	def largestTopLevelTensor(self):
-		s = 0
-		sh = None
-		nn = None
-
-		for n in self.__topLevelNodes:
-			ss = n.tensor().size()
-			if ss > s:
-				s = ss
-				sh = n.tensor().shape()
-				nn = n
-
-		return nn
+		sizeGetter = lambda n: n.tensor().size()
+		return max(self.__topLevelNodes,key=sizeGetter)
 
 	def registerLink(self, link):
 		assert link not in self.__allLinks
