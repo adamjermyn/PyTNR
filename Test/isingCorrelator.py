@@ -74,25 +74,29 @@ def correlator(lattice, network, i,j,k,l):
 			print len(network.topLevelNodes()),network.topLevelSize(), network.largestTopLevelTensor()
 		counter += 1
 
-	if len(network.topLevelNodes()) == 1:
-		ret = np.exp(list(network.topLevelNodes())[0].logScalar())*list(network.topLevelNodes())[0].tensor().array()
-	elif len(network.topLevelNodes()) == 2:
-		r1 = np.exp(list(network.topLevelNodes())[0].logScalar())*list(network.topLevelNodes())[0].tensor().array()
-		r2 = np.exp(list(network.topLevelNodes())[1].logScalar())*list(network.topLevelNodes())[1].tensor().array()
-		ret = np.einsum('a,b->ab',r1,r2)
+	topNodes = list(network.topLevelNodes())
+	topLevel = [np.exp(n.logScalar())*n.tensor().array() for n in topNodes]
+
+	ret = topLevel[0]
+	for q in range(1,len(topLevel)):
+		ret = np.tensordot(ret, topLevel[q],axes=0)
 
 	lattice[i][j].removeDim()
 	lattice[k][l].removeDim()	
 
+	print i,j,k,l
+
 	return ret
 
+nX = 10
+nY = 10
 
-lattice, network = IsingSolve(20,20,0,-0.2)
+lattice, network = IsingSolve(nX,nY,0,-0.4)
 
-data = np.zeros((20,20))
+data = np.zeros((nX,nY))
 
-for i in range(20):
-	for j in range(20):
+for i in range(nX):
+	for j in range(nY):
 		if i==0 and j==0:
 			data[i,j] = 1.0
 		else:
@@ -103,6 +107,6 @@ for i in range(20):
 
 import matplotlib.pyplot as plt
 
-plt.imshow(data)
+plt.imshow(np.log(np.abs(data)))
 plt.show()
 
