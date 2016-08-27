@@ -62,12 +62,18 @@ class Node:
 
 	delete			-	Delete the Node and all associated Links. Recursively deletes all parents.
 	'''
-	def __init__(self, tens, network, children=[], Buckets=[], logScalar = 0):
+	def __init__(self, tens, network, children=None, Buckets=None, logScalar = 0):
 		self.__tensor = tens
 		self.__logScalar = logScalar + np.log(self.__tensor.makeUnity())
 		self.__network = network
 		self.__id = self.__network.nextID()
 		self.__parent = None
+
+		if children is None:
+			children = []
+		if Buckets is None:
+			Buckets = []
+
 		self.__children = children
 		self.__buckets = Buckets
 		self.__network.registerNode(self)
