@@ -236,29 +236,41 @@ class Network:
 		for n in nodes:
 			n.trace()
 
-	def merge(self, mergeL=True, compressL=True, eps=1e-4):
+	def merge(self, mergeL=True, compressL=True, eps=1e-4, omit=None):
 		'''
 		Performs the next best merger (contraction) between Nodes based on entropy heuristics.
 		The Nodes must be linked to one another.
 
-		This method takes three keyword arguments:
+		This method takes four keyword arguments:
 			mergeL 	  - 	If the merger results in a Node which has multiple Links in common with
 						another Node, the Links will be merged.
 			compressL -	Attempts to compress all Links (if any) resulting from a Link merger.
 			eps		  -	The accuracy of the compression to perform.
+			omit	  - Set of Nodes to omit from the merger.
 		'''
+		if omit is None:
+			omit = set()
+
 		link = self.__sortedLinks.pop()
 
-		link.bucket1().topNode().merge(link.bucket2().topNode(), mergeL=mergeL, compress=compressL, eps=eps)
+		n1 = link.bucket1().topNode()
+		n2 = link.bucket2().topNode()
 
 
-	def linkMerge(self, compressL=False, eps=1e-4):
+		if n1 not in omit and n2 not in omit:
+			n1.merge(n2, mergeL=mergeL, compressL=compressL, eps=eps, omit=omit)
+
+	def linkMerge(self, compressL=False, eps=1e-4, omit=None):
 		'''
 		This method checks all Nodes for potential Link mergers and performs any it finds.
-		This method takes two keyword arguments:
+		This method takes three keyword arguments:
 			compressL	-	Attempts to compress all Links (if any) resulting from a Link merger.
 			eps			-	The accuracy of the compression to perform.
+			omit	    - Set of Nodes to omit from the merger.
 		'''
+		if omit is None:
+			omit = set()
+
 		done = set()
 		todo = set(self.__topLevelNodes)
 
@@ -270,6 +282,29 @@ class Network:
 			todo = todo | new
 
 			done.add(nn)
+
+	def contract(self, mergeL=True, compressL=True, eps=1e-4, omit=None):
+		'''
+		This method contracts the Network to a minimal representation.
+
+		This method takes four keywork arguments:
+			mergeL 	  - 	If the merger results in a Node which has multiple Links in common with
+						another Node, the Links will be merged.
+			compressL -	Attempts to compress all Links (if any) resulting from a Link merger.
+			eps		  -	The accuracy of the compression to perform.
+			omit	  - Set of Nodes to omit from the merger.
+		'''
+		if omit is None:
+			omit = set()
+
+		counter = 0
+		while self.__sortedLinks.length > 0:
+			self.merge(mergeL=True, compressL=True, omit=omit)
+
+			if counter%20 == 0:
+				t = self.largestTopLevelTensor()
+				print len(self.topLevelNodes()),self.topLevelSize(), t.tensor().shape()
+			counter += 1
 
 
 	def compressLinks(self, eps=1e-4):
@@ -287,3 +322,46 @@ class Network:
 			todo = list(todo)
 			link, _, _ = compress(todo[0], eps=eps)
 			compressed.add(link)
+
+	def view(self, nodes, mergeL=True, compressL=True, eps=1e-4):
+		'''
+		This method calculates the effective Tensor represented by the Network connecting to the given Nodes.
+
+		The way we do this is straightforward: we delete the parents of
+		these Nodes, contract all of the Network except for the given
+		Nodes, and evaluate what remains as a Tensor.
+
+		This method takes three keywork arguments:
+			mergeL 	  - 	If the merger results in a Node which has multiple Links in common with
+						another Node, the Links will be merged.
+			compressL -	Attempts to compress all Links (if any) resulting from a Link merger.
+			eps		  -	The accuracy of the compression to perform.
+
+		TODO: Write code that cleans up the higher-up parts of the Network
+		after we're done.
+		'''
+		for n in nodes:
+			if n.parent() is not None:
+				n.parent().delete()
+
+		self.contract(mergeL=True, compressL=True, eps=1e-4, omit=nodes)
+
+		bucketList = []
+		arr = np.array([1.])
+
+		for n in self.__topLevelNodes:
+			if n not in nodes:
+				bucketList.extend(n.buckets())
+				arr = np.tensordot(arr, n.tensor().array(), axes=0)
+
+		arr = arr[0]
+
+		newBucketList = []
+		for b in bucketList:
+			if b.linked():
+				newBucketList.append(b)
+			else:
+				newBucketList.append(None)
+
+		return arr, newBucketList
+
