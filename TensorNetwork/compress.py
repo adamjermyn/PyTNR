@@ -24,8 +24,6 @@ def makeLinearOperator(matrix1, matrix2):
 
 	return LinearOperator(shape, matvec=matvec, matmat=matmat, rmatvec=rmatvec)
 
-
-
 def cutBond(u, v, n1, n2, ind1, ind2, link, sh1m, sh2m):
 	u = np.reshape(u,sh1m)
 	v = np.reshape(v,sh2m)
@@ -47,12 +45,12 @@ def bigSVD(matrix, k):
 	u, s, v = svds(matrix, k=k)
 	inds = np.argsort(s)
 	inds = inds[::-1]
-	u = u[:,inds]
+	u = u[:, inds]
 	s = s[inds]
-	v = v[inds,:]
+	v = v[inds, :]
 	return u, s, v
 
-def compress(link, eps=1e-4):
+def compress(link, eps=1e-2):
 	n1 = link.bucket1().topNode()
 	n2 = link.bucket2().topNode()
 
