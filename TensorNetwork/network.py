@@ -116,7 +116,7 @@ class Network:
 		assert link.bucket1().topNode() in self.__topLevelNodes
 		assert link.bucket2().topNode() in self.__topLevelNodes
 
- 		self.__topLevelLinks.add(link)
+		self.__topLevelLinks.add(link)
 		self.__sortedLinks.add(link, link.mergeEntropy())
 
 	def deregisterLinkTop(self, link):
@@ -236,41 +236,33 @@ class Network:
 		for n in nodes:
 			n.trace()
 
-	def merge(self, mergeL=True, compressL=True, eps=1e-4, omit=None):
+	def merge(self, mergeL=True, compressL=True, eps=1e-4):
 		'''
 		Performs the next best merger (contraction) between Nodes based on entropy heuristics.
 		The Nodes must be linked to one another.
 
-		This method takes four keyword arguments:
+		This method takes three keyword arguments:
 			mergeL 	  - 	If the merger results in a Node which has multiple Links in common with
 						another Node, the Links will be merged.
 			compressL -	Attempts to compress all Links (if any) resulting from a Link merger.
 			eps		  -	The accuracy of the compression to perform.
-			omit	  - Set of Nodes to omit from the merger.
 		'''
-		if omit is None:
-			omit = set()
 
 		link = self.__sortedLinks.pop()
 
 		n1 = link.bucket1().topNode()
 		n2 = link.bucket2().topNode()
 
+		n1.merge(n2, mergeL=mergeL, compressL=compressL, eps=eps)
 
-		if n1 not in omit and n2 not in omit:
-			n1.merge(n2, mergeL=mergeL, compressL=compressL, eps=eps, omit=omit)
 
-	def linkMerge(self, compressL=False, eps=1e-4, omit=None):
+	def linkMerge(self, compressL=False, eps=1e-4):
 		'''
 		This method checks all Nodes for potential Link mergers and performs any it finds.
-		This method takes three keyword arguments:
+		This method takes two keyword arguments:
 			compressL	-	Attempts to compress all Links (if any) resulting from a Link merger.
 			eps			-	The accuracy of the compression to perform.
-			omit	    - Set of Nodes to omit from the merger.
 		'''
-		if omit is None:
-			omit = set()
-
 		done = set()
 		todo = set(self.__topLevelNodes)
 
@@ -283,29 +275,24 @@ class Network:
 
 			done.add(nn)
 
-	def contract(self, mergeL=True, compressL=True, eps=1e-4, omit=None):
+	def contract(self, mergeL=True, compressL=True, eps=1e-4):
 		'''
 		This method contracts the Network to a minimal representation.
 
-		This method takes four keywork arguments:
+		This method takes three keywork arguments:
 			mergeL 	  - 	If the merger results in a Node which has multiple Links in common with
 						another Node, the Links will be merged.
 			compressL -	Attempts to compress all Links (if any) resulting from a Link merger.
 			eps		  -	The accuracy of the compression to perform.
-			omit	  - Set of Nodes to omit from the merger.
 		'''
-		if omit is None:
-			omit = set()
-
 		counter = 0
 		while self.__sortedLinks.length > 0:
-			self.merge(mergeL=True, compressL=True, omit=omit)
+			self.merge(mergeL=True, compressL=True)
 
 			if counter%20 == 0:
 				t = self.largestTopLevelTensor()
 				print len(self.topLevelNodes()),self.topLevelSize(), t.tensor().shape()
 			counter += 1
-
 
 	def compressLinks(self, eps=1e-4):
 		'''
@@ -327,41 +314,81 @@ class Network:
 		'''
 		This method calculates the effective Tensor represented by the Network connecting to the given Nodes.
 
-		The way we do this is straightforward: we delete the parents of
-		these Nodes, contract all of the Network except for the given
-		Nodes, and evaluate what remains as a Tensor.
+		The way we do this is straightforward: we go through marking Nodes as rejected
+		as if we were deleting them. This includes following compression/merger bonds
+		where appropriate. We then copy the highest-level Nodes remaining into a new
+		Network and contract it.
 
 		This method takes three keywork arguments:
 			mergeL 	  - 	If the merger results in a Node which has multiple Links in common with
 						another Node, the Links will be merged.
 			compressL -	Attempts to compress all Links (if any) resulting from a Link merger.
 			eps		  -	The accuracy of the compression to perform.
-
-		TODO: Write code that cleans up the higher-up parts of the Network
-		after we're done.
 		'''
-		for n in nodes:
-			if n.parent() is not None:
-				n.parent().delete()
+		todo = set(nodes)
+		rejected = set()
 
-		self.contract(mergeL=True, compressL=True, eps=1e-4, omit=nodes)
+		while len(todo) > 0:
+			n = todo.pop()
 
-		bucketList = []
-		arr = np.array([1.])
+			if n not in rejected:
+				rejected.add(n)
+				if n.parent() is not None:
+					todo.add(n.parent())
 
-		for n in self.__topLevelNodes:
-			if n not in nodes:
-				bucketList.extend(n.buckets())
-				arr = np.tensordot(arr, n.tensor().array(), axes=0)
+				if len(n.children()) == 1:
+					for b in n.buckets():
+						link = b.link()
+						bo = link.otherBucket(b)
+						no = bo.bottomNode()
+						if len(no.children()) == 1:
+							todo.add(no)
 
-		arr = arr[0]
+		new1 = set(self.__nodes).difference(rejected)
+		new2 = set(self.__nodes).difference(rejected)
 
-		newBucketList = []
-		for b in bucketList:
-			if b.linked():
-				newBucketList.append(b)
-			else:
-				newBucketList.append(None)
+		for n in new1:
+			if n.parent() in new1:
+				new2.remove(n)
 
-		return arr, newBucketList
+		# Build the new Network
+		nn = Network()
+
+		# Build the new Nodes
+		oldIDs = {}	#	Returns the old Node corresponding to the given new ID.
+		newIDs = {}	#	Returns the new Node corresponding to the given old ID.
+
+		newNodes = set()
+
+		for n in new2:
+			n1 = nn.addNodeFromArray(n.tensor().array())
+
+			oldIDs[n1.id()] = n
+			newIDs[n.id()] = n1
+
+			newNodes.add(n1)
+
+		done = set()
+
+		for n in new2:
+			n1 = newIDs[n.id()]
+			for ind0, b in enumerate(n.buckets()):
+				if b.linked():
+					otherB = b.otherBucket()
+					if len(set(otherB.nodes()).intersection(new2)) > 0:
+						n2 = (set(otherB.nodes()).intersection(new2)).pop()
+						ind1 = n2.buckets().index(otherB)
+						n2 = newIDs[n2.id()]
+						if (n1.id(),ind0,n2.id(),ind1) not in done:
+							n1.addLink(n2, ind0, ind1)
+							done.add((n1.id(),ind0,n2.id(),ind1))
+							done.add((n2.id(),ind1,n1.id(),ind0))
+
+		# TODO: Compute mapping between Buckets (so that linking is easy).
+
+		return nn
+
+
+
+
 

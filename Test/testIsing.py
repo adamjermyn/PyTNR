@@ -52,12 +52,12 @@ def IsingSolve(nX, nY, h, J):
 
 	network.contract(mergeL=True, compressL=True, eps=1e-4)
 
-	nn, bl = network.view(set([lattice[0][0],lattice[0][1]]))
+	nn = network.view(set([lattice[0][0],lattice[0][1],lattice[0][2]]))
 
-	print nn.shape
-	print bl
+	nn.contract(mergeL=True, compressL=True, eps=1e-4)
 
-	print 'aaa'
+	for n in list(nn.topLevelNodes()):
+		print n
 
 	lattice[0][0].addDim()
 	lattice[0][1].addDim()
@@ -79,7 +79,7 @@ def exactIsing(J):
 
 
 #print IsingSolve(20,20,0,0.5)/400,exactIsing(0.5)
-corr = IsingSolve(6,6,0,0.5)
+corr = IsingSolve(10,10,0,0.5)
 
 print corr/np.sum(corr)
 

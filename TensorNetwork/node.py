@@ -307,14 +307,8 @@ class Node:
 					return n
 		return self
 
-	def linkMerge(self, compress=False, eps=1e-4, omit=None):
+	def linkMerge(self, compress=False, eps=1e-4):
 		assert self.__parent is None
-
-		if omit is None:
-			omit = []
-
-		if self in omit:
-			return self, set(), set()
 
 		todo = set()
 		done = set()
@@ -323,7 +317,7 @@ class Node:
 		c = Counter(self.connectedHigh())
 
 		for n in c:
-			if c[n] > 1 and n not in omit:
+			if c[n] > 1:
 				todo.add(n)
 
 		n1 = self
@@ -340,14 +334,11 @@ class Node:
 
 		return n1, done, new
 
-	def merge(self, other, mergeL=True, compressL=True, eps=1e-4, omit=None):
+	def merge(self, other, mergeL=True, compressL=True, eps=1e-4):
 		assert self in self.__network.topLevelNodes()
 		assert other in self.__network.topLevelNodes()
 		assert self in other.connectedHigh()
 		assert other in self.connectedHigh()
-
-		if omit is None:
-			omit = set()
 
 		# Find all links between self and other, store their indices, and
 		# deregister them from the top level
@@ -385,6 +376,6 @@ class Node:
 		if mergeL:
 			# Merge any links that need it. The next line is probably redundant given that trace now returns the top level.
 			n = n.topParent()
-			n, _, _= n.linkMerge(compress=compressL, omit=omit)
+			n, _, _= n.linkMerge(compress=compressL)
 
 		return n
