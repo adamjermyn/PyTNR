@@ -368,25 +368,41 @@ class Network:
 
 			newNodes.add(n1)
 
+
+		# Link up new Nodes
 		done = set()
 
-		for n in new2:
-			n1 = newIDs[n.id()]
-			for ind0, b in enumerate(n.buckets()):
+		for n1 in new2:
+			n1new = newIDs[n1.id()]
+			for ind0, b in enumerate(n1.buckets()):
 				if b.linked():
 					otherB = b.otherBucket()
-					if len(set(otherB.nodes()).intersection(new2)) > 0:
-						n2 = (set(otherB.nodes()).intersection(new2)).pop()
+					intersection = set(otherB.nodes()).intersection(new2)
+					if len(intersection) > 0:
+						n2 = intersection.pop()
 						ind1 = n2.buckets().index(otherB)
-						n2 = newIDs[n2.id()]
-						if (n1.id(),ind0,n2.id(),ind1) not in done:
-							n1.addLink(n2, ind0, ind1)
-							done.add((n1.id(),ind0,n2.id(),ind1))
-							done.add((n2.id(),ind1,n1.id(),ind0))
+						n2new = newIDs[n2.id()]
+						if (n1new.id(), ind0, n2new.id(), ind1) not in done:
+							n1new.addLink(n2new, ind0, ind1)
+							done.add((n1new.id(), ind0, n2new.id(), ind1))
+							done.add((n2new.id(), ind1, n1new.id(), ind0))
 
-		# TODO: Compute mapping between Buckets (so that linking is easy).
+		# Contract new Network
+		nn.contract(mergeL=mergeL, compressL=compressL, eps=eps)
 
-		return nn
+		# Build contracted Tensor and bucketList
+		arr = np.array([1.])
+		bucketList = []
+
+		for n in nn.topLevelNodes():
+			arr = np.tensordot(arr, n.tensor().array(), axes=0)
+			for b in n.buckets():
+				nb = b.bottomNode()
+				ind = nb.bucketIndex(b)
+				oldNode = oldIDs[nb.id()]
+				bucketList.append(oldNode.buckets()[ind].otherBucket())
+
+		return nn, arr[0], bucketList
 
 
 

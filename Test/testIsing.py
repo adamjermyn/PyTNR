@@ -52,12 +52,10 @@ def IsingSolve(nX, nY, h, J):
 
 	network.contract(mergeL=True, compressL=True, eps=1e-4)
 
-	nn = network.view(set([lattice[0][0],lattice[0][1],lattice[0][2]]))
+	nn, arr, bucketList = network.view(set([lattice[0][0],lattice[0][1],lattice[0][2]]))
 
-	nn.contract(mergeL=True, compressL=True, eps=1e-4)
-
-	for n in list(nn.topLevelNodes()):
-		print n
+	print arr
+	print arr.shape
 
 	lattice[0][0].addDim()
 	lattice[0][1].addDim()
