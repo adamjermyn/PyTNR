@@ -241,6 +241,7 @@ class Node:
 		assert self in self.__network.topLevelNodes()
 		assert other in self.__network.topLevelNodes()
 		assert children is None or len(self.children()) == len(other.children())
+		assert self.tensor().shape()[selfBucketIndex] > 1
 
 		if children is None:
 			children = []

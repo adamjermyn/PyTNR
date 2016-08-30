@@ -43,11 +43,8 @@ def compress(link, eps=1e-2):
 
 	shI = arr1.shape[ind1] # Must be the same as arr2.shape[ind2]
 
-	if shI == 1: # Means we just cut the bond
-		return cutBond(np.copy(arr1), np.copy(arr2), n1, n2, ind1, ind2, link, sh1m, sh2m)
-
-	arr11 = t1.matrix(ind1, front=False)
-	arr22 = t2.matrix(ind2, front=True)
+	arr11 = t1.toMatrix(ind1, front=False)
+	arr22 = t2.toMatrix(ind2, front=True)
 
 	opN = matrixProductLinearOperator(arr11, arr22)
 
