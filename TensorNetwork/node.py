@@ -64,7 +64,7 @@ class Node:
 	'''
 	def __init__(self, tens, network, children=None, Buckets=None, logScalar = 0):
 		self.__tensor = tens
-		self.__logScalar = logScalar + np.log(self.__tensor.logScalar())
+		self.__logScalar = logScalar + self.__tensor.logScalar()
 		self.__network = network
 		self.__id = self.__network.nextID()
 		self.__parent = None
@@ -335,7 +335,7 @@ class Node:
 			n = todo.pop()
 			done.add(n)
 
-			n1, n2 = mergeLinks(n1, n, compressLink = compress)
+			n1, n2 = mergeLinks(n1, n, compressLink = compressL)
 
 			assert len(n1.children()) == len(n2.children())
 
@@ -385,6 +385,6 @@ class Node:
 		if mergeL:
 			# Merge any links that need it. The next line is probably redundant given that trace now returns the top level.
 			n = n.topParent()
-			n, _, _= n.linkMerge(compress=compressL)
+			n, _, _= n.linkMerge(compressL=compressL)
 
 		return n

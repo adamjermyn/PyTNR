@@ -268,7 +268,7 @@ class Network:
 
 		while len(todo) > 0:
 			n = todo.pop()
-			nn, d, new = n.linkMerge(compress=compressL, eps=eps)
+			nn, d, new = n.linkMerge(compressL=compressL, eps=eps)
 
 			todo = todo.difference(d)
 			todo = todo | new
@@ -285,6 +285,8 @@ class Network:
 			compressL -	Attempts to compress all Links (if any) resulting from a Link merger.
 			eps		  -	The accuracy of the compression to perform.
 		'''
+		self.trace()
+
 		counter = 0
 		while self.__sortedLinks.length > 0:
 			self.merge(mergeL=True, compressL=True)

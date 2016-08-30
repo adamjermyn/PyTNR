@@ -1,6 +1,8 @@
 from tensor import Tensor
 import numpy as np
+from utils import matrixToTensor, tensorToMatrix
 from utils import matrixProductLinearOperator, generalSVD
+from utils import tupleReplace
 
 
 def cutBond(u, v, n1, n2, ind1, ind2, link, sh1m, sh2m):
@@ -46,10 +48,16 @@ def compress(link, eps=1e-2):
 	if shI == 1: # Means we just cut the bond 
 		return cutBond(np.copy(arr1), np.copy(arr2), n1, n2, ind1, ind2, link, sh1m, sh2m) 
 
-	arr11 = t1.toMatrix(ind1, front=False)
-	arr22 = t2.toMatrix(ind2, front=True)
+	arr11 = tensorToMatrix(t1, ind1, front=False)
+	arr22 = tensorToMatrix(t2, ind2, front=True)
 
 	opN = matrixProductLinearOperator(arr11, arr22)
+
+	print min(sh1[ind1], min(opN.shape)-1)
+	print sh1[ind1]
+	print opN.shape
+	print sh1, ind1
+	print sh2, ind2
 
 	u, lam, v = generalSVD(opN, bondDimension=min(sh1[ind1], min(opN.shape)-1))
 
@@ -74,21 +82,8 @@ def compress(link, eps=1e-2):
 		v *= np.sqrt(lam[:,np.newaxis])
 
 		if ind > 1:
-			u = np.reshape(u,[ind] + sh1m)
-			v = np.reshape(v,[ind] + sh2m)
-
-			perm1 = range(len(arr1.shape))
-			perm1 = perm1[1:]
-			perm1.insert(ind1,0)
-			perm2 = range(len(arr2.shape))
-			perm2 = perm2[1:]
-			perm2.insert(ind2,0)
-
-			u = np.transpose(u,axes=perm1)
-			v = np.transpose(v,axes=perm2)
-
-			t1m = Tensor(u.shape,u)
-			t2m = Tensor(v.shape,v)
+			t1m = matrixToTensor(u, tupleReplace(arr1.shape, ind1, ind), ind1, front=True)
+			t2m = matrixToTensor(v, tupleReplace(arr2.shape, ind2, ind), ind2, front=True)
 
 			n1m = n1.modify(t1m, repBuckets=[ind1])
 			n2m = n2.modify(t2m, repBuckets=[ind2])

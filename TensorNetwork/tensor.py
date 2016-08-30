@@ -1,7 +1,6 @@
 import numpy as np
 import tempfile
 import os
-from utils import kroneckerDelta
 
 class Tensor:
 	'''
@@ -19,7 +18,7 @@ class Tensor:
 		m = np.max(np.abs(tens))
 		self.__logScalar = np.log(m)
 
-		if self.__size < 100000:
+		if self.__size < 10000000:
 			self.__array = np.copy(tens/m)
 		else:
 			handle, self.__array = tempfile.mkstemp()
@@ -45,7 +44,7 @@ class Tensor:
 		Returns the array underlying the Tensor.
 		Also handles any caching operations that are needed for large-memory Tensors.
 		'''
-		if self.__size < 100000:
+		if self.__size < 10000000:
 			return np.copy(self.__array)
 		else:
 			fi = open(self.__array)
@@ -108,30 +107,3 @@ class Tensor:
 				ind1[j] -= d1
 
 		return Tensor(arr.shape,arr)
-
-	def matrix(self, index, front=True):
-		'''
-		This method flattens the Tensor's array along all indices other than
-		index and does so in a way which preserves the ordering of the other
-		axes when unflattened.
-
-		This method also takes as input a boolean variable front. If front is True
-		then the special index is pushed to the beginning. If front is False then the
-		special index is pushed to the back.
-		'''
-		arr = self.array()
-
-		perm = range(len(self.__shape))
-		perm.remove(index)
-
-		shm = self.__shape[:index] + self.__shape[index+1:]
-		shI = self.__shape[index]
-
-		if front:
-			perm.insert(0, index)
-			arr = np.transpose(arr, axes=perm)
-			arr = np.reshape(arr, [shI, np.product(shm)])
-		else:
-			perm.append(index)
-			arr = np.transpose(arr, axes=perm)
-			arr = np.reshape(arr, [np.product(shm), shI])
