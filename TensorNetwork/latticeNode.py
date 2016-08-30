@@ -2,6 +2,7 @@ from node import Node
 from bucket import Bucket
 from tensor import Tensor
 import numpy as np
+from utils import kroneckerDelta
 
 class latticeNode(Node):
 
@@ -19,11 +20,7 @@ class latticeNode(Node):
 
 		self.__dim += 1
 
-		if self.__dim > 1:
-			arr = np.zeros(tuple(self.__length for i in range(self.__dim)))
-			np.fill_diagonal(arr,1.0)
-		else:
-			arr = np.ones(self.__length)
+		arr = kroneckerDelta(self.__dim, self.__length)
 		tens = Tensor(arr.shape, arr)
 		self._Node__tensor = tens
 
@@ -37,11 +34,7 @@ class latticeNode(Node):
 		assert self.__dim > 0
 		self.__dim -= 1
 
-		if self.__dim > 1:
-			arr = np.zeros(tuple(self.__length for i in range(self.__dim)))
-			np.fill_diagonal(arr,1.0)
-		else:
-			arr = np.ones(self.__length)
+		arr = kroneckerDelta(self.__dim, self.__length)
 		tens = Tensor(arr.shape, arr)
 		self._Node__tensor = tens
 
