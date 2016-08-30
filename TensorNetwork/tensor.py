@@ -46,15 +46,27 @@ class Tensor:
 		return Tensor(arr.shape,arr)
 
 	def trace(self, ind0, ind1):
-		if self.__shape[ind0] != self.__shape[ind1]:
-			raise ValueError
-		arr = np.trace(self.array(),axis1=ind0,axis2=ind1)
-		return Tensor(arr.shape,arr)
+		arr = self.array()
+		for i in range(len(ind0)):
+			arr = np.trace(arr, axis1=ind0[i], axis2=ind1[i])
+			for j in range(len(ind0)):
+				d0 = 0
+				d1 = 0
 
-	def makeUnity(self):
-		m = np.max(np.abs(self.__array))
-		self.__array /= m
-		return m
+				if ind0[j] > ind0[i]:
+					d0 += 1
+				if ind0[j] > ind1[i]:
+					d0 += 1
+	
+				if ind1[j] > ind0[i]:
+					d1 += 1
+				if ind1[j] > ind1[i]:
+					d1 += 1
+
+				ind0[j] -= d0
+				ind1[j] -= d1
+
+		return Tensor(arr.shape,arr)
 
 	def deepcopy(self):
 		arr = np.copy(self.__array)

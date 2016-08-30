@@ -64,7 +64,7 @@ class Node:
 	'''
 	def __init__(self, tens, network, children=None, Buckets=None, logScalar = 0):
 		self.__tensor = tens
-		self.__logScalar = logScalar + np.log(self.__tensor.makeUnity())
+		self.__logScalar = logScalar + np.log(self.__tensor.logScalar())
 		self.__network = network
 		self.__id = self.__network.nextID()
 		self.__parent = None
@@ -293,21 +293,29 @@ class Node:
 	def trace(self):
 		assert self in self.__network.topLevelNodes()
 
+		axes0 = []
+		axes1 = []
+		links = []
+
 		for b in self.__buckets:
 			if b.linked():
 				otherBucket = b.otherBucket()
 				otherNode = otherBucket.topNode()
 				if otherNode == self:
+					links.append(b.link())
 					ind0 = self.bucketIndex(b)
 					ind1 = self.bucketIndex(otherBucket)
-					newT = self.__tensor.trace(ind0, ind1)
-					n = self.modify(newT, delBuckets=[ind0,ind1])
-					self.__network.deregisterLinkTop(b.link())
-					n = n.trace() # Keep going until there are no more repeated indices to trace.
-					return n
-		return self
+					axes0.append(ind0)
+					axes1.append(ind1)
 
-	def linkMerge(self, compress=False, eps=1e-4):
+		newT = self.__tensor.trace(axes0, axes1)
+		n = self.modify(newT, delBuckets=(axes0 + axes1))
+		for l in links:
+			self.__network.deregisterLinkTop(l)
+
+		return n
+
+	def linkMerge(self, compressL=False, eps=1e-4):
 		assert self.__parent is None
 
 		todo = set()
