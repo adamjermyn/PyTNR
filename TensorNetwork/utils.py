@@ -1,5 +1,4 @@
 import numpy as np
-from tensor import Tensor
 from scipy.sparse.linalg import aslinearoperator
 from scipy.sparse.linalg import LinearOperator
 from scipy.sparse.linalg import svds
@@ -15,6 +14,7 @@ def tupleReplace(tpl, i, j):
 	tpl = list(tpl)
 	tpl = tpl[:i] + [j] + tpl[i+1:]
 	return tuple(tpl)
+
 
 ##################################
 # General Linear Algebra Functions
@@ -40,6 +40,60 @@ def kroneckerDelta(dim, length):
 ###################################
 # Linear Operator and SVD Functions
 ###################################
+
+def ndArrayToMatrix(arr, index, front=True):
+		'''
+		This method flattens the array along all indices other than
+		index and does so in a way which preserves the ordering of the other
+		axes when unflattened.
+
+		This method also takes as input a boolean variable front. If front is True
+		then the special index is pushed to the beginning. If front is False then the
+		special index is pushed to the back.
+		'''
+		shape = arr.shape
+
+		perm = list(range(len(shape)))
+		perm.remove(index)
+
+		shm = shape[:index] + shape[index+1:]
+		shI = shape[index]
+
+		if front:
+			perm.insert(0, index)
+			arr = np.transpose(arr, axes=perm)
+			arr = np.reshape(arr, [shI, np.product(shm)])
+		else:
+			perm.append(index)
+			arr = np.transpose(arr, axes=perm)
+			arr = np.reshape(arr, [np.product(shm), shI])
+
+		return arr
+
+def matrixToNDArray(matrix, shape, index, front=True):
+		'''
+		This method takes a 2D array and reshapes it to the given shape.
+		The reshape operation only modifies one of the axes of the matrix.
+		This is either the first (front) or last (not front) depending on the
+		boolean variable front. Whichever index is not reshaped is then
+		put in the position specified by index.
+
+		This method is meant to be the inverse of ndArrayToMatrix.
+		'''
+		if not front:
+			matrix = np.transpose(matrix)
+
+		shm = shape[:index] + shape[index+1:]
+
+		matrix = np.reshape(matrix, [shape[index]] + list(shm))
+
+		perm = list(range(len(shape)))
+		perm = perm[1:]
+		perm.insert(index, 0)
+
+		matrix = np.transpose(matrix, axes=perm)
+
+		return matrix
 
 def matrixProductLinearOperator(matrix1, matrix2):
 	'''
@@ -101,65 +155,5 @@ def generalSVD(matrix, bondDimension=np.inf):
 	else:
 		return np.linalg.svd(matrix, full_matrices=0)
 
-#######################
-# Tensor Helper Methods
-#######################
-
-def tensorToMatrix(tens, index, front=True):
-		'''
-		This method flattens the Tensor's array along all indices other than
-		index and does so in a way which preserves the ordering of the other
-		axes when unflattened.
-
-		This method also takes as input a boolean variable front. If front is True
-		then the special index is pushed to the beginning. If front is False then the
-		special index is pushed to the back.
-		'''
-		arr = tens.array()
-		shape = tens.shape()
-
-		perm = list(range(len(shape)))
-		perm.remove(index)
-
-		shm = shape[:index] + shape[index+1:]
-		shI = shape[index]
-
-		if front:
-			perm.insert(0, index)
-			arr = np.transpose(arr, axes=perm)
-			arr = np.reshape(arr, [shI, np.product(shm)])
-		else:
-			perm.append(index)
-			arr = np.transpose(arr, axes=perm)
-			arr = np.reshape(arr, [np.product(shm), shI])
-
-		return arr
-
-def matrixToTensor(matrix, shape, index, front=True):
-		'''
-		This method takes a 2D array and reshapes it to the given shape.
-		The reshape operation only modifies one of the axes of the matrix.
-		This is either the first (front) or last (not front) depending on the
-		boolean variable front. Whichever index is not reshaped is then
-		put in the position specified by index.
-
-		This method is meant to be the inverse of tensorToMatrix.
-		'''
-		if not front:
-			matrix = np.transpose(matrix)
-
-		shm = shape[:index] + shape[index+1:]
-
-		matrix = np.reshape(matrix, [shape[index]] + list(shm))
-
-		perm = list(range(len(shape)))
-		perm = perm[1:]
-		perm.insert(index, 0)
-
-		matrix = np.transpose(matrix, axes=perm)
-
-		t = Tensor(matrix.shape, matrix)
-
-		return t
 
 

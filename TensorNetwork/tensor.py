@@ -2,6 +2,7 @@ import numpy as np
 import tempfile
 import os
 from concurrent.futures import ThreadPoolExecutor
+from utils import ndArrayToMatrix, matrixToNDArray
 
 tempdir = tempfile.TemporaryDirectory()
 executor = ThreadPoolExecutor(max_workers=10)
@@ -23,6 +24,7 @@ class Tensor:
 		m = np.max(np.abs(tens))
 		self.__logScalar = np.log(m)
 
+
 		if self.__size < maxSize:
 			self.__array = np.copy(tens/m)
 		else:
@@ -35,7 +37,6 @@ class Tensor:
 				fi.close()
 
 			self.__writeFuture = executor.submit(write)
-
 
 	def shape(self):
 		'''
@@ -122,3 +123,35 @@ class Tensor:
 				ind1[j] -= d1
 
 		return Tensor(arr.shape,arr)
+
+
+
+
+#######################
+# Tensor Helper Methods
+#######################
+
+def tensorToMatrix(tens, index, front=True):
+		'''
+		This method flattens the Tensor's array along all indices other than
+		index and does so in a way which preserves the ordering of the other
+		axes when unflattened.
+
+		This method also takes as input a boolean variable front. If front is True
+		then the special index is pushed to the beginning. If front is False then the
+		special index is pushed to the back.
+		'''
+		return ndArrayToMatrix(tens.array(), index, front=front)
+
+def matrixToTensor(matrix, shape, index, front=True):
+		'''
+		This method takes a 2D array and reshapes it to the given shape.
+		The reshape operation only modifies one of the axes of the matrix.
+		This is either the first (front) or last (not front) depending on the
+		boolean variable front. Whichever index is not reshaped is then
+		put in the position specified by index.
+
+		This method is meant to be the inverse of tensorToMatrix.
+		'''
+		arr = matrixToNDArray(matrix, shape, index, front=front)
+		return Tensor(arr.shape, arr)
