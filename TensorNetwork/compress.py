@@ -1,28 +1,7 @@
 from tensor import Tensor
 import numpy as np
-from scipy.sparse.linalg import svds
-from scipy.sparse.linalg import aslinearoperator
-from scipy.sparse.linalg import LinearOperator
+from utils import matrixProductLinearOperator, generalSVD
 
-def makeLinearOperator(matrix1, matrix2):
-	'''
-	The reason we implement our own function here is that the dot product
-	associated with the standard LinearOperator class has an extremely slow
-	type-checking stage which has to be performed every time a product is calculated.
-	'''
-
-	shape = (matrix1.shape[0],matrix2.shape[1])
-
-	def matvec(v):
-		return np.dot(matrix1,np.dot(matrix2,v))
-
-	def matmat(m):
-		return np.dot(matrix1,np.dot(matrix2,m))
-
-	def rmatvec(v):
-		return np.dot(np.transpose(matrix2),np.dot(np.transpose(matrix1),v))
-
-	return LinearOperator(shape, matvec=matvec, matmat=matmat, rmatvec=rmatvec)
 
 def cutBond(u, v, n1, n2, ind1, ind2, link, sh1m, sh2m):
 	u = np.reshape(u,sh1m)
@@ -41,14 +20,7 @@ def cutBond(u, v, n1, n2, ind1, ind2, link, sh1m, sh2m):
 
 	return link, n1m, n2m
 
-def bigSVD(matrix, k):
-	u, s, v = svds(matrix, k=k)
-	inds = np.argsort(s)
-	inds = inds[::-1]
-	u = u[:, inds]
-	s = s[inds]
-	v = v[inds, :]
-	return u, s, v
+
 
 def compress(link, eps=1e-2):
 	n1 = link.bucket1().topNode()
@@ -74,27 +46,21 @@ def compress(link, eps=1e-2):
 	if shI == 1: # Means we just cut the bond
 		return cutBond(np.copy(arr1), np.copy(arr2), n1, n2, ind1, ind2, link, sh1m, sh2m)
 
-	if np.product(sh1m) > shI and np.product(sh2m) > shI: # Required so sparse bond is properly represented
-		perm = range(len(arr1.shape))
-		perm.remove(ind1)
-		perm.append(ind1)
-		arr11 = np.transpose(arr1, axes=perm)
-		arr11 = np.reshape(arr11,[np.product(sh1m),shI])
+	perm = range(len(arr1.shape))
+	perm.remove(ind1)
+	perm.append(ind1)
+	arr11 = np.transpose(arr1, axes=perm)
+	arr11 = np.reshape(arr11,[np.product(sh1m),shI])
 
-		perm = range(len(arr2.shape))
-		perm.remove(ind2)
-		perm.insert(0, ind2)
-		arr22 = np.transpose(arr2, axes=perm)
-		arr22 = np.reshape(arr22,[shI,np.product(sh2m)])
+	perm = range(len(arr2.shape))
+	perm.remove(ind2)
+	perm.insert(0, ind2)
+	arr22 = np.transpose(arr2, axes=perm)
+	arr22 = np.reshape(arr22,[shI,np.product(sh2m)])
 
-		opN = makeLinearOperator(arr11, arr22)
+	opN = matrixProductLinearOperator(arr11, arr22)
 
-		u, lam, v = bigSVD(opN, min(sh1[ind1], min(opN.shape)-1))
-	else:
-		cont = t1.contract(ind1,t2,ind2)
-		arrN = cont.array()
-		arrN = np.reshape(arrN,(np.product(sh1m),np.product(sh2m)))
-		u, lam, v = np.linalg.svd(arrN,full_matrices=0)
+	u, lam, v = generalSVD(opN, bondDimension=min(sh1[ind1], min(opN.shape)-1))
 
 	p = lam**2
 	p /= np.sum(p)
