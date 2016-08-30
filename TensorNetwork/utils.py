@@ -3,7 +3,9 @@ from scipy.sparse.linalg import aslinearoperator
 from scipy.sparse.linalg import LinearOperator
 from scipy.sparse.linalg import svds
 
+##################################
 # General Linear Algebra Functions
+##################################
 
 def kroneckerDelta(dim, length):
 	'''
@@ -22,7 +24,9 @@ def kroneckerDelta(dim, length):
 		np.fill_diagonal(arr,1.0)
 		return arr
 
+###################################
 # Linear Operator and SVD Functions
+###################################
 
 def matrixProductLinearOperator(matrix1, matrix2):
 	'''
@@ -77,6 +81,7 @@ def generalSVD(matrix, bondDimension=np.inf):
 	just an implementation detail, and only arises in rare cases, so we just revert
 	to the full SVD solve.
 	'''
+
 	if bondDimension < matrix.shape[0] and bondDimension < matrix.shape[1]:
 		# Required so sparse bond is properly represented
 		return bigSVD(matrix, bondDimension)
