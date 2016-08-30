@@ -48,14 +48,16 @@ def IsingSolve(nX, nY, h, J):
 			lattice[i][j].addLink(bondH[i][j],0)
 			lattice[i][j].addLink(bondH[(i+1)%nX][j],1)
 
-	network.trace()
-
 	network.contract(mergeL=True, compressL=True, eps=1e-4)
+
+	print(list(network.topLevelNodes())[0].logScalar()/(nX*nY))
+	print(exactIsing(J))
+	exit()
 
 	nn, arr, bucketList = network.view(set([lattice[0][0],lattice[0][1],lattice[0][2]]))
 
-	print arr
-	print arr.shape
+	print(arr)
+	print(arr.shape)
 
 	lattice[0][0].addDim()
 	lattice[0][1].addDim()
@@ -77,15 +79,15 @@ def exactIsing(J):
 
 
 #print IsingSolve(20,20,0,0.5)/400,exactIsing(0.5)
-corr = IsingSolve(10,10,0,0.5)
+corr = IsingSolve(50,50,0,0.5)
 
-print corr/np.sum(corr)
+print(corr/np.sum(corr))
 
 #print cProfile.run('print IsingSolve(10,10,0,0.5)/100')
 
 exit()
 
-print IsingSolve(7,7,4.0,0)/49,np.log(np.exp(4) + np.exp(-4))
+print(IsingSolve(7,7,4.0,0)/49,np.log(np.exp(4) + np.exp(-4)))
 
 for j in np.linspace(-1,1,num=10):
 	q = IsingSolve(10,10,0,j)/100

@@ -358,7 +358,7 @@ class Node:
 					links.append((i,other.bucketIndex(b.otherBucket())))
 					self.__network.deregisterLinkTop(b.link())
 
-		links = zip(*links)
+		links = list(zip(*links))
 
 		# Contract along common links
 		t = self.__tensor.contract(links[0],other.tensor(),links[1])

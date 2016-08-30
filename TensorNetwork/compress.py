@@ -4,7 +4,6 @@ from utils import matrixToTensor, tensorToMatrix
 from utils import matrixProductLinearOperator, generalSVD
 from utils import tupleReplace
 
-
 def cutBond(u, v, n1, n2, ind1, ind2, link, sh1m, sh2m):
 	u = np.reshape(u,sh1m)
 	v = np.reshape(v,sh2m)
@@ -21,8 +20,6 @@ def cutBond(u, v, n1, n2, ind1, ind2, link, sh1m, sh2m):
 	link.update() # So it's up to date.
 
 	return link, n1m, n2m
-
-
 
 def compress(link, eps=1e-2):
 	n1 = link.bucket1().topNode()
@@ -42,7 +39,7 @@ def compress(link, eps=1e-2):
 
 	shI = arr1.shape[ind1] # Must be the same as arr2.shape[ind2]
 
- 	sh1m = sh1[:ind1] + sh1[ind1+1:]
+	sh1m = sh1[:ind1] + sh1[ind1+1:]
 	sh2m = sh2[:ind2] + sh2[ind2+1:]
 
 	if shI == 1: # Means we just cut the bond 
@@ -52,12 +49,6 @@ def compress(link, eps=1e-2):
 	arr22 = tensorToMatrix(t2, ind2, front=True)
 
 	opN = matrixProductLinearOperator(arr11, arr22)
-
-	print min(sh1[ind1], min(opN.shape)-1)
-	print sh1[ind1]
-	print opN.shape
-	print sh1, ind1
-	print sh2, ind2
 
 	u, lam, v = generalSVD(opN, bondDimension=min(sh1[ind1], min(opN.shape)-1))
 
@@ -94,3 +85,4 @@ def compress(link, eps=1e-2):
 			return cutBond(u, v, n1, n2, ind1, ind2, link, sh1m, sh2m)
 
 	return newLink, n1m, n2m
+

@@ -293,7 +293,7 @@ class Network:
 
 			if counter%20 == 0:
 				t = self.largestTopLevelTensor()
-				print len(self.topLevelNodes()),self.topLevelSize(), t.tensor().shape()
+				print(len(self.topLevelNodes()),self.topLevelSize(), t.tensor().shape())
 			counter += 1
 
 	def compressLinks(self, eps=1e-4):

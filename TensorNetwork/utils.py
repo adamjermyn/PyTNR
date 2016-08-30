@@ -118,7 +118,7 @@ def tensorToMatrix(tens, index, front=True):
 		arr = tens.array()
 		shape = tens.shape()
 
-		perm = range(len(shape))
+		perm = list(range(len(shape)))
 		perm.remove(index)
 
 		shm = shape[:index] + shape[index+1:]
@@ -152,7 +152,7 @@ def matrixToTensor(matrix, shape, index, front=True):
 
 		matrix = np.reshape(matrix, [shape[index]] + list(shm))
 
-		perm = range(len(shape))
+		perm = list(range(len(shape)))
 		perm = perm[1:]
 		perm.insert(index, 0)
 
@@ -161,3 +161,5 @@ def matrixToTensor(matrix, shape, index, front=True):
 		t = Tensor(matrix.shape, matrix)
 
 		return t
+
+

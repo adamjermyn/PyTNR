@@ -1,6 +1,11 @@
 import numpy as np
 import tempfile
 import os
+from concurrent.futures import ThreadPoolExecutor
+
+tempdir = tempfile.TemporaryDirectory()
+executor = ThreadPoolExecutor(max_workers=10)
+maxSize = 500000
 
 class Tensor:
 	'''
@@ -18,14 +23,19 @@ class Tensor:
 		m = np.max(np.abs(tens))
 		self.__logScalar = np.log(m)
 
-		if self.__size < 10000000:
+		if self.__size < maxSize:
 			self.__array = np.copy(tens/m)
 		else:
-			handle, self.__array = tempfile.mkstemp()
+			handle, self.__array = tempfile.mkstemp(dir=tempdir.name)
 			os.close(handle)
-			fi = open(self.__array,'w+')
-			np.save(fi,tens/m,allow_pickle=False)
-			fi.close()
+
+			def write():
+				fi = open(self.__array,'wb+')
+				np.save(fi,tens/m,allow_pickle=False)
+				fi.close()
+
+			self.__writeFuture = executor.submit(write)
+
 
 	def shape(self):
 		'''
@@ -44,13 +54,18 @@ class Tensor:
 		Returns the array underlying the Tensor.
 		Also handles any caching operations that are needed for large-memory Tensors.
 		'''
-		if self.__size < 10000000:
+		if self.__size < maxSize:
 			return np.copy(self.__array)
 		else:
-			fi = open(self.__array)
-			arr = np.load(fi)
-			fi.close()
-			return arr
+			def read():			
+				fi = open(self.__array,'rb')
+				arr = np.load(fi)
+				fi.close()
+				return arr
+
+			self.__writeFuture.result()
+
+			return read()
 
 	def logScalar(self):
 		'''
