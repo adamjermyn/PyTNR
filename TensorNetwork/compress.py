@@ -1,8 +1,8 @@
 from tensor import Tensor
-import numpy as np
-from utils import matrixToTensor, tensorToMatrix
+from tensor import matrixToTensor, tensorToMatrix
 from utils import matrixProductLinearOperator, generalSVD
 from utils import tupleReplace
+import numpy as np
 
 def cutBond(u, v, n1, n2, ind1, ind2, link, sh1m, sh2m):
 	u = np.reshape(u,sh1m)
