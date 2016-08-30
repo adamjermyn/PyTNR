@@ -46,17 +46,8 @@ def compress(link, eps=1e-2):
 	if shI == 1: # Means we just cut the bond
 		return cutBond(np.copy(arr1), np.copy(arr2), n1, n2, ind1, ind2, link, sh1m, sh2m)
 
-	perm = range(len(arr1.shape))
-	perm.remove(ind1)
-	perm.append(ind1)
-	arr11 = np.transpose(arr1, axes=perm)
-	arr11 = np.reshape(arr11,[np.product(sh1m),shI])
-
-	perm = range(len(arr2.shape))
-	perm.remove(ind2)
-	perm.insert(0, ind2)
-	arr22 = np.transpose(arr2, axes=perm)
-	arr22 = np.reshape(arr22,[shI,np.product(sh2m)])
+	arr11 = t1.matrix(ind1, front=False)
+	arr22 = t2.matrix(ind2, front=True)
 
 	opN = matrixProductLinearOperator(arr11, arr22)
 
