@@ -68,6 +68,24 @@ class Link:
 	def children(self):
 		return self.__children
 
+	def compressed(self):
+		return self.__compressed
+
+	def setCompressed(self):
+		self.__compressed = True
+
+	def topContents(self):
+		n1 = self.__b1.topNode()
+		n2 = self.__b2.topNode()
+
+		t1 = n1.tensor()
+		t2 = n2.tensor()
+
+		sh1 = t1.shape()
+		sh2 = t1.shape()
+
+		return n1, n2, t1, t2, sh1, sh2
+
 	def otherBucket(self, bucket):
 		if bucket == self.__b1:
 			return self.__b2
@@ -75,12 +93,6 @@ class Link:
 			return self.__b1
 		else:
 			raise ValueError
-
-	def compressed(self):
-		return self.__compressed
-
-	def setCompressed(self):
-		self.__compressed = True
 
 	def mergeEntropy(self):
 		if self.__mergeEntropy is None:

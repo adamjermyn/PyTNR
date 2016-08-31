@@ -4,7 +4,12 @@ from utils import matrixProductLinearOperator, generalSVD
 from utils import tupleReplace
 import numpy as np
 
-def cutBond(u, v, n1, n2, ind1, ind2, link, sh1m, sh2m):
+def cutBond(u, v, ind1, ind2, link):
+	n1, n2, _, _, sh1, sh2 = link.topContents()
+
+	sh1m = tupleReplace(sh1, ind1, None)
+	sh2m = tupleReplace(sh2, ind2, None)
+
 	u = np.reshape(u,sh1m)
 	v = np.reshape(v,sh2m)
 
@@ -22,28 +27,18 @@ def cutBond(u, v, n1, n2, ind1, ind2, link, sh1m, sh2m):
 	return link, n1m, n2m
 
 def compress(link, eps=1e-2):
-	n1 = link.bucket1().topNode()
-	n2 = link.bucket2().topNode()
-
-	t1 = n1.tensor()
-	t2 = n2.tensor()
+	n1, n2, t1, t2, sh1, _ = link.topContents()
 
 	arr1 = t1.array()
 	arr2 = t2.array()
 
-	sh1 = list(arr1.shape)
-	sh2 = list(arr2.shape)
-
 	ind1 = n1.bucketIndex(link.bucket1())
 	ind2 = n2.bucketIndex(link.bucket2())
 
-	shI = arr1.shape[ind1] # Must be the same as arr2.shape[ind2]
-
-	sh1m = sh1[:ind1] + sh1[ind1+1:]
-	sh2m = sh2[:ind2] + sh2[ind2+1:]
+	shI = sh1[ind1] # Must be the same as arr2.shape[ind2]
 
 	if shI == 1: # Means we just cut the bond 
-		return cutBond(np.copy(arr1), np.copy(arr2), n1, n2, ind1, ind2, link, sh1m, sh2m) 
+		return cutBond(arr1, arr2, ind1, ind2, link) 
 
 	arr11 = tensorToMatrix(t1, ind1, front=False)
 	arr22 = tensorToMatrix(t2, ind2, front=True)
@@ -82,7 +77,7 @@ def compress(link, eps=1e-2):
 			newLink = n1m.addLink(n2m, ind1, ind2, compressed=True, children=[link])
 
 		else:	# Means we're just cutting the bond
-			return cutBond(u, v, n1, n2, ind1, ind2, link, sh1m, sh2m)
+			return cutBond(u, v, ind1, ind2, link)
 
 	return newLink, n1m, n2m
 
