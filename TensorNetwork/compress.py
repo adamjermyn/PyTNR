@@ -24,7 +24,7 @@ def cutBond(u, v, n1, n2, ind1, ind2, link):
 
 	return link, n1m, n2m
 
-def compress(link, eps=1e-2):
+def compress(link, optimizerArray=None, optimizerBuckets=None, eps=1e-2):
 	n1 = link.bucket1().topNode()
 	n2 = link.bucket2().topNode()
 
@@ -50,7 +50,45 @@ def compress(link, eps=1e-2):
 
 	opN = matrixProductLinearOperator(arr11, arr22)
 
-	u, lam, v, _, cp = generalSVD(opN, bondDimension=min(sh1[ind1], min(opN.shape)-1))
+	if optimizerArray is None:
+		optimizerMatrix = None
+	else:
+		# First we need to establish correspondence between indices in
+		# optimizerArray and arr1.
+
+		inds1 = {}	# Stores the indices in arr1 as values
+		inds2 = {}	# Stores the indices in arr2 as values
+		inds  = {}	# Stores the indices in optimizerArray as values
+
+		for i,b in enumerate(optimizerBuckets):
+			if b in n1.buckets():
+				j = n1.bucketIndex(b)
+				inds1[i] = j
+				inds[(1,j)] = i
+			if b in n2.buckets():
+				j = n2.bucketIndex(b)
+				inds2[i] = j
+				inds[(1,j)] = i
+
+		# Now we put all indices corresponding to arr1 at the front,
+		# and all indices corresponding to arr2 at the back.
+		perm = []
+
+		for i in range(len(arr1.shape)):
+			if i != ind1:
+				perm.append(inds[(1,i)])
+		for i in range(len(arr2.shape)):
+			if i != ind2:
+				perm.append(inds[(2,i)])
+
+		optimizerMatrix = np.transpose(optimizerArray, axes=perm)
+
+		sh1m = np.product(tupleReplace(sh1, ind1, None))
+		sh2m = np.product(tupleReplace(sh2, ind2, None))
+
+		optimizerMatrix = np.reshape(optimizerMatrix, (sh1m, sh2m))
+
+	u, lam, v, _, cp = generalSVD(opN, bondDimension=min(sh1[ind1], min(opN.shape)-1), optimizerMatrix=optimizerMatrix)
 
 	ind = np.searchsorted(cp, eps, side='left')
 	ind = len(cp) - ind

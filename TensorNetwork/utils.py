@@ -141,7 +141,7 @@ def bigSVD(matrix, bondDimension):
 	v = v[inds, :]
 	return u, s, v
 
-def generalSVD(matrix, bondDimension=np.inf):
+def generalSVD(matrix, bondDimension=np.inf, optimizerMatrix=None):
 	'''
 	This is a helper method for SVD calculations.
 
@@ -155,6 +155,14 @@ def generalSVD(matrix, bondDimension=np.inf):
 	just an implementation detail, and only arises in rare cases, so we just revert
 	to the full SVD solve.
 
+	If an optimizerArray is provided, we perform the procedure outlined in Eq7-13
+	in "Second Renormalization of Tensor-Network States" by Xie et. al. (arXiv:0809.0182v3).
+
+	This method accepts as input:
+		matrix 			-	The matrix to SVD.
+		bondDimension	-	The bond dimension used to form the matrix (i.e. A.shape[1]).
+		optimizerTensor	-	The 'environment' array to optimize against.
+
 	This method returns:
 		u 	-	A matrix of the left singular vectors
 		lam	-	An array of the singular values
@@ -167,11 +175,27 @@ def generalSVD(matrix, bondDimension=np.inf):
 	As a result of the above definitions, p and cp are both sorted in descending order.
 	'''
 
-	if bondDimension > 0 and bondDimension < matrix.shape[0] and bondDimension < matrix.shape[1]:
-		# Required so sparse bond is properly represented
-		u, lam, v = bigSVD(matrix, bondDimension)
+	if optimizerMatrix is None:
+		if bondDimension > 0 and bondDimension < matrix.shape[0] and bondDimension < matrix.shape[1]:
+			# Required so sparse bond is properly represented
+			u, lam, v = bigSVD(matrix, bondDimension)
+		else:
+			u, lam, v = np.linalg.svd(matrix, full_matrices=0)
 	else:
-		u, lam, v = np.linalg.svd(matrix, full_matrices=0)
+		ue, lame, ve = np.linalg.svd(optimizerMatrix, full_matrices=0)
+
+		lams = np.sqrt(lam)
+
+		mmod = np.einsum('i,ij,jk,kl,l->il', lams, v, matrix, u, lams)
+
+		um, lamm, vm = np.linalg.svd(mmod, full_matrices=0)
+
+		lamms = np.sqrt(lamm)
+
+		uf = np.einsum('ij,j,jk->ik',ve.H,1/lamms,um)
+		vf = np.einsum('ij,j,jk->ik',vm,1/lamms,um.H)
+
+		u, lam, v = uf, lamm, vf
 
 	p = lam**2
 	p /= np.sum(p)
