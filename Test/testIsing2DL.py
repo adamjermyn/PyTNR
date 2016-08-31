@@ -14,6 +14,11 @@ def IsingSolve(nX, nY, h, J):
 	onSite = [[] for i in range(nX)]
 	bondV = [[] for i in range(nX)]
 	bondH = [[] for i in range(nY)]
+	bondL0 = [[] for i in range(nX)]
+	bondL1 = [[] for i in range(nX)]
+	bondL2 = [[] for i in range(nX)]
+	bondL3 = [[] for i in range(nX)]
+
 
 	# Each lattice site has seven indices of width five, and returns zero if they are unequal and one otherwise.
 	for i in range(nX):
@@ -40,6 +45,18 @@ def IsingSolve(nX, nY, h, J):
 			bondV[i].append(network.addNodeFromArray(np.copy(arr)))
 			bondH[i].append(network.addNodeFromArray(np.copy(arr)))
 
+	# Add L-bonds
+	for i in range(nX):
+		for j in range(nY):
+			arr = np.zeros((2,2,2))
+			arr += 1./7
+			arr[1,1,1] = 0
+			bondL0[i].append(network.addNodeFromArray(np.copy(arr)))
+			bondL1[i].append(network.addNodeFromArray(np.copy(arr)))
+			bondL2[i].append(network.addNodeFromArray(np.copy(arr)))
+			bondL3[i].append(network.addNodeFromArray(np.copy(arr)))
+
+
 	# Attach bond terms
 	for i in range(nX):
 		for j in range(nY):
@@ -48,25 +65,34 @@ def IsingSolve(nX, nY, h, J):
 			lattice[i][j].addLink(bondH[i][j],0)
 			lattice[i][j].addLink(bondH[(i+1)%nX][j],1)
 
-	network.contract(mergeL=True, compressL=True, eps=1e-4)
+			lattice[i][j].addLink(bondL0[i][j],0)
+			lattice[i][j].addLink(bondL0[i][(j+1)%nY],1)
+			lattice[i][j].addLink(bondL0[(i+1)%nX][j],2)
 
-	print(list(network.topLevelNodes())[0].logScalar()/(nX*nY))
-	print(exactIsing(J))
-	exit()
+			lattice[i][j].addLink(bondL1[i][j],0)
+			lattice[i][j].addLink(bondL1[i][(j-1)%nY],1)
+			lattice[i][j].addLink(bondL1[(i+1)%nX][j],2)
 
-	nn, arr, bucketList = network.view(set([lattice[0][0],lattice[0][1],lattice[0][2]]))
+			lattice[i][j].addLink(bondL2[i][j],0)
+			lattice[i][j].addLink(bondL2[i][(j+1)%nY],1)
+			lattice[i][j].addLink(bondL2[(i-1)%nX][j],2)
 
-	print(arr)
-	print(arr.shape)
+			lattice[i][j].addLink(bondL3[i][j],0)
+			lattice[i][j].addLink(bondL3[i][(j-1)%nY],1)
+			lattice[i][j].addLink(bondL3[(i-1)%nX][j],2)
 
-	lattice[0][0].addDim()
-	lattice[0][1].addDim()
 
-	network.contract(mergeL=True, compressL=True, eps=1e-4)
+	network.trace()
 
-	return np.exp(list(network.topLevelNodes())[0].logScalar())*list(network.topLevelNodes())[0].tensor().array()
+	counter = 0
+	while len(network.topLevelLinks()) > 0:
+		network.merge(mergeL=True,compress=True)
 
-#	return np.log(list(network.topLevelNodes())[0].tensor().array()) + list(network.topLevelNodes())[0].logScalar()
+		if counter%20 == 0:
+			print len(network.topLevelNodes()),network.topLevelSize(), network.largestTopLevelTensor()
+		counter += 1
+
+	return np.log(list(network.topLevelNodes())[0].tensor().array()) + list(network.topLevelNodes())[0].logScalar()
 
 def exactIsing(J):
 	k = 1/np.sinh(2*J)**2
@@ -76,18 +102,13 @@ def exactIsing(J):
 
 	return np.log(2)/2 + (1/(2*np.pi))*inte
 
-
-
-#print IsingSolve(20,20,0,0.5)/400,exactIsing(0.5)
-corr = IsingSolve(50,50,0,0.5)
-
-print(corr/np.sum(corr))
+print IsingSolve(20,20,0,0.5)/400
 
 #print cProfile.run('print IsingSolve(10,10,0,0.5)/100')
 
 exit()
 
-print(IsingSolve(7,7,4.0,0)/49,np.log(np.exp(4) + np.exp(-4)))
+print IsingSolve(7,7,4.0,0)/49,np.log(np.exp(4) + np.exp(-4))
 
 for j in np.linspace(-1,1,num=10):
 	q = IsingSolve(10,10,0,j)/100

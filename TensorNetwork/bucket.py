@@ -3,68 +3,126 @@ class Bucket:
 	A Bucket is a means of externally referencing an index of a tensor which handles the way in which
 	the tensor is linked to other tensors.
 
-	Each Bucket references exactly one index, but may contain multiple Links between that index and others.
-	This allows a given tensor to be part of a heirarchical network, wherein nodes may be merged while
-	retaining information about the unmerged structure. To accomodate this, each Bucket contains a list
-	of Links. When two nodes are merged, the old links remain, while a new Link to the merged object
-	is added to the end of the Link list.
+	Each Bucket references exactly one index and up to one link, but a Bucket may be associated with
+	multiple Nodes (and hence Tensors). More specifically, in the Network we build a heirarchical structure
+	in which Tensors are constructed based on those in lower levels. A Bucket may be associated with a line
+	of parents/children in this structure. This indicates that the physical meaning of the relevant index
+	has gone unchanged through the transformations that produce this structure.
+
+	The insistence that no more than one Link exist between Buckets reflects the physical nature of the Link.
+
+	When two Nodes are merged, the merged object becomes their parent and acquires all of their Buckets, sans
+	the ones which were traced over in the merger. When a Link merger or Link compression occurs, new Buckets
+	must be created for the relevant indices, as their physical meaning has changed with the associated change
+	of basis. When a trace occurs no new Buckets are required.
+
+	The order of Nodes in the __nodes attribute respects the parent/child relationship, such that the
+	highest-level Node (the one with no parents in the set) is the final element and the lowest-level Node
+	(the one with no children in the set) is the first element.
 
 	Buckets have the following functions:
 
-	node 		-	Returns the Node this Bucket belongs to.
-	index 		-	Returns the index of the Node's Tensor this Bucket refers to.
-	network 	-	Returns the TensorNetwork this Bucket belongs to.
-	numLinks	-	Returns the number of Links this Bucket has.
-	links 		-	Returns all Links this Bucket has.
-	link 		-	Takes as input an integer specifying the index of the Link of interest and returns
-					that link.
+	link 		-	Returns the Link, if any, associated with this Bucket. Returns None if there is no Link.
 	linked		-	Returns True if the Bucket is linked. Returns False otherwise.
-	otherBucket	-	Takes as input an integer specifying the index of the Link of interest and returns
-					the Bucket on the other side of that Link.
-	otherNode	-	Takes as input an integer specifying the index of the Link of interest and returns
-					the Node on the other side of that Link.
-	addLink		-	Takes as input a Link and appends it to the end of the Link list.
-	removeLink	-	Removes a Link from the Link list. Raises a ValueError if the Link is not present.
+	nodes 		-	Return all Nodes associated with this Bucket.
+	node 		-	Return the Node at the given index.
+	numNodes	-	Returns the number of Nodes associated with this Bucket.
+	topNode		-	Returns the top-Level Node associated with this Bucket.
+	network 	-	Returns the TensorNetwork this Bucket belongs to.
+	otherBucket	-	Returns the Bucket on the other side of the Link, if this Bucket is linked. If it is not
+					returns None.
+	otherNodes	-	Returns the list of Nodes associated with the other Bucket associated with the Link
+					associated with this Bucket.
+	otherNode	-	Takes as input an integer specifying the index of the Node of interest and returns the
+					Node associated with the other Bucket of the Link associated with this Bucket at that
+					index. If there is no Link raises a ValueError.
+	otherTopNode	-	Returns the highest-level Node associated with the other Bucket associated with the Link
+						associated with this Bucket.
+	numOtherNodes	-	Returns the number of Nodes associated with the other Bucket associated with the
+						Link associated with this Node. If there is no Link reutnrs 0.
+	addNode		-	Takes as input a Node and adds it to the end of the list of Nodes.
+	removeNove	-	Removes the top Node from the list.
+	setLink		-	Takes as input a Link and sets it as the one associated with this Bucket.
+	removeLink	-	Removes the Link associated with this Bucket.
+					Raises a ValueError if the Link is not present.
 	'''
 
-	def __init__(self, node, index, network):
-		self.__node = node
+	def __init__(self, network):
+		self.__nodes = []
 		self.__network = network
+		self.__link = None
+		self.__otherBucket = None
 
-		self.__links = []
+	def link(self):
+		return self.__link
 
-	def node(self):
-		return self.__node
+	def linked(self):
+		return self.__link is not None
+
+	def node(self, index):
+		return self.__nodes[index]
+
+	def nodes(self):
+		return self.__nodes
+
+	def numNodes(self):
+		return len(self.__nodes)
+
+	def topNode(self):
+		assert len(self.__nodes) > 0
+		return self.__nodes[-1]
+
+	def bottomNode(self):
+		assert len(self.__nodes) > 0
+		return self.__nodes[0]
 
 	def network(self):
 		return self.__network
 
-	def numLinks(self):
-		return len(self.__links)
+	def otherBucket(self):
+		return self.__otherBucket
 
-	def links(self):
-		return self.__links
-
-	def link(self, index):
-		return self.__links[index]
-
-	def linked(self):
-		return (len(self.__links) > 0)
-
-	def otherBucket(self, index):
-		b = self.__links[index].bucket1()
-		if b == self:
-			b = self.__links[index].bucket2()
-		return b
+	def otherNodes(self):
+		if not self.linked():
+			raise ValueError
+		return self.__otherBucket.nodes()
 
 	def otherNode(self, index):
-		return self.otherBucket(index).node()
+		return self.otherNodes()[index]
 
-	def addLink(self, link):
-		self.__links.append(link)
+	def otherTopNode(self):
+		assert len(self.otherNodes()) > 0
+		return self.otherNode(-1)
 
-	def removeLink(self, link):
-		if link in self.__links:
-			self.__links.remove(link)
-		else:
+	def otherBottomNode(self):
+		assert len(self.__nodes) > 0
+		return self.otherNode(0)
+
+	def numOtherNodes(self):
+		if not self.linked():
 			raise ValueError
+		return self.otherBucket().numNodes()
+
+	def addNode(self, node):
+		# Shouldn't modify buckets once there are buckets higher up.
+		assert not self.linked() or self.link().parent() is None 
+		self.__nodes.append(node)
+		if self.linked():
+			self.__link.update()
+
+	def removeNode(self):
+		self.__nodes = self.__nodes[:-1]
+		if self.linked():
+			self.__link.update()
+
+	def setLink(self, link):
+		self.__link = link
+		self.__otherBucket = link.otherBucket(self)
+		self.__link.update()
+			# A condition of this logic for otherBucket is that we never change which Bucket
+			# a Link points to once we set it. This is fine, as there are no modifier methods
+			# in the Link class for the Buckets it points to.
+
+	def removeLink(self):
+		self.__link = None
+		self.__otherBucket = None

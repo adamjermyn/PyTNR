@@ -48,48 +48,65 @@ def IsingSolve(nX, nY, h, J):
 			lattice[i][j].addLink(bondH[i][j],0)
 			lattice[i][j].addLink(bondH[(i+1)%nX][j],1)
 
-	network.contract(mergeL=True, compressL=True, eps=1e-4)
+	network.trace()
 
-	print(list(network.topLevelNodes())[0].logScalar()/(nX*nY))
-	print(exactIsing(J))
-	exit()
+	counter = 0
+	while len(network.topLevelLinks()) > 0:
+		network.merge(mergeL=True,compress=True)
 
-	nn, arr, bucketList = network.view(set([lattice[0][0],lattice[0][1],lattice[0][2]]))
+		if counter%20 == 0:
+			t = network.largestTopLevelTensor()
+			print len(network.topLevelNodes()),network.topLevelSize(), t.tensor().shape()
+		counter += 1
 
-	print(arr)
-	print(arr.shape)
+	return lattice, network
 
-	lattice[0][0].addDim()
-	lattice[0][1].addDim()
+def correlator(lattice, network, i,j,k,l):
+	lattice[i][j].addDim()
+	lattice[k][l].addDim()
 
-	network.contract(mergeL=True, compressL=True, eps=1e-4)
+	counter = 0
 
-	return np.exp(list(network.topLevelNodes())[0].logScalar())*list(network.topLevelNodes())[0].tensor().array()
+	while len(network.topLevelLinks()) > 0:
+		network.merge(mergeL=True,compress=True)
 
-#	return np.log(list(network.topLevelNodes())[0].tensor().array()) + list(network.topLevelNodes())[0].logScalar()
+		if counter%1 == 0:
+			print len(network.topLevelNodes()),network.topLevelSize(), network.largestTopLevelTensor()
+		counter += 1
 
-def exactIsing(J):
-	k = 1/np.sinh(2*J)**2
-	def f(x):
-		return np.log(np.cosh(2*J)**2 + (1/k)*np.sqrt(1+k**2-2*k*np.cos(2*x)))
-	inte = quad(f,0,np.pi)[0]
+	topNodes = list(network.topLevelNodes())
+	topLevel = [np.exp(n.logScalar())*n.tensor().array() for n in topNodes]
 
-	return np.log(2)/2 + (1/(2*np.pi))*inte
+	ret = topLevel[0]
+	for q in range(1,len(topLevel)):
+		ret = np.tensordot(ret, topLevel[q],axes=0)
+
+	lattice[i][j].removeDim()
+	lattice[k][l].removeDim()	
+
+	print i,j,k,l
+
+	return ret
+
+nX = 10
+nY = 10
+
+lattice, network = IsingSolve(nX,nY,0,-0.4)
+
+data = np.zeros((nX,nY))
+
+for i in range(nX):
+	for j in range(nY):
+		if i==0 and j==0:
+			data[i,j] = 1.0
+		else:
+			corr = correlator(lattice, network, i, j, 0, 0)
+			corr /= np.sum(corr)
+			data[i,j] = corr[0][0]+corr[1][1]-corr[0][1]-corr[1][0]
 
 
+import matplotlib.pyplot as plt
 
-#print IsingSolve(20,20,0,0.5)/400,exactIsing(0.5)
-corr = IsingSolve(50,50,0,0.5)
-
-print(corr/np.sum(corr))
-
-#print cProfile.run('print IsingSolve(10,10,0,0.5)/100')
-
-exit()
-
-print(IsingSolve(7,7,4.0,0)/49,np.log(np.exp(4) + np.exp(-4)))
-
-for j in np.linspace(-1,1,num=10):
-	q = IsingSolve(10,10,0,j)/100
-	print(j,q,exactIsing(j))
+plt.imshow(np.log(np.abs(data)))
+plt.show()
 

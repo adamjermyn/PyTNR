@@ -1,9 +1,29 @@
 from tensor import Tensor
+from tensor import matrixToTensor, tensorToMatrix
+from utils import matrixProductLinearOperator, generalSVD
+from utils import tupleReplace
 import numpy as np
 
-def compress(link, eps=1e-4):
-	n1 = link.bucket1().node()
-	n2 = link.bucket2().node()
+def cutBond(u, v, n1, n2, ind1, ind2, link, sh1m, sh2m):
+	u = np.reshape(u,sh1m)
+	v = np.reshape(v,sh2m)
+
+	t1m = Tensor(u.shape,u)
+	t2m = Tensor(v.shape,v)
+
+	n1m = n1.modify(t1m, delBuckets=[ind1])
+	n2m = n2.modify(t2m, delBuckets=[ind2])
+
+	link.network().registerLinkCut(link)
+	link.setParent(link) # So it is unambiguously not top-level.
+	link.setCompressed()
+	link.update() # So it's up to date.
+
+	return link, n1m, n2m
+
+def compress(link, eps=1e-2):
+	n1 = link.bucket1().topNode()
+	n2 = link.bucket2().topNode()
 
 	t1 = n1.tensor()
 	t2 = n2.tensor()
@@ -11,21 +31,26 @@ def compress(link, eps=1e-4):
 	arr1 = t1.array()
 	arr2 = t2.array()
 
+	sh1 = list(arr1.shape)
+	sh2 = list(arr2.shape)
+
 	ind1 = n1.bucketIndex(link.bucket1())
 	ind2 = n2.bucketIndex(link.bucket2())
 
-	cont = t1.contract(ind1,t2,ind2)
-	arrN = cont.array()
-
-	sh1 = list(arr1.shape)
-	sh2 = list(arr2.shape)
+	shI = arr1.shape[ind1] # Must be the same as arr2.shape[ind2]
 
 	sh1m = sh1[:ind1] + sh1[ind1+1:]
 	sh2m = sh2[:ind2] + sh2[ind2+1:]
 
-	arrN = np.reshape(arrN,(np.product(sh1m),np.product(sh2m)))
+	if shI == 1: # Means we just cut the bond 
+		return cutBond(np.copy(arr1), np.copy(arr2), n1, n2, ind1, ind2, link, sh1m, sh2m) 
 
-	u, lam, v = np.linalg.svd(arrN,full_matrices=0)
+	arr11 = tensorToMatrix(t1, ind1, front=False)
+	arr22 = tensorToMatrix(t2, ind2, front=True)
+
+	opN = matrixProductLinearOperator(arr11, arr22)
+
+	u, lam, v = generalSVD(opN, bondDimension=min(sh1[ind1], min(opN.shape)-1))
 
 	p = lam**2
 	p /= np.sum(p)
@@ -34,46 +59,30 @@ def compress(link, eps=1e-4):
 	ind = np.searchsorted(cp, eps, side='left')
 	ind = len(cp) - ind
 
-	if ind == len(cp):
+	if ind == len(cp): 	# Means we won't actually compress it
 		link.setCompressed()
-		return link
+		return link, n1, n2
+	else:				# Means we will compress it
+		u = np.transpose(u)
 
-	u = np.transpose(u)
+		lam = lam[:ind]
+		u = u[:ind,:]
+		v = v[:ind,:]
 
-	lam = lam[:ind]
-	u = u[:ind,:]
-	v = v[:ind,:]
+		u *= np.sqrt(lam[:,np.newaxis])
+		v *= np.sqrt(lam[:,np.newaxis])
 
-	u *= np.sqrt(lam[:,np.newaxis])
-	v *= np.sqrt(lam[:,np.newaxis])
+		if ind > 1:
+			t1m = matrixToTensor(u, tupleReplace(arr1.shape, ind1, ind), ind1, front=True)
+			t2m = matrixToTensor(v, tupleReplace(arr2.shape, ind2, ind), ind2, front=True)
 
-	u = np.reshape(u,[ind] + sh1m)
-	v = np.reshape(v,[ind] + sh2m)
+			n1m = n1.modify(t1m, repBuckets=[ind1])
+			n2m = n2.modify(t2m, repBuckets=[ind2])
 
-	perm1 = range(len(arr1.shape))
-	perm1 = perm1[1:]
-	perm1.insert(ind1,0)
-	perm2 = range(len(arr2.shape))
-	perm2 = perm2[1:]
-	perm2.insert(ind2,0)
+			newLink = n1m.addLink(n2m, ind1, ind2, compressed=True, children=[link])
 
-	u = np.transpose(u,axes=perm1)
-	v = np.transpose(v,axes=perm2)
-
-	t1m = Tensor(u.shape,u)
-	t2m = Tensor(v.shape,v)
-
-	n1m = n1.modify(t1m, preserveCompressed=True)
-	n2m = n2.modify(t2m, preserveCompressed=True)
-	
-	newLink = n1m.findLink(n2m)
-	newLink.setCompressed()
-
-	# Remove bad Link. This will actually need to propagate through all children of n1 and n2
-	# once the rest of the link inheritance code is written.
-	badLink = n1m.findLink(n2)
-	badLink.delete()
-	badLink = n2m.findLink(n1)
-	badLink.delete()
+		else:	# Means we're just cutting the bond
+			return cutBond(u, v, n1, n2, ind1, ind2, link, sh1m, sh2m)
 
 	return newLink, n1m, n2m
+

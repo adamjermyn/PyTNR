@@ -3,10 +3,10 @@ import numpy as np
 from compress import compress
 
 def mergeLinks(n1, n2, compressLink=False):
-	c = n1.connectedHigh()
-
-	if n2 not in c:
-		raise ValueError
+	assert n1 in n2.connectedHigh()
+	assert n2 in n1.connectedHigh()
+	assert n1 in n1.network().topLevelNodes()
+	assert n2 in n2.network().topLevelNodes()
 
 	links = n1.linksConnecting(n2)
 
@@ -14,7 +14,7 @@ def mergeLinks(n1, n2, compressLink=False):
 	indices2 = []
 
 	for link in links:
-		if link.bucket1().node() == n1:
+		if link.bucket1().topNode() == n1:
 			indices1.append(n1.bucketIndex(link.bucket1()))
 			indices2.append(n2.bucketIndex(link.bucket2()))
 		else:
@@ -36,8 +36,8 @@ def mergeLinks(n1, n2, compressLink=False):
 	arr1m = np.transpose(arr1, axes=perm1)
 	arr2m = np.transpose(arr2, axes=perm2)
 
-	arr1m = np.reshape(arr1m, list(arr1m.shape[:m1]) + [np.product([arr1m.shape[i] for i in indices1])] + list(arr1m.shape[m1+len(indices1):]))
-	arr2m = np.reshape(arr2m, list(arr2m.shape[:m2]) + [np.product([arr2m.shape[i] for i in indices2])] + list(arr2m.shape[m2+len(indices2):]))
+	arr1m = np.reshape(arr1m, list(arr1m.shape[:m1]) + [np.product([arr1.shape[i] for i in indices1])] + list(arr1m.shape[m1+len(indices1):]))
+	arr2m = np.reshape(arr2m, list(arr2m.shape[:m2]) + [np.product([arr2.shape[i] for i in indices2])] + list(arr2m.shape[m2+len(indices2):]))
 
 	# Now the new index is where m1/m2 were.
 
@@ -50,21 +50,13 @@ def mergeLinks(n1, n2, compressLink=False):
 	ind2m = list(indices2)
 	ind2m.remove(m2)
 
-	n1m = n1.modify(t1m, preserveCompressed=False, delBuckets=ind1m)
-	n2m = n2.modify(t2m, preserveCompressed=False, delBuckets=ind2m)
+	n1m = n1.modify(t1m, delBuckets=ind1m, repBuckets=[m1])
+	n2m = n2.modify(t2m, delBuckets=ind2m, repBuckets=[m2])
 
-	# Add back in the link between n1m and n2m
-	n1m.addLink(n2m, m1, m2, compressed = False)
-
-	# Remove bad Link
-	badLink = n1m.findLink(n2)
-	badLink.delete()
-	badLink = n2m.findLink(n1)
-	badLink.delete()
+	n1m.addLink(n2m, m1, m2, compressed = False, children=links)
 
 	if compressLink:
-		links = n1m.findLink(n2m)
-		link = links[0]
+		link = n1m.findLink(n2m)
 		_, n1m, n2m = compress(link)
 
 	return n1m, n2m
