@@ -42,9 +42,6 @@ def compress(link, eps=1e-2):
 
 	shI = arr1.shape[ind1] # Must be the same as arr2.shape[ind2]
 
-	sh1m = sh1[:ind1] + sh1[ind1+1:]
-	sh2m = sh2[:ind2] + sh2[ind2+1:]
-
 	if shI == 1: # Means we just cut the bond 
 		return cutBond(arr1, arr2, n1, n2, ind1, ind2, link) 
 
@@ -63,7 +60,8 @@ def compress(link, eps=1e-2):
 		# we leave it untouched to avoid incurring floating point error.
 		link.setCompressed()
 		return link, n1, n2
-	else:				# Means we will compress it
+	else:
+		# Means that we will either compress or cut the Link.
 		u = np.transpose(u)
 
 		lam = lam[:ind]
@@ -81,9 +79,7 @@ def compress(link, eps=1e-2):
 			n2m = n2.modify(t2m, repBuckets=[ind2])
 
 			newLink = n1m.addLink(n2m, ind1, ind2, compressed=True, children=[link])
-
+			return newLink, n1m, n2m
 		else:	# Means we're just cutting the bond
 			return cutBond(u, v, n1, n2, ind1, ind2, link)
-
-	return newLink, n1m, n2m
 
