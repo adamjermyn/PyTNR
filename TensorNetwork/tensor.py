@@ -8,6 +8,17 @@ tempdir = tempfile.TemporaryDirectory()
 executor = ThreadPoolExecutor(max_workers=10)
 maxSize = 500000
 
+def write(fname, arr):
+	fi = open(fname,'wb+')
+	np.save(fi,arr,allow_pickle=False)
+	fi.close()
+
+def read(fname):
+	fi = open(fname,'rb')
+	arr = np.load(fi)
+	fi.close()
+	return arr	
+
 class Tensor:
 	'''
 	A tensor is a multilinear function mapping a series of vectors (also known as indices) to a scalar. 
@@ -30,13 +41,7 @@ class Tensor:
 		else:
 			handle, self.__array = tempfile.mkstemp(dir=tempdir.name)
 			os.close(handle)
-
-			def write():
-				fi = open(self.__array,'wb+')
-				np.save(fi,tens/m,allow_pickle=False)
-				fi.close()
-
-			self.__writeFuture = executor.submit(write)
+			self.__writeFuture = executor.submit(write,self.__array, tens/m)
 
 	def shape(self):
 		'''
@@ -58,15 +63,8 @@ class Tensor:
 		if self.__size < maxSize:
 			return np.copy(self.__array)
 		else:
-			def read():			
-				fi = open(self.__array,'rb')
-				arr = np.load(fi)
-				fi.close()
-				return arr
-
 			self.__writeFuture.result()
-
-			return read()
+			return read(self.__array)
 
 	def logScalar(self):
 		'''
