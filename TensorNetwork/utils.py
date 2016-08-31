@@ -10,9 +10,16 @@ from scipy.sparse.linalg import svds
 def tupleReplace(tpl, i, j):
 	'''
 	Returns a tuple with element i of tpl replaced with the quantity j.
+	If j is None, just removes element i.
 	'''
+	assert i >= 0
+	assert i < len(tpl)
+
 	tpl = list(tpl)
-	tpl = tpl[:i] + [j] + tpl[i+1:]
+	if j is not None:
+		tpl = tpl[:i] + [j] + tpl[i+1:]
+	else:
+		tpl = tpl[:i] + tpl[i+1:]
 	return tuple(tpl)
 
 
@@ -147,13 +154,29 @@ def generalSVD(matrix, bondDimension=np.inf):
 	all singular values of a matrix (it can retrieve at most one fewer). This is
 	just an implementation detail, and only arises in rare cases, so we just revert
 	to the full SVD solve.
+
+	This method returns:
+		u 	-	A matrix of the left singular vectors
+		lam	-	An array of the singular values
+		v 	-	An array of the right singular vectors
+		p 	-	An array whose entries reflect the portion of the total weight in each
+				singular value.
+		cp 	-	An array whose entries reflect the cumulative portion of the total weight
+				associated with all singular values past a given index.
+
+	As a result of the above definitions, p and cp are both sorted in descending order.
 	'''
 
 	if bondDimension > 0 and bondDimension < matrix.shape[0] and bondDimension < matrix.shape[1]:
 		# Required so sparse bond is properly represented
-		return bigSVD(matrix, bondDimension)
+		u, lam, v = bigSVD(matrix, bondDimension)
 	else:
-		return np.linalg.svd(matrix, full_matrices=0)
+		u, lam, v = np.linalg.svd(matrix, full_matrices=0)
 
+	p = lam**2
+	p /= np.sum(p)
+	cp = np.cumsum(p[::-1])
+
+	return u, lam, v, p, cp
 
 

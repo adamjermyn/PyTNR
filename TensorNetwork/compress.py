@@ -13,8 +13,11 @@ def cutBond(u, v, ind1, ind2, link):
 	u = np.reshape(u,sh1m)
 	v = np.reshape(v,sh2m)
 
-	t1m = Tensor(u.shape,u)
-	t2m = Tensor(v.shape,v)
+	u = np.reshape(u, sh1m)
+	v = np.reshape(v, sh2m)
+
+	t1m = Tensor(u.shape, u)
+	t2m = Tensor(v.shape, v)
 
 	n1m = n1.modify(t1m, delBuckets=[ind1])
 	n2m = n2.modify(t2m, delBuckets=[ind2])
@@ -45,19 +48,18 @@ def compress(link, eps=1e-2):
 
 	opN = matrixProductLinearOperator(arr11, arr22)
 
-	u, lam, v = generalSVD(opN, bondDimension=min(sh1[ind1], min(opN.shape)-1))
-
-	p = lam**2
-	p /= np.sum(p)
-	cp = np.cumsum(p[::-1])
+	u, lam, v, _, cp = generalSVD(opN, bondDimension=min(sh1[ind1], min(opN.shape)-1))
 
 	ind = np.searchsorted(cp, eps, side='left')
 	ind = len(cp) - ind
 
-	if ind == len(cp): 	# Means we won't actually compress it
+	if ind == len(cp): 
+		# This means that we can't compress this bond, and so
+		# we leave it untouched to avoid incurring floating point error.
 		link.setCompressed()
 		return link, n1, n2
-	else:				# Means we will compress it
+	else:
+		# Means that we will either compress or cut the Link.
 		u = np.transpose(u)
 
 		lam = lam[:ind]
@@ -75,9 +77,7 @@ def compress(link, eps=1e-2):
 			n2m = n2.modify(t2m, repBuckets=[ind2])
 
 			newLink = n1m.addLink(n2m, ind1, ind2, compressed=True, children=[link])
-
+			return newLink, n1m, n2m
 		else:	# Means we're just cutting the bond
 			return cutBond(u, v, ind1, ind2, link)
-
-	return newLink, n1m, n2m
 
