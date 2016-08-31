@@ -10,9 +10,6 @@ def cutBond(u, v, ind1, ind2, link):
 	sh1m = tupleReplace(sh1, ind1, None)
 	sh2m = tupleReplace(sh2, ind2, None)
 
-	u = np.reshape(u,sh1m)
-	v = np.reshape(v,sh2m)
-
 	u = np.reshape(u, sh1m)
 	v = np.reshape(v, sh2m)
 
@@ -63,11 +60,11 @@ def compress(link, eps=1e-2):
 		u = np.transpose(u)
 
 		lam = lam[:ind]
-		u = u[:ind,:]
-		v = v[:ind,:]
+		u = u[:ind, :]
+		v = v[:ind, :]
 
-		u *= np.sqrt(lam[:,np.newaxis])
-		v *= np.sqrt(lam[:,np.newaxis])
+		u *= np.sqrt(lam[:, np.newaxis])
+		v *= np.sqrt(lam[:, np.newaxis])
 
 		if ind > 1:
 			t1m = matrixToTensor(u, tupleReplace(arr1.shape, ind1, ind), ind1, front=True)
