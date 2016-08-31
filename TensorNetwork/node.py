@@ -308,13 +308,14 @@ class Node:
 					ind1 = self.bucketIndex(otherBucket)
 					axes0.append(ind0)
 					axes1.append(ind1)
-
-		newT = self.__tensor.trace(axes0, axes1)
-		n = self.modify(newT, delBuckets=(axes0 + axes1))
-		for l in links:
-			self.__network.deregisterLinkTop(l)
-
-		return n
+		if len(axes0) > 0:
+			newT = self.__tensor.trace(axes0, axes1)
+			n = self.modify(newT, delBuckets=(axes0 + axes1))
+			for l in links:
+				self.__network.deregisterLinkTop(l)
+			return n
+		else:
+			return self
 
 	def linkMerge(self, compressL=False, eps=1e-4):
 		assert self.__parent is None
