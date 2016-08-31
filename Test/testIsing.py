@@ -79,7 +79,7 @@ def exactIsing(J):
 
 
 #print IsingSolve(20,20,0,0.5)/400,exactIsing(0.5)
-corr = IsingSolve(50,50,0,0.5)
+corr = IsingSolve(21,21,0,0.5)
 
 print(corr/np.sum(corr))
 
