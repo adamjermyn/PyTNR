@@ -34,12 +34,13 @@ class Link:
 	lists of their buckets. They are also added to the link registry of their TensorNetwork.
 	'''
 
-	def __init__(self, b1, b2, network, compressed=False, reduction=0.75, children=None):
+	def __init__(self, b1, b2, network, compressed=False, optimized=False, reduction=0.75, children=None):
 		if children is None:
 			children = []
 		self.__b1 = b1
 		self.__b2 = b2
 		self.__compressed = compressed
+		self.__optimized = optimized
 		self.__network = network
 		self.__reduction = reduction
 		self.__mergeEntropy = None
@@ -81,6 +82,12 @@ class Link:
 
 	def setCompressed(self):
 		self.__compressed = True
+
+	def optimized(self):
+		return self.__optimized
+
+	def setOptimized(self):
+		self.__optimized = True
 
 	def mergeEntropy(self):
 		if self.__mergeEntropy is None:
