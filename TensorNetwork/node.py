@@ -95,10 +95,27 @@ class Node:
 		return self.__parent
 
 	def topParent(self):
-		if self.parent() is None:
+		if self.__parent is None:
 			return self
 		else:
 			return self.parent().topParent()
+
+	def bottomChild(self):
+		if len(self.__children) == 0:
+			return self
+		else:
+			return self.__children[0]
+
+	def sibling(self):
+		if self.__parent is None:
+			return None
+		else:
+			sibs = self.__parent.children()
+			if len(sibs) == 2:
+				if sibs[0] == self:
+					return sibs[1]
+				else:
+					return sibs[0]
 
 	def allNChildren(self):
 		ch = set(self.__children)
@@ -237,7 +254,7 @@ class Node:
 		for c in self.children():
 			c.setParent(None)
 
-	def addLink(self, other, selfBucketIndex, otherBucketIndex, compressed=False, children=None):
+	def addLink(self, other, selfBucketIndex, otherBucketIndex, optimized=False, compressed=False, children=None):
 		assert self in self.__network.topLevelNodes()
 		assert other in self.__network.topLevelNodes()
 		assert children is None or len(self.children()) == len(other.children())
@@ -254,7 +271,7 @@ class Node:
 		if otherBucket.linked():
 			raise ValueError
 
-		l = Link(selfBucket,otherBucket,self.__network,compressed=compressed,children=children)
+		l = Link(selfBucket,otherBucket,self.__network,compressed=compressed,optimized=optimized,children=children)
 
 		selfBucket.setLink(l)
 		otherBucket.setLink(l)
@@ -335,7 +352,7 @@ class Node:
 			n = todo.pop()
 			done.add(n)
 
-			n1, n2 = mergeLinks(n1, n, compressLink = compressL)
+			n1, n2, _ = mergeLinks(n1, n, compressLink = compressL)
 
 			assert len(n1.children()) == len(n2.children())
 

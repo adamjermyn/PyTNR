@@ -60,16 +60,25 @@ def compress(link, optimizerArray=None, optimizerBuckets=None, eps=1e-2):
 		inds2 = {}	# Stores the indices in arr2 as values
 		inds  = {}	# Stores the indices in optimizerArray as values
 
+		print(len(optimizerBuckets))
+
 		for i,b in enumerate(optimizerBuckets):
 			if b in n1.buckets():
 				j = n1.bucketIndex(b)
 				inds1[i] = j
 				inds[(1,j)] = i
+				print(1,j,i)
+		for i,b in enumerate(optimizerBuckets):
 			if b in n2.buckets():
 				j = n2.bucketIndex(b)
 				inds2[i] = j
-				inds[(1,j)] = i
+				inds[(2,j)] = i
+				print(2,j,i)
 
+		print(len(inds1),len(inds2),len(n1.buckets()),len(n2.buckets()))
+		print(len(inds))
+		print(inds)
+		print(ind1,ind2)
 		# Now we put all indices corresponding to arr1 at the front,
 		# and all indices corresponding to arr2 at the back.
 		perm = []
@@ -97,6 +106,8 @@ def compress(link, optimizerArray=None, optimizerBuckets=None, eps=1e-2):
 		# This means that we can't compress this bond, and so
 		# we leave it untouched to avoid incurring floating point error.
 		link.setCompressed()
+		if optimizerArray is not None:
+			link.setOptimized()
 		return link, n1, n2
 	else:
 		# Means that we will either compress or cut the Link.
@@ -116,7 +127,9 @@ def compress(link, optimizerArray=None, optimizerBuckets=None, eps=1e-2):
 			n1m = n1.modify(t1m, repBuckets=[ind1])
 			n2m = n2.modify(t2m, repBuckets=[ind2])
 
-			newLink = n1m.addLink(n2m, ind1, ind2, compressed=True, children=[link])
+			optimized = (optimizerArray is not None)
+
+			newLink = n1m.addLink(n2m, ind1, ind2, compressed=True, optimized=optimized, children=[link])
 			return newLink, n1m, n2m
 		else:	# Means we're just cutting the bond
 			return cutBond(u, v, n1, n2, ind1, ind2, link)
