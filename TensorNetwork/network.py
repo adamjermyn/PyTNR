@@ -79,6 +79,23 @@ class Network:
 		sizeGetter = lambda n: n.tensor().size()
 		return max(self.__topLevelNodes, key=sizeGetter)
 
+	def topLevelRepresentation(self):
+		'''
+		Returns the tensor product of all top-level Tensors along with
+		a list of corresponding Buckets in the same order as the indices.
+		'''
+		arr = np.array([1.])
+		logS = 0
+		bucketList = []
+
+		for n in self.__topLevelNodes:
+			arr = np.tensordot(arr, n.tensor().array(), axes=0)
+			logS += n.logScalar()
+			for b in n.buckets():
+				bucketList.append(b)
+
+		return arr[0], logS, bucketList
+
 	def registerLink(self, link):
 		'''
 		Registers a new Link in the Network.

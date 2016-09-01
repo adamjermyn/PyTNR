@@ -82,7 +82,7 @@ class Link:
 		t2 = n2.tensor()
 
 		sh1 = t1.shape()
-		sh2 = t1.shape()
+		sh2 = t2.shape()
 
 		return n1, n2, t1, t2, sh1, sh2
 

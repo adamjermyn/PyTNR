@@ -6,7 +6,7 @@ import numpy as np
 from scipy.integrate import quad 
 import cProfile 
  
-def IsingSolve(nX, nY, h, J): 
+def IsingModel(nX, nY, h, J): 
 	network = Network() 
  
 	# Place to store the tensors 
