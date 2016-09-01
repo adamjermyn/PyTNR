@@ -52,6 +52,12 @@ def IsingSolve(nX, nY, h, J):
 
 	print(list(network.topLevelNodes())[0].logScalar()/(nX*nY))
 	print(exactIsing(J))
+
+	network.optimize(mergeL=True, compressL=True, eps=1e-4)
+
+	print(list(network.topLevelNodes())[0].logScalar()/(nX*nY))
+	print(exactIsing(J))
+
 	exit()
 
 	nn, arr, bucketList = network.view(set([lattice[0][0],lattice[0][1],lattice[0][2]]))
@@ -79,7 +85,7 @@ def exactIsing(J):
 
 
 #print IsingSolve(20,20,0,0.5)/400,exactIsing(0.5)
-corr = IsingSolve(21,21,0,0.5)
+corr = IsingSolve(10,10,0,0.5)
 
 print(corr/np.sum(corr))
 
