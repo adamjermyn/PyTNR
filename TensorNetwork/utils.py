@@ -184,10 +184,12 @@ def generalSVD(matrix, bondDimension=np.inf, optimizerMatrix=None):
 	else:
 		ue, lame, ve = np.linalg.svd(optimizerMatrix, full_matrices=0)
 
-		lams = np.sqrt(lam)
+		lams = np.sqrt(lame)
 
-		mmod = np.einsum('i,ij,jk,kl,l->il', lams, v, matrix, u, lams)
+		print(lams.shape, ve.shape, matrix.shape, ue.shape, lams.shape)
+		mmod = lams*np.dot(ve,np.dot(matrix,ue))*lams
 
+		print(mmod.shape)
 		um, lamm, vm = np.linalg.svd(mmod, full_matrices=0)
 
 		lamms = np.sqrt(lamm)
