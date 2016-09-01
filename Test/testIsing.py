@@ -16,9 +16,9 @@ for j in np.linspace(-1,1,num=10):
 	q /= (nX*nY)
 	print(j,q,exactIsing2D(j))
 
-nX = 10
-nY = 10
-nZ = 10
+nX = 8
+nY = 8
+nZ = 8
 
 network, lattice=  IsingModel3D(nX, nY, nZ, 0.5, 0.5)
 network.contract(mergeL=True, compressL=True, eps=1e-4)
