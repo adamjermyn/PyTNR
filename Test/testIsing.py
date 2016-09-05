@@ -44,9 +44,9 @@ print('lnZ (calculated)=',q)
 
 print('Testing 3D Regular Ising Model - J=0.5,h=0.5:')
 
-nX = 8
-nY = 8
-nZ = 8
+nX = 6
+nY = 6
+nZ = 6
 
 network, lattice=  IsingModel3D(nX, nY, nZ, 0.5, 0.5)
 network.contract(mergeL=True, compressL=True, eps=1e-4)
