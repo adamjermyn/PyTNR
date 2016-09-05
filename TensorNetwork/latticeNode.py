@@ -9,40 +9,40 @@ class latticeNode(Node):
 	def __init__(self, length, network):
 		tens = Tensor(tuple(),np.array(1))
 		Node.__init__(self,tens,network,Buckets=[])
-		self.__length = length
-		self.__dim = 0
+		self._length = length
+		self._dim = 0
 
 	def dim(self):
-		return self.__dim
+		return self._dim
 
 	def addDim(self):
 		# TODO: Should probably implement self-factoring so that memory usage doesn't become an issue.
 
-		self.__dim += 1
+		self._dim += 1
 
-		arr = kroneckerDelta(self.__dim, self.__length)
+		arr = kroneckerDelta(self._dim, self._length)
 		tens = Tensor(arr.shape, arr)
-		self._Node__tensor = tens
+		self._tensor = tens
 
-		if self._Node__parent is not None:
-			self._Node__parent.delete()
+		if self._parent is not None:
+			self._parent.delete()
 
-		self._Node__buckets.append(Bucket(self._Node__network))
-		self._Node__buckets[-1].addNode(self)
+		self._buckets.append(Bucket(self._network))
+		self._buckets[-1].addNode(self)
 
 	def removeDim(self):
-		assert self.__dim > 0
-		self.__dim -= 1
+		assert self._dim > 0
+		self._dim -= 1
 
-		arr = kroneckerDelta(self.__dim, self.__length)
+		arr = kroneckerDelta(self._dim, self._length)
 		tens = Tensor(arr.shape, arr)
-		self._Node__tensor = tens
+		self._tensor = tens
 
-		if self._Node__parent is not None:
-			self._Node__parent.delete()
+		if self._parent is not None:
+			self._parent.delete()
 
-		self._Node__buckets[-1].removeNode()
-		self._Node__buckets = self._Node__buckets[:-1]
+		self._buckets[-1].removeNode()
+		self._buckets = self._buckets[:-1]
 
 
 

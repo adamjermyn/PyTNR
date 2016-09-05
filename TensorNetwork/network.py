@@ -17,15 +17,15 @@ class Network:
 		'''
 		Method for initializing an empty Network.
 		'''
-		self.__nodes = set()
-		self.__topLevelNodes = set()
-		self.__bottomLevelNodes = set()
-		self.__allLinks = set()
-		self.__topLevelLinks = set()
-		self.__cutLinks = set()
-		self.__sortedLinks = PriorityQueue()
-		self.__idDict = {}
-		self.__idCounter = 0
+		self._nodes = set()
+		self._topLevelNodes = set()
+		self._bottomLevelNodes = set()
+		self._allLinks = set()
+		self._topLevelLinks = set()
+		self._cutLinks = set()
+		self._sortedLinks = PriorityQueue()
+		self._idDict = {}
+		self._idCounter = 0
 
 	def __str__(self):
 		'''
@@ -33,7 +33,7 @@ class Network:
 		The are no guarantees of the order in which this is done.
 		'''
 		s = 'Network\n'
-		for n in self.__topLevelNodes:
+		for n in self._topLevelNodes:
 			s = s + str(n) + '\n'
 		return s
 
@@ -41,55 +41,72 @@ class Network:
 		'''
 		Returns the sum of the sizes of all Tensors in the Network.
 		'''
-		return sum(n.tensor().size() for n in self.__nodes)
+		return sum(n.tensor().size() for n in self._nodes)
 
 	def topLevelSize(self):
 		'''
 		Returns the sum of the sizes of all Tensors belonging to top-level Nodes in the Network.
 		'''
-		return sum(n.tensor().size() for n in self.__topLevelNodes)
+		return sum(n.tensor().size() for n in self._topLevelNodes)
 
 	def nodes(self):
 		'''
 		Returns a copy of the set of all Nodes in the Network.
 		'''
-		return set(self.__nodes)
+		return set(self._nodes)
 
 	def topLevelNodes(self):
 		'''
 		Returns a copy of the set of all top-level Nodes in the Network.
 		'''
-		return set(self.__topLevelNodes)
+		return set(self._topLevelNodes)
 
 	def topLevelLinks(self):
 		'''
 		Returns a copy of the set of all top-level Links in the Network.
 		'''
-		return set(self.__topLevelLinks)
+		return set(self._topLevelLinks)
 
 	def largestTensor(self):
 		'''
 		Returns the Node containing the largest Tensor in the Network.
 		'''
 		sizeGetter = lambda n: n.tensor().size()
-		return max(self.__nodes, key=sizeGetter)
+		return max(self._nodes, key=sizeGetter)
 
 	def largestTopLevelTensor(self):
 		'''
 		Returns the top-level Node with the largest Tensor in the Network.
 		'''
 		sizeGetter = lambda n: n.tensor().size()
-		return max(self.__topLevelNodes, key=sizeGetter)
+		return max(self._topLevelNodes, key=sizeGetter)
+
+	def topLevelRepresentation(self):
+		'''
+		Returns the tensor product of all top-level Tensors along with
+		a list of corresponding Buckets in the same order as the indices.
+		'''
+		arr = np.array([1.])
+		logS = 0
+		bucketList = []
+
+		for n in self._topLevelNodes:
+			arr = np.tensordot(arr, n.tensor().array(), axes=0)
+			logS += n.logScalar()
+			for b in n.buckets():
+				bucketList.append(b)
+
+		return arr[0], logS, bucketList
 
 	def registerLink(self, link):
 		'''
 		Registers a new Link in the Network.
 		This should only be called when a Link is created.
 		'''
-		assert link not in self.__allLinks
-		assert link not in self.__topLevelLinks
+		assert link not in self._allLinks
+		assert link not in self._topLevelLinks
 
-		self.__allLinks.add(link)
+		self._allLinks.add(link)
 		self.registerLinkTop(link)
 
 	def deregisterLink(self, link):
@@ -97,15 +114,15 @@ class Network:
 		De-registers a Link from the Network.
 		This should only be used when deleting a Link.
 		'''
-		assert link in self.__allLinks
-		assert link in self.__topLevelLinks or link in self.__cutLinks
+		assert link in self._allLinks
+		assert link in self._topLevelLinks or link in self._cutLinks
 
-		self.__allLinks.remove(link)
-		if link in self.__topLevelLinks:
-			self.__topLevelLinks.remove(link)
+		self._allLinks.remove(link)
+		if link in self._topLevelLinks:
+			self._topLevelLinks.remove(link)
 		else:
-			self.__cutLinks.remove(link)
-		self.__sortedLinks.remove(link)
+			self._cutLinks.remove(link)
+		self._sortedLinks.remove(link)
 
 	def registerLinkTop(self, link):
 		'''
@@ -114,37 +131,38 @@ class Network:
 		It is also called when a Link is deleted (so that the children of that Link
 		may become top-level).
 		'''
-		assert link not in self.__topLevelLinks
-		assert link.bucket1().topNode() in self.__topLevelNodes
-		assert link.bucket2().topNode() in self.__topLevelNodes
+		assert link not in self._topLevelLinks
+		assert link.bucket1().topNode() in self._topLevelNodes
+		assert link.bucket2().topNode() in self._topLevelNodes
 
-		self.__topLevelLinks.add(link)
-		self.__sortedLinks.add(link, link.mergeEntropy())
+		self._topLevelLinks.add(link)
+		self._sortedLinks.add(link, link.mergeEntropy())
 
 	def deregisterLinkTop(self, link):
 		'''
 		De-registers a Link in the Network from being top-level.
-		This should be called only when a Link is traced out,
-		compressed, or merged with another Link.
+		This should be called only when a Link is compressed, deleted,
+		or merged with another Link.
 		'''
-		assert link in self.__allLinks
-		assert link in self.__topLevelLinks
+		assert link in self._allLinks
+		assert link in self._topLevelLinks
 
-		self.__topLevelLinks.remove(link)
-		self.__sortedLinks.remove(link)
+		self._topLevelLinks.remove(link)
+		self._sortedLinks.remove(link)
 
 
 	def registerLinkCut(self, link):
 		'''
 		Registers a link as having been cut and de-registers is from the top-level.
-		This should only be called when a Link is cut.
-		This occurs when, upon compression, the Link is reduced to bond dimension 1.
+		This should only be called when a Link is cut or traced.
+		This occurs when, upon compression, the Link is reduced to bond dimension 1
+		or when a Link leads from a Tensor to itself.
 		'''
-		assert link not in self.__cutLinks
-		assert link in self.__topLevelLinks
-		assert link in self.__allLinks
+		assert link not in self._cutLinks
+		assert link in self._topLevelLinks
+		assert link in self._allLinks
 
-		self.__cutLinks.add(link)
+		self._cutLinks.add(link)
 		self.deregisterLinkTop(link)
 
 	def deregisterLinkCut(self, link):
@@ -155,11 +173,11 @@ class Network:
 		active once more (the compression resulting in it being cut has been
 		undone).
 		'''
-		assert link in self.__cutLinks
-		assert link in self.__allLinks
-		assert link not in self.__topLevelLinks
+		assert link in self._cutLinks
+		assert link in self._allLinks
+		assert link not in self._topLevelLinks
 
-		self.__cutLinks.remove(link)
+		self._cutLinks.remove(link)
 		self.registerLinkTop(link)
 
 	def updateSortedLinkList(self, link):
@@ -167,28 +185,28 @@ class Network:
 		Updates the position of the given Link in the priority queue of Links
 		to be contracted.
 		'''
-		self.__sortedLinks.remove(link)
-		self.__sortedLinks.add(link, link.mergeEntropy())
+		self._sortedLinks.remove(link)
+		self._sortedLinks.add(link, link.mergeEntropy())
 
 	def registerNode(self, node):
 		'''
 		Registers a new Node in the Network.
 		This should only be called when registering a new Node.
 		'''
-		assert node not in self.__nodes
-		assert node not in self.__topLevelNodes
-		assert len(set(node.children()).intersection(self.__topLevelNodes)) == len(node.children())
+		assert node not in self._nodes
+		assert node not in self._topLevelNodes
+		assert len(set(node.children()).intersection(self._topLevelNodes)) == len(node.children())
 
-		self.__nodes.add(node)
-		self.__topLevelNodes.add(node)
+		self._nodes.add(node)
+		self._topLevelNodes.add(node)
 		if len(node.children()) == 0:
-			self.__bottomLevelNodes.add(node)
+			self._bottomLevelNodes.add(node)
 
 		children = node.children()
 		for c in children:
-			self.__topLevelNodes.remove(c)
+			self._topLevelNodes.remove(c)
 
-		assert len(set(node.children()).intersection(self.__topLevelNodes)) == 0
+		assert len(set(node.children()).intersection(self._topLevelNodes)) == 0
 
 
 	def deregisterNode(self, node):
@@ -200,12 +218,12 @@ class Network:
 		a Link.
 		'''
 
-		self.__nodes.remove(node)
-		self.__topLevelNodes.remove(node)
+		self._nodes.remove(node)
+		self._topLevelNodes.remove(node)
 
 		children = node.children()
 
-		self.__topLevelNodes.update(children)
+		self._topLevelNodes.update(children)
 
 		for b in node.buckets():
 			assert b.topNode() == node
@@ -219,8 +237,8 @@ class Network:
 		'''
 		Returns the next unused ID number in the Network.
 		'''
-		idd = self.__idCounter
-		self.__idCounter += 1
+		idd = self._idCounter
+		self._idCounter += 1
 		return idd
 
 
@@ -252,10 +270,16 @@ class Network:
 			eps		  -	The accuracy of the compression to perform.
 		'''
 
-		link = self.__sortedLinks.pop()
+		link = self._sortedLinks.pop()
+
+		assert link in self._topLevelLinks
 
 		n1 = link.bucket1().topNode()
 		n2 = link.bucket2().topNode()
+
+		assert n1 in self._topLevelNodes
+		assert n2 in self._topLevelNodes
+		assert n1 != n2
 
 		n1.merge(n2, mergeL=mergeL, compressL=compressL, eps=eps)
 
@@ -268,7 +292,7 @@ class Network:
 			eps			-	The accuracy of the compression to perform.
 		'''
 		done = set()
-		todo = set(self.__topLevelNodes)
+		todo = set(self._topLevelNodes)
 
 		while len(todo) > 0:
 			n = todo.pop()
@@ -292,8 +316,8 @@ class Network:
 		self.trace()
 
 		counter = 0
-		while self.__sortedLinks.length > 0:
-			self.merge(mergeL=True, compressL=True)
+		while self._sortedLinks.length > 0:
+			self.merge(mergeL=mergeL, compressL=compressL, eps=eps)
 
 			if counter%20 == 0:
 				t = self.largestTopLevelTensor()
@@ -301,7 +325,7 @@ class Network:
 			counter += 1
 
 	def optimize(self, mergeL=True, compressL=True, eps=1e-4):
-		todo = set(self.__bottomLevelNodes)
+		todo = set(self._bottomLevelNodes)
 		done = set()
 
 		while len(todo) > 0:
@@ -428,8 +452,8 @@ class Network:
 						if len(no.children()) == 1:
 							todo.add(no)
 
-		new1 = set(self.__nodes).difference(rejected)
-		new2 = set(self.__nodes).difference(rejected)
+		new1 = set(self._nodes).difference(rejected)
+		new2 = set(self._nodes).difference(rejected)
 
 		for n in new1:
 			if n.parent() in new1:

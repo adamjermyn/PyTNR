@@ -5,10 +5,27 @@ import numpy as np
 
 ### Initialize random arrays
 
-x = np.random.randn(6,6,6,6)
-y = np.random.randn(6,6,6,6)
-z = np.random.randn(6,6,6,6)
-p = np.random.randn(6,6,6,6)
+x = np.random.randn(2,2,2,2)
+y = np.random.randn(2,2,2,2)
+z = np.random.randn(2,2,2,2)
+p = np.random.randn(2,2,2,2)
+
+x = np.exp(x)
+y = np.exp(y)
+z = np.exp(z)
+p = np.exp(p)
+
+x = np.abs(x)
+y = np.abs(y)
+z = np.abs(z)
+p = np.abs(p)
+
+x = np.ones((2,2,2,2))
+y = np.ones((2,2,2,2))
+z = np.ones((2,2,2,2))
+p = np.ones((2,2,2,2))
+p[1,1,1,1] = 2.0
+z[1,1,0,1] = 2.0
 
 ### Compute final answer
 
@@ -40,21 +57,12 @@ z.addLink(p, 3, 3)
 
 ### Trace
 
-n.trace()
+n.contract(mergeL=True, compressL=True, eps=1e-10)
 
-### Merge tensors
+arrT, logS, buckets = n.topLevelRepresentation()
 
-while len(n.topLevelLinks()) > 0:
-	print 'merge'
-	n.merge()
+arrT *= np.exp(logS)
 
-	print 'compress'
-	n.compress()
-
-	print 'trace'
-	n.trace()
-
-a = n.topLevelNodes()
-
-print np.sum(np.abs(list(a)[0].tensor().array()-arr))/np.sum(np.abs(arr))
-print np.sum(np.abs(list(a)[0].tensor().array()-np.transpose(arr)))/np.sum(np.abs(arr))
+print('Error is the smaller of the following two:')
+print(np.sum(np.abs(arrT-arr))/np.sum(np.abs(arr)))
+print(np.sum(np.abs(arrT-np.transpose(arr)))/np.sum(np.abs(arr)))

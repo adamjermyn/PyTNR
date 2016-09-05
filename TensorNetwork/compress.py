@@ -4,9 +4,11 @@ from utils import matrixProductLinearOperator, generalSVD
 from utils import tupleReplace
 import numpy as np
 
-def cutBond(u, v, n1, n2, ind1, ind2, link):
-	sh1m = tupleReplace(n1.tensor().shape(), ind1, None)
-	sh2m = tupleReplace(n2.tensor().shape(), ind2, None)
+def cutBond(u, v, ind1, ind2, link):
+	n1, n2, _, _, sh1, sh2 = link.topContents()
+
+	sh1m = tupleReplace(sh1, ind1, None)
+	sh2m = tupleReplace(sh2, ind2, None)
 
 	u = np.reshape(u, sh1m)
 	v = np.reshape(v, sh2m)
@@ -20,30 +22,22 @@ def cutBond(u, v, n1, n2, ind1, ind2, link):
 	link.network().registerLinkCut(link)
 	link.setParent(link) # So it is unambiguously not top-level.
 	link.setCompressed()
-	link.update() # So it's up to date.
 
 	return link, n1m, n2m
 
 def compress(link, optimizerArray=None, optimizerBuckets=None, eps=1e-2):
-	n1 = link.bucket1().topNode()
-	n2 = link.bucket2().topNode()
-
-	t1 = n1.tensor()
-	t2 = n2.tensor()
+	n1, n2, t1, t2, sh1, sh2 = link.topContents()
 
 	arr1 = t1.array()
 	arr2 = t2.array()
 
-	sh1 = list(arr1.shape)
-	sh2 = list(arr2.shape)
-
 	ind1 = n1.bucketIndex(link.bucket1())
 	ind2 = n2.bucketIndex(link.bucket2())
 
-	shI = arr1.shape[ind1] # Must be the same as arr2.shape[ind2]
+	shI = sh1[ind1] # Must be the same as arr2.shape[ind2]
 
 	if shI == 1: # Means we just cut the bond 
-		return cutBond(arr1, arr2, n1, n2, ind1, ind2, link) 
+		return cutBond(arr1, arr2, ind1, ind2, link) 
 
 	arr11 = tensorToMatrix(t1, ind1, front=False)
 	arr22 = tensorToMatrix(t2, ind2, front=True)
@@ -114,11 +108,11 @@ def compress(link, optimizerArray=None, optimizerBuckets=None, eps=1e-2):
 		u = np.transpose(u)
 
 		lam = lam[:ind]
-		u = u[:ind,:]
-		v = v[:ind,:]
+		u = u[:ind, :]
+		v = v[:ind, :]
 
-		u *= np.sqrt(lam[:,np.newaxis])
-		v *= np.sqrt(lam[:,np.newaxis])
+		u *= np.sqrt(lam[:, np.newaxis])
+		v *= np.sqrt(lam[:, np.newaxis])
 
 		if ind > 1:
 			t1m = matrixToTensor(u, tupleReplace(arr1.shape, ind1, ind), ind1, front=True)
@@ -132,5 +126,5 @@ def compress(link, optimizerArray=None, optimizerBuckets=None, eps=1e-2):
 			newLink = n1m.addLink(n2m, ind1, ind2, compressed=True, optimized=optimized, children=[link])
 			return newLink, n1m, n2m
 		else:	# Means we're just cutting the bond
-			return cutBond(u, v, n1, n2, ind1, ind2, link)
+			return cutBond(u, v, ind1, ind2, link)
 

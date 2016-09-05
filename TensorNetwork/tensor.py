@@ -8,6 +8,17 @@ tempdir = tempfile.TemporaryDirectory()
 executor = ThreadPoolExecutor(max_workers=10)
 maxSize = 500000
 
+def write(fname, arr):
+	fi = open(fname,'wb+')
+	np.save(fi,arr,allow_pickle=False)
+	fi.close()
+
+def read(fname):
+	fi = open(fname,'rb')
+	arr = np.load(fi)
+	fi.close()
+	return arr	
+
 class Tensor:
 	'''
 	A tensor is a multilinear function mapping a series of vectors (also known as indices) to a scalar. 
@@ -16,57 +27,43 @@ class Tensor:
 	def __init__(self, shape, tens):
 		assert shape == tens.shape
 
-		self.__shape = shape
-		self.__size = tens.size
+		self._shape = shape
+		self._size = tens.size
 
 		# We normalize the Tensor by factoring out the log of the
 		# maximum-magnitude element.
 		m = np.max(np.abs(tens))
-		self.__logScalar = np.log(m)
+		self._logScalar = np.log(m)
 
-
-		if self.__size < maxSize:
-			self.__array = np.copy(tens/m)
+		if self._size < maxSize:
+			self._array = np.copy(tens/m)
 		else:
-			handle, self.__array = tempfile.mkstemp(dir=tempdir.name)
+			handle, self._array = tempfile.mkstemp(dir=tempdir.name)
 			os.close(handle)
-
-			def write():
-				fi = open(self.__array,'wb+')
-				np.save(fi,tens/m,allow_pickle=False)
-				fi.close()
-
-			self.__writeFuture = executor.submit(write)
+			self._writeFuture = executor.submit(write,self._array, tens/m)
 
 	def shape(self):
 		'''
 		Returns the shape of the Tensor.
 		'''
-		return tuple(self.__shape)
+		return tuple(self._shape)
 
 	def size(self):
 		'''
 		Returns the size of the Tensor (the number of elements stored)
 		'''
-		return self.__size
+		return self._size
 
 	def array(self):
 		'''
 		Returns the array underlying the Tensor.
 		Also handles any caching operations that are needed for large-memory Tensors.
 		'''
-		if self.__size < maxSize:
-			return np.copy(self.__array)
+		if self._size < maxSize:
+			return np.copy(self._array)
 		else:
-			def read():			
-				fi = open(self.__array,'rb')
-				arr = np.load(fi)
-				fi.close()
-				return arr
-
-			self.__writeFuture.result()
-
-			return read()
+			self._writeFuture.result()
+			return read(self._array)
 
 	def logScalar(self):
 		'''
@@ -74,7 +71,7 @@ class Tensor:
 		The exponential of this is multiplied by the Tensor's array to recover
 		the full Tensor array.
 		'''	
-		return self.__logScalar
+		return self._logScalar
 
 	def tostr(self):
 		return 'Tensor of shape '+str(self.shape())+'.'
@@ -100,9 +97,14 @@ class Tensor:
 		Elements of ind0 and ind1 must correspond, such that the same Link is
 		represented by indices at the same location in each list.
 
+		Elements of ind0 should not appear in ind1, and vice-versa.
+
 		Returns a Tensor containing the trace over all of the pairs of indices.
 		'''
 		arr = self.array()
+		ind0 = list(ind0)
+		ind1 = list(ind1)
+
 		for i in range(len(ind0)):
 			arr = np.trace(arr, axis1=ind0[i], axis2=ind1[i])
 			for j in range(len(ind0)):
