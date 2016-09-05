@@ -40,21 +40,11 @@ z.addLink(p, 3, 3)
 
 ### Trace
 
-n.trace()
+n.contract(mergeL=True, compressL=True, eps=1e-4)
 
-### Merge tensors
+arrT, logS, buckets = n.topLevelRepresentation()
+arrT *= np.exp(logS)
 
-while len(n.topLevelLinks()) > 0:
-	print 'merge'
-	n.merge()
-
-	print 'compress'
-	n.compress()
-
-	print 'trace'
-	n.trace()
-
-a = n.topLevelNodes()
-
-print np.sum(np.abs(list(a)[0].tensor().array()-arr))/np.sum(np.abs(arr))
-print np.sum(np.abs(list(a)[0].tensor().array()-np.transpose(arr)))/np.sum(np.abs(arr))
+print('Error is the smaller of the following two:')
+print(np.sum(np.abs(arrT-arr))/np.sum(np.abs(arr)))
+print(np.sum(np.abs(arrT-np.transpose(arr)))/np.sum(np.abs(arr)))

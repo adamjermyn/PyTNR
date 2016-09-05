@@ -114,21 +114,20 @@ class Link:
 		length = t1.shape()[n1.bucketIndex(self.__b1)]
 
 		if n1 == n2:
-			raise ValueError		# You should always trace out self-loops before examining entropy.
+			self.__mergeEntropy = t1.size()/(length**2) - t1.size()
+		else:
+			s1 = t1.size()
+			s2 = t2.size()
 
-		s1 = t1.size()
-		s2 = t2.size()
+			sN = s1*s2/length**2	# Estimate based on no merging of Links
 
-		sN = s1*s2/length**2	# Estimate based on no merging of Links
+			# Correction based on number of merging Links
+			commonNodes = set(n1.connectedHigh()).intersection(set(n2.connectedHigh()))
+			sN *= self.__reduction**len(commonNodes)
 
+			dS = sN - s1 - s2
 
-		# Correction based on number of merging Links
-		commonNodes = set(n1.connectedHigh()).intersection(set(n2.connectedHigh()))
-		sN *= self.__reduction**len(commonNodes)
-
-		dS = sN - s1 - s2
-
-		self.__mergeEntropy = dS
+			self.__mergeEntropy = dS
 
 	def update(self):
 		self.updateMergeEntropy()
