@@ -294,6 +294,8 @@ class Node:
 	def trace(self):
 		assert self in self.__network.topLevelNodes()
 
+		# Find all self-Links
+
 		axes0 = []
 		axes1 = []
 		links = []
@@ -310,11 +312,14 @@ class Node:
 					axes1.append(ind1)
 
 		# Avoid duplicates
+
 		for i in axes0:
 			if i in axes1:
 				ind = axes1.index(i)
 				axes1 = axes1[:ind] + axes1[ind+1:]
 				axes0 = axes0[:ind] + axes0[ind+1:]
+
+		# Trace
 
 		if len(axes0) > 0:
 			newT = self.__tensor.trace(axes0, axes1)
