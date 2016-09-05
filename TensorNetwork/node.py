@@ -345,7 +345,7 @@ class Node:
 			n = todo.pop()
 			done.add(n)
 
-			n1, n2 = mergeLinks(n1, n, compressLink = compressL)
+			n1, n2 = mergeLinks(n1, n, compressLink = compressL, eps=eps)
 
 			assert len(n1.children()) == len(n2.children())
 
@@ -358,6 +358,7 @@ class Node:
 		assert other in self.__network.topLevelNodes()
 		assert self in other.connectedHigh()
 		assert other in self.connectedHigh()
+		assert self != other
 
 		# Find all links between self and other, store their indices, and
 		# deregister them from the top level
@@ -395,6 +396,6 @@ class Node:
 		if mergeL:
 			# Merge any links that need it. The next line is probably redundant given that trace now returns the top level.
 			n = n.topParent()
-			n, _, _= n.linkMerge(compressL=compressL)
+			n, _, _= n.linkMerge(compressL=compressL, eps=eps)
 
 		return n

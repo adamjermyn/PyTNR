@@ -268,8 +268,14 @@ class Network:
 
 		link = self.__sortedLinks.pop()
 
+		assert link in self.__topLevelLinks
+
 		n1 = link.bucket1().topNode()
 		n2 = link.bucket2().topNode()
+
+		assert n1 in self.__topLevelNodes
+		assert n2 in self.__topLevelNodes
+		assert n1 != n2
 
 		n1.merge(n2, mergeL=mergeL, compressL=compressL, eps=eps)
 
@@ -307,7 +313,7 @@ class Network:
 
 		counter = 0
 		while self.__sortedLinks.length > 0:
-			self.merge(mergeL=True, compressL=True)
+			self.merge(mergeL=mergeL, compressL=compressL, eps=eps)
 
 			if counter%20 == 0:
 				t = self.largestTopLevelTensor()

@@ -2,7 +2,7 @@ from tensor import Tensor
 import numpy as np
 from compress import compress
 
-def mergeLinks(n1, n2, compressLink=False):
+def mergeLinks(n1, n2, compressLink=False, eps=1e-4):
 	assert n1 in n2.connectedHigh()
 	assert n2 in n1.connectedHigh()
 	assert n1 in n1.network().topLevelNodes()
@@ -57,6 +57,6 @@ def mergeLinks(n1, n2, compressLink=False):
 
 	if compressLink:
 		link = n1m.findLink(n2m)
-		_, n1m, n2m = compress(link)
+		_, n1m, n2m = compress(link, eps=eps)
 
 	return n1m, n2m

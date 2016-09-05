@@ -100,6 +100,8 @@ class Link:
 		return self.__mergeEntropy
 
 	def updateMergeEntropy(self):
+		assert self in self.__network.topLevelLinks()
+
 		# Entropy is computed in base e.
 		# As a heuristic we assume that merging a bond of
 		# size S with a bond of size S' produces a bond of

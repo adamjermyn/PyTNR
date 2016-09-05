@@ -22,7 +22,6 @@ def cutBond(u, v, ind1, ind2, link):
 	link.network().registerLinkCut(link)
 	link.setParent(link) # So it is unambiguously not top-level.
 	link.setCompressed()
-	link.update() # So it's up to date.
 
 	return link, n1m, n2m
 
@@ -44,6 +43,8 @@ def compress(link, eps=1e-2):
 	arr22 = tensorToMatrix(t2, ind2, front=True)
 
 	opN = matrixProductLinearOperator(arr11, arr22)
+
+
 
 	u, lam, v, _, cp = generalSVD(opN, bondDimension=min(sh1[ind1], min(opN.shape)-1))
 
