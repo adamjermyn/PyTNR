@@ -139,8 +139,8 @@ class Network:
 	def deregisterLinkTop(self, link):
 		'''
 		De-registers a Link in the Network from being top-level.
-		This should be called only when a Link is traced out,
-		compressed, or merged with another Link.
+		This should be called only when a Link is compressed, deleted,
+		or merged with another Link.
 		'''
 		assert link in self.__allLinks
 		assert link in self.__topLevelLinks
@@ -152,8 +152,9 @@ class Network:
 	def registerLinkCut(self, link):
 		'''
 		Registers a link as having been cut and de-registers is from the top-level.
-		This should only be called when a Link is cut.
-		This occurs when, upon compression, the Link is reduced to bond dimension 1.
+		This should only be called when a Link is cut or traced.
+		This occurs when, upon compression, the Link is reduced to bond dimension 1
+		or when a Link leads from a Tensor to itself.
 		'''
 		assert link not in self.__cutLinks
 		assert link in self.__topLevelLinks

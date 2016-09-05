@@ -318,6 +318,7 @@ class Node:
 				ind = axes1.index(i)
 				axes1 = axes1[:ind] + axes1[ind+1:]
 				axes0 = axes0[:ind] + axes0[ind+1:]
+				links = links[:ind] + links[ind+1:]
 
 		# Trace
 
@@ -325,7 +326,7 @@ class Node:
 			newT = self.__tensor.trace(axes0, axes1)
 			n = self.modify(newT, delBuckets=(axes0 + axes1))
 			for l in links:
-				self.__network.deregisterLinkTop(l)
+				self.__network.registerLinkCut(l)
 			return n
 		else:
 			return self
