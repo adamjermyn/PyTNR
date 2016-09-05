@@ -305,28 +305,23 @@ class Node:
 				otherBucket = b.otherBucket()
 				otherNode = otherBucket.topNode()
 				if otherNode == self:
-					links.append(b.link())
 					ind0 = self.bucketIndex(b)
 					ind1 = self.bucketIndex(otherBucket)
-					axes0.append(ind0)
-					axes1.append(ind1)
 
-		# Avoid duplicates
-
-		for i in axes0:
-			if i in axes1:
-				ind = axes1.index(i)
-				axes1 = axes1[:ind] + axes1[ind+1:]
-				axes0 = axes0[:ind] + axes0[ind+1:]
-				links = links[:ind] + links[ind+1:]
+					# Avoid duplicates
+					if ind0 not in axes1:
+						assert ind1 not in axes0
+						links.append(b.link())
+						axes0.append(ind0)
+						axes1.append(ind1)
 
 		# Trace
 
 		if len(axes0) > 0:
-			newT = self.__tensor.trace(axes0, axes1)
-			n = self.modify(newT, delBuckets=(axes0 + axes1))
 			for l in links:
 				self.__network.registerLinkCut(l)
+			newT = self.__tensor.trace(axes0, axes1)
+			n = self.modify(newT, delBuckets=(axes0 + axes1))
 			return n
 		else:
 			return self

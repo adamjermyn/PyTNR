@@ -35,7 +35,6 @@ class Tensor:
 		m = np.max(np.abs(tens))
 		self.__logScalar = np.log(m)
 
-
 		if self.__size < maxSize:
 			self.__array = np.copy(tens/m)
 		else:
@@ -98,9 +97,14 @@ class Tensor:
 		Elements of ind0 and ind1 must correspond, such that the same Link is
 		represented by indices at the same location in each list.
 
+		Elements of ind0 should not appear in ind1, and vice-versa.
+
 		Returns a Tensor containing the trace over all of the pairs of indices.
 		'''
 		arr = self.array()
+		ind0 = list(ind0)
+		ind1 = list(ind1)
+
 		for i in range(len(ind0)):
 			arr = np.trace(arr, axis1=ind0[i], axis2=ind1[i])
 			for j in range(len(ind0)):
