@@ -308,6 +308,14 @@ class Node:
 					ind1 = self.bucketIndex(otherBucket)
 					axes0.append(ind0)
 					axes1.append(ind1)
+
+		# Avoid duplicates
+		for i in axes0:
+			if i in axes1:
+				ind = axes1.index(i)
+				axes1 = axes1[:ind] + axes1[ind+1:]
+				axes0 = axes0[:ind] + axes0[ind+1:]
+
 		if len(axes0) > 0:
 			newT = self.__tensor.trace(axes0, axes1)
 			n = self.modify(newT, delBuckets=(axes0 + axes1))
