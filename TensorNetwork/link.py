@@ -37,46 +37,46 @@ class Link:
 	def __init__(self, b1, b2, network, compressed=False, reduction=0.75, children=None):
 		if children is None:
 			children = []
-		self.__b1 = b1
-		self.__b2 = b2
-		self.__compressed = compressed
-		self.__network = network
-		self.__reduction = reduction
-		self.__mergeEntropy = None
-		self.__parent = None
-		self.__children = children
-		for c in self.__children:
+		self._b1 = b1
+		self._b2 = b2
+		self._compressed = compressed
+		self._network = network
+		self._reduction = reduction
+		self._mergeEntropy = None
+		self._parent = None
+		self._children = children
+		for c in self._children:
 			c.setParent(self)
-			self.__network.deregisterLinkTop(c)
-		self.__network.registerLink(self)
+			self._network.deregisterLinkTop(c)
+		self._network.registerLink(self)
 
 	def bucket1(self):
-		return self.__b1
+		return self._b1
 
 	def bucket2(self):
-		return self.__b2
+		return self._b2
 
 	def network(self):
-		return self.__network
+		return self._network
 
 	def parent(self):
-		return self.__parent
+		return self._parent
 
 	def setParent(self, parent):
-		self.__parent = parent
+		self._parent = parent
 
 	def children(self):
-		return self.__children
+		return self._children
 
 	def compressed(self):
-		return self.__compressed
+		return self._compressed
 
 	def setCompressed(self):
-		self.__compressed = True
+		self._compressed = True
 
 	def topContents(self):
-		n1 = self.__b1.topNode()
-		n2 = self.__b2.topNode()
+		n1 = self._b1.topNode()
+		n2 = self._b2.topNode()
 
 		t1 = n1.tensor()
 		t2 = n2.tensor()
@@ -87,36 +87,36 @@ class Link:
 		return n1, n2, t1, t2, sh1, sh2
 
 	def otherBucket(self, bucket):
-		if bucket == self.__b1:
-			return self.__b2
-		elif bucket == self.__b2:
-			return self.__b1
+		if bucket == self._b1:
+			return self._b2
+		elif bucket == self._b2:
+			return self._b1
 		else:
 			raise ValueError
 
 	def mergeEntropy(self):
-		if self.__mergeEntropy is None:
+		if self._mergeEntropy is None:
 			self.updateMergeEntropy()
-		return self.__mergeEntropy
+		return self._mergeEntropy
 
 	def updateMergeEntropy(self):
-		assert self in self.__network.topLevelLinks()
+		assert self in self._network.topLevelLinks()
 
 		# Entropy is computed in base e.
 		# As a heuristic we assume that merging a bond of
 		# size S with a bond of size S' produces a bond of
 		# size reduction*S*S'.
 
-		n1 = self.__b1.topNode()
-		n2 = self.__b2.topNode()
+		n1 = self._b1.topNode()
+		n2 = self._b2.topNode()
 
 		t1 = n1.tensor()
 		t2 = n2.tensor()
 
-		length = t1.shape()[n1.bucketIndex(self.__b1)]
+		length = t1.shape()[n1.bucketIndex(self._b1)]
 
 		if n1 == n2:
-			self.__mergeEntropy = t1.size()/(length**2) - t1.size()
+			self._mergeEntropy = t1.size()/(length**2) - t1.size()
 		else:
 			s1 = t1.size()
 			s2 = t2.size()
@@ -125,32 +125,32 @@ class Link:
 
 			# Correction based on number of merging Links
 			commonNodes = set(n1.connectedHigh()).intersection(set(n2.connectedHigh()))
-			sN *= self.__reduction**len(commonNodes)
+			sN *= self._reduction**len(commonNodes)
 
 			dS = sN - s1 - s2
 
-			self.__mergeEntropy = dS
+			self._mergeEntropy = dS
 
 	def update(self):
 		self.updateMergeEntropy()
-		if self.__parent is None:
+		if self._parent is None:
 			# I have a feeling there's a more elegant way to handle this, but I'm not sure what it is.
-			self.__network.updateSortedLinkList(self)
+			self._network.updateSortedLinkList(self)
 
 	def delete(self):
 		# This method assumes you want to delete the nodes on either side!
-		assert len(self.__children) > 0
+		assert len(self._children) > 0
 
-		self.__network.deregisterLink(self)
-		self.__b1.removeLink()
-		self.__b2.removeLink()
+		self._network.deregisterLink(self)
+		self._b1.removeLink()
+		self._b2.removeLink()
 
 		# This means that if we remove the references to these buckets in the Nodes then
 		# the buckets will be deleted (there will be no remaining references to them
 		# assuming they are in fact only referenced by a single Node each).
-		self.__b1 = None
-		self.__b2 = None
+		self._b1 = None
+		self._b2 = None
 
-		for c in self.__children:
+		for c in self._children:
 			c.setParent(None)
-			self.__network.registerLinkTop(c)
+			self._network.registerLinkTop(c)

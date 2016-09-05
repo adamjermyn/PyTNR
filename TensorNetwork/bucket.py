@@ -48,44 +48,44 @@ class Bucket:
 	'''
 
 	def __init__(self, network):
-		self.__nodes = []
-		self.__network = network
-		self.__link = None
-		self.__otherBucket = None
+		self._nodes = []
+		self._network = network
+		self._link = None
+		self._otherBucket = None
 
 	def link(self):
-		return self.__link
+		return self._link
 
 	def linked(self):
-		return self.__link is not None
+		return self._link is not None
 
 	def node(self, index):
-		return self.__nodes[index]
+		return self._nodes[index]
 
 	def nodes(self):
-		return self.__nodes
+		return self._nodes
 
 	def numNodes(self):
-		return len(self.__nodes)
+		return len(self._nodes)
 
 	def topNode(self):
-		assert len(self.__nodes) > 0
-		return self.__nodes[-1]
+		assert len(self._nodes) > 0
+		return self._nodes[-1]
 
 	def bottomNode(self):
-		assert len(self.__nodes) > 0
-		return self.__nodes[0]
+		assert len(self._nodes) > 0
+		return self._nodes[0]
 
 	def network(self):
-		return self.__network
+		return self._network
 
 	def otherBucket(self):
-		return self.__otherBucket
+		return self._otherBucket
 
 	def otherNodes(self):
 		if not self.linked():
 			raise ValueError
-		return self.__otherBucket.nodes()
+		return self._otherBucket.nodes()
 
 	def otherNode(self, index):
 		return self.otherNodes()[index]
@@ -95,7 +95,7 @@ class Bucket:
 		return self.otherNode(-1)
 
 	def otherBottomNode(self):
-		assert len(self.__nodes) > 0
+		assert len(self._nodes) > 0
 		return self.otherNode(0)
 
 	def numOtherNodes(self):
@@ -106,23 +106,23 @@ class Bucket:
 	def addNode(self, node):
 		# Shouldn't modify buckets once there are buckets higher up.
 		assert not self.linked() or self.link().parent() is None 
-		self.__nodes.append(node)
+		self._nodes.append(node)
 		if self.linked():
-			self.__link.update()
+			self._link.update()
 
 	def removeNode(self):
-		self.__nodes = self.__nodes[:-1]
+		self._nodes = self._nodes[:-1]
 		if self.linked():
-			self.__link.update()
+			self._link.update()
 
 	def setLink(self, link):
-		self.__link = link
-		self.__otherBucket = link.otherBucket(self)
-		self.__link.update()
+		self._link = link
+		self._otherBucket = link.otherBucket(self)
+		self._link.update()
 			# A condition of this logic for otherBucket is that we never change which Bucket
 			# a Link points to once we set it. This is fine, as there are no modifier methods
 			# in the Link class for the Buckets it points to.
 
 	def removeLink(self):
-		self.__link = None
-		self.__otherBucket = None
+		self._link = None
+		self._otherBucket = None

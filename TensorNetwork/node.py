@@ -63,36 +63,36 @@ class Node:
 	delete			-	Delete the Node and all associated Links. Recursively deletes all parents.
 	'''
 	def __init__(self, tens, network, children=None, Buckets=None, logScalar = 0):
-		self.__tensor = tens
-		self.__logScalar = logScalar + self.__tensor.logScalar()
-		self.__network = network
-		self.__id = self.__network.nextID()
-		self.__parent = None
+		self._tensor = tens
+		self._logScalar = logScalar + self._tensor.logScalar()
+		self._network = network
+		self._id = self._network.nextID()
+		self._parent = None
 
 		if children is None:
 			children = []
 		if Buckets is None:
 			Buckets = []
 
-		self.__children = children
-		self.__buckets = Buckets
-		self.__network.registerNode(self)
+		self._children = children
+		self._buckets = Buckets
+		self._network.registerNode(self)
 		for b in Buckets:
 			b.addNode(self)
-		for c in self.__children:
+		for c in self._children:
 			c.setParent(self)
 
 	def id(self):
-		return self.__id
+		return self._id
 
 	def __str__(self):
-		return 'Node with ID: ' + str(self.__id) + '  and tensor shape ' + str(self.__tensor.shape())
+		return 'Node with ID: ' + str(self._id) + '  and tensor shape ' + str(self._tensor.shape())
 
 	def children(self):
-		return self.__children
+		return self._children
 
 	def parent(self):
-		return self.__parent
+		return self._parent
 
 	def topParent(self):
 		if self.parent() is None:
@@ -101,33 +101,33 @@ class Node:
 			return self.parent().topParent()
 
 	def allNChildren(self):
-		ch = set(self.__children)
-		for c in self.__children:
+		ch = set(self._children)
+		for c in self._children:
 			ch = ch | set(c.allNChildren())
 		return ch
 
 	def setParent(self, parent):
-		self.__parent = parent
+		self._parent = parent
 
 	def network(self):
-		return self.__network
+		return self._network
 
 	def connected(self):
 		c = []
-		for b in self.__buckets:
+		for b in self._buckets:
 			if b.linked():
 				c.extend(b.otherNodes())
 		return c
 
 	def connectedHigh(self):
 		c = []
-		for b in self.__buckets:
+		for b in self._buckets:
 			if b.linked():
 				c.append(b.otherTopNode())
 		return c
 
 	def findLink(self, other):
-		for b in self.__buckets:
+		for b in self._buckets:
 			if b.linked():
 				if other in b.otherNodes():
 					return b.link()
@@ -135,51 +135,51 @@ class Node:
 
 	def linksConnecting(self, other):
 		links = []
-		for b in self.__buckets:
+		for b in self._buckets:
 			if b.linked():
 				if other in b.otherNodes():
 					links.append(b.link())
 		return links
 
 	def indexConnecting(self, other):
-		for i,b in enumerate(self.__buckets):
+		for i,b in enumerate(self._buckets):
 			if b.linked():
 				if other in b.otherNodes():
 					return i
 		return None		
 
 	def tensor(self):
-		return self.__tensor
+		return self._tensor
 
 	def logScalar(self):
-		return self.__logScalar
+		return self._logScalar
 
 	def bucketIndex(self, b):
-		return self.__buckets.index(b)
+		return self._buckets.index(b)
 
 	def bucket(self, i):
-		return self.__buckets[i]
+		return self._buckets[i]
 
 	def buckets(self):
-		return self.__buckets
+		return self._buckets
 
 	def removeBucket(self, b):
-		assert b in self.__buckets
-		self.__buckets.remove(b)
+		assert b in self._buckets
+		self._buckets.remove(b)
 
 	def delete(self, linksToDelete=None):
 		# Delete parents
-		if self.__parent is not None:
-			self.__parent.delete()
+		if self._parent is not None:
+			self._parent.delete()
 
-		assert self.__parent is None
+		assert self._parent is None
 
 		# Delete buckets whose links ought to be deleted,
 		# and keep track of those links.
 		if linksToDelete is None:
 			linksToDelete = []
 
-		for b in self.__buckets:
+		for b in self._buckets:
 			if b.linked():
 				link = b.link()
 				bo = link.otherBucket(b)
@@ -209,21 +209,21 @@ class Node:
 					return
 
 		# At this stage we have no buckets pointing to links which were compressed or merged.
-		for b in self.__buckets:
+		for b in self._buckets:
 			if b.linked():
 				assert len(b.link().children()) == 0 or b.numNodes() > 1
 
 		# We deregister the node before we handle any link deletion.
-		self.__network.deregisterNode(self)
-		assert self not in self.__network.nodes()
-		assert self not in self.__network.topLevelNodes()
+		self._network.deregisterNode(self)
+		assert self not in self._network.nodes()
+		assert self not in self._network.topLevelNodes()
 		for c in self.children():
-			assert c in self.__network.topLevelNodes()
+			assert c in self._network.topLevelNodes()
 
 		# Now we delete the links
 		for link in linksToDelete:
 			assert self in [link.bucket1().topNode(),link.bucket2().topNode()]
-			assert len(set([link.bucket1().topNode(),link.bucket2().topNode()]).intersection(self.__network.topLevelNodes())) == 0
+			assert len(set([link.bucket1().topNode(),link.bucket2().topNode()]).intersection(self._network.topLevelNodes())) == 0
 			assert link.parent() is None or link.parent() == link
 			link.delete()
 
@@ -231,15 +231,15 @@ class Node:
 		# we deleted, as those Links no longer refer to them and the Nodes no longer
 		# refer to them either.
 
-		for b in self.__buckets:
+		for b in self._buckets:
 			b.removeNode()
 
 		for c in self.children():
 			c.setParent(None)
 
 	def addLink(self, other, selfBucketIndex, otherBucketIndex, compressed=False, children=None):
-		assert self in self.__network.topLevelNodes()
-		assert other in self.__network.topLevelNodes()
+		assert self in self._network.topLevelNodes()
+		assert other in self._network.topLevelNodes()
 		assert children is None or len(self.children()) == len(other.children())
 		assert self.tensor().shape()[selfBucketIndex] > 1
 
@@ -254,7 +254,7 @@ class Node:
 		if otherBucket.linked():
 			raise ValueError
 
-		l = Link(selfBucket,otherBucket,self.__network,compressed=compressed,children=children)
+		l = Link(selfBucket,otherBucket,self._network,compressed=compressed,children=children)
 
 		selfBucket.setLink(l)
 		otherBucket.setLink(l)
@@ -274,7 +274,7 @@ class Node:
 		if repBuckets is None:
 			repBuckets = []
 
-		assert self in self.__network.topLevelNodes()
+		assert self in self._network.topLevelNodes()
 		assert len(set(delBuckets).intersection(set(repBuckets))) == 0
 		assert len(delBuckets) + len(tens.shape()) - len(self.tensor().shape()) >= 0
 
@@ -287,12 +287,12 @@ class Node:
 				else:
 					Buckets.append(Bucket(self.network()))
 
-		n = Node(tens, self.__network, children=[self], Buckets=Buckets, logScalar=self.__logScalar)
+		n = Node(tens, self._network, children=[self], Buckets=Buckets, logScalar=self._logScalar)
 
 		return n
 
 	def trace(self):
-		assert self in self.__network.topLevelNodes()
+		assert self in self._network.topLevelNodes()
 
 		# Find all self-Links
 
@@ -300,7 +300,7 @@ class Node:
 		axes1 = []
 		links = []
 
-		for b in self.__buckets:
+		for b in self._buckets:
 			if b.linked():
 				otherBucket = b.otherBucket()
 				otherNode = otherBucket.topNode()
@@ -319,15 +319,15 @@ class Node:
 
 		if len(axes0) > 0:
 			for l in links:
-				self.__network.registerLinkCut(l)
-			newT = self.__tensor.trace(axes0, axes1)
+				self._network.registerLinkCut(l)
+			newT = self._tensor.trace(axes0, axes1)
 			n = self.modify(newT, delBuckets=(axes0 + axes1))
 			return n
 		else:
 			return self
 
 	def linkMerge(self, compressL=False, eps=1e-4):
-		assert self.__parent is None
+		assert self._parent is None
 
 		todo = set()
 		done = set()
@@ -354,8 +354,8 @@ class Node:
 		return n1, done, new
 
 	def merge(self, other, mergeL=True, compressL=True, eps=1e-4):
-		assert self in self.__network.topLevelNodes()
-		assert other in self.__network.topLevelNodes()
+		assert self in self._network.topLevelNodes()
+		assert other in self._network.topLevelNodes()
 		assert self in other.connectedHigh()
 		assert other in self.connectedHigh()
 		assert self != other
@@ -363,16 +363,16 @@ class Node:
 		# Find all links between self and other, store their indices, and
 		# deregister them from the top level
 		links = []
-		for i,b in enumerate(self.__buckets):
+		for i,b in enumerate(self._buckets):
 			if b.linked():
 				if b.otherTopNode() == other:
 					links.append((i,other.bucketIndex(b.otherBucket())))
-					self.__network.deregisterLinkTop(b.link())
+					self._network.deregisterLinkTop(b.link())
 
 		links = list(zip(*links))
 
 		# Contract along common links
-		t = self.__tensor.contract(links[0],other.tensor(),links[1])
+		t = self._tensor.contract(links[0],other.tensor(),links[1])
 
 		# Build new Node
 		Buckets = []
@@ -388,7 +388,7 @@ class Node:
 				Buckets.append(b)
 
 		# Build new Node
-		n = Node(t,self.__network,children=[self,other], Buckets=Buckets, logScalar = self.logScalar() + other.logScalar())	
+		n = Node(t,self._network,children=[self,other], Buckets=Buckets, logScalar = self.logScalar() + other.logScalar())	
 
 		# Trace out any self-loops
 		n = n.trace()
