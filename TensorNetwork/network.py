@@ -268,14 +268,14 @@ class Network:
 		'''
 
 		nodeSet = set(self.topLevelNodes())
+		remaining = nodeSet.difference(subset)
 
 		while len(nodeSet.intersection(subset)) < len(subset):
-			remaining = nodeSet.difference(subset)
 			n = remaining.pop()
-			if len(subset.intersection(n.allNChildren())) > 0:
+			if len(set(subset).intersection(n.allNChildren())) > 0:
 				nodeSet.remove(n)
 				nodeSet.update(n.children())
-
+				remaining = nodeSet.difference(subset)
 		return nodeSet
 
 
