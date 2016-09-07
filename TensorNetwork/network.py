@@ -438,6 +438,22 @@ class Network:
 				print(len(self.topLevelNodes()),self.topLevelSize(), t.tensor().shape())
 			counter += 1
 
+	def compressLinks(self, eps=1e-4):
+		'''
+		This method attempts to compress all top-level Links in the Network.
+
+		This method takes one keyword argument:
+			eps	-	The accuracy of the compression to perform.
+		'''
+
+		compressed = set()
+
+		while len(compressed) < len(self.topLevelLinks()):
+			todo = self.topLevelLinks().difference(compressed)
+			todo = list(todo)
+			link, _, _ = compress(todo[0], eps=eps)
+			compressed.add(link)
+
 	def optimize(self, mergeL=True, compressL=True, eps=1e-4):
 		todo = set(self._bottomLevelNodes)
 		done = set()
@@ -511,21 +527,4 @@ class Network:
 				if not optimized and n.parent() is not None:
 					done.add(n)
 					todo.add(n.parent())
-
-
-	def compressLinks(self, eps=1e-4):
-		'''
-		This method attempts to compress all top-level Links in the Network.
-
-		This method takes one keyword argument:
-			eps	-	The accuracy of the compression to perform.
-		'''
-
-		compressed = set()
-
-		while len(compressed) < len(self.topLevelLinks()):
-			todo = self.topLevelLinks().difference(compressed)
-			todo = list(todo)
-			link, _, _ = compress(todo[0], eps=eps)
-			compressed.add(link)
 
