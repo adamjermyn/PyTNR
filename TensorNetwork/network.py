@@ -24,6 +24,7 @@ class Network:
 		self._sortedLinks = PriorityQueue()
 		self._idDict = {}
 		self._idCounter = 0
+		self.__memoryUsage = 0
 
 	def __str__(self):
 		'''

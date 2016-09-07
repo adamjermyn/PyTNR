@@ -6,7 +6,6 @@ from utils import ndArrayToMatrix, matrixToNDArray
 
 tempdir = tempfile.TemporaryDirectory()
 executor = ThreadPoolExecutor(max_workers=10)
-maxSize = 500000
 
 def write(fname, arr):
 	fi = open(fname,'wb+')
@@ -29,18 +28,16 @@ class Tensor:
 
 		self._shape = shape
 		self._size = tens.size
+		self._onDisk = False
 
 		# We normalize the Tensor by factoring out the log of the
 		# maximum-magnitude element.
 		m = np.max(np.abs(tens))
 		self._logScalar = np.log(m)
 
-		if self._size < maxSize:
-			self._array = np.copy(tens/m)
-		else:
-			handle, self._array = tempfile.mkstemp(dir=tempdir.name)
-			os.close(handle)
-			self._writeFuture = executor.submit(write,self._array, tens/m)
+		self._array = np.copy(tens/m)
+		self._writeFuture = None
+
 
 	def shape(self):
 		'''
@@ -59,11 +56,15 @@ class Tensor:
 		Returns the array underlying the Tensor.
 		Also handles any caching operations that are needed for large-memory Tensors.
 		'''
-		if self._size < maxSize:
+		if self._onDisk:
 			return np.copy(self._array)
 		else:
 			self._writeFuture.result()
 			return read(self._array)
+
+	def pushToDisk(self):
+		if not self._onDisk:
+			# do stuff
 
 	def logScalar(self):
 		'''
