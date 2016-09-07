@@ -246,6 +246,62 @@ class Network:
 		t = Tensor(arr.shape, arr)
 		return Node(t, self, Buckets=[Bucket(self) for _ in range(len(arr.shape))])
 
+	def filterSubset(self, subset):
+		'''
+		Given a subset of the Nodes in this Network obeying the property that
+		none are ancestors of others, this method finds and returns the highest-level
+		set of Nodes in the Network which have the following properties:
+		-	Any Node which is not a descentend of these Nodes is an ancestor of at least
+			one of them.
+		-	None of these Nodes are ancestors of any others.
+		-	The specified Nodes are all in the returned set.
+
+		todo: flesh out these docs
+		'''
+
+		nodeSet = set(self.topLevelNodes())
+
+		while len(nodeSet.intersection(subset)) < len(subset):
+			remaining = nodeSet.difference(subset)
+			n = remaining.pop()
+			if len(subset.intersection(n.allNChildren())) > 0:
+				nodeSet.remove(n)
+				nodeSet.update(n.children())
+
+		return nodeSet
+
+
+	def copySubset(self, subset):
+		'''
+		Given a subset of the Nodes in this Network, this method
+		produces a Network containing a copy of these Nodes connected
+		as they are in this Network. In addition this method returns
+		dictionaries mapping back and forth between the Nodes and Buckets
+		of the new and old Network.
+
+		todo: flesh out these docs
+
+		'''
+		newNodeOldID = {}
+		oldNodeNewID = {}
+		newBucketOldIDind = {}
+		oldBucketNewIDind = {}
+
+		nn = Network()
+
+		for n in subset:
+			m = nn.addNodeFromArray(n.tensor().array())
+
+			newNodeOldID[n.id()] = m
+			oldNodeNewID[m.id()] = n
+
+			for i in range(len(n.buckets())):
+				newBucketOldIDind[(n.id(),i)] = n.buckets()[i]
+				oldBucketNewIDind[(m.id(),i)] = m.buckets()[i]
+
+		# TODO: Link it up
+
+
 	def trace(self):
 		'''
 		Traces over all Nodes in the Network.
