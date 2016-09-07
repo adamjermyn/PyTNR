@@ -256,7 +256,11 @@ class Network:
 		-	None of these Nodes are ancestors of any others.
 		-	The specified Nodes are all in the returned set.
 
-		todo: flesh out these docs
+		This is done by starting with the top-level Nodes.
+		At each stage we remove a Node which is not in the subset of interest
+		from the working set. We then check if its descendents include any Nodes
+		from the subset of interest and if so we add its children to the working
+		set.
 		'''
 
 		nodeSet = set(self.topLevelNodes())
@@ -282,6 +286,7 @@ class Network:
 		todo: flesh out these docs
 
 		'''
+
 		newNodeOldID = {}
 		oldNodeNewID = {}
 		newBucketOldIDind = {}
@@ -289,6 +294,7 @@ class Network:
 
 		nn = Network()
 
+		# Copy Nodes
 		for n in subset:
 			m = nn.addNodeFromArray(n.tensor().array())
 
@@ -299,8 +305,60 @@ class Network:
 				newBucketOldIDind[(n.id(),i)] = n.buckets()[i]
 				oldBucketNewIDind[(m.id(),i)] = m.buckets()[i]
 
-		# TODO: Link it up
+		# Link new Nodes
+		done = set()
 
+		for n in subset:
+			nnew = newNodeOldID[n.id()]
+			for ind0, b in enumerate(n.buckets()):
+				if b.linked():
+					otherB = b.otherBucket()
+					intersection = set(otherB.nodes()).intersection(subset)
+					if len(intersection) > 0:
+						n2 = intersection.pop()
+						ind1 = n2.buckets().index(otherB)
+						n2new = newNodeOldID[n2.id()]
+						if (nnew.id(), ind0, n2new.id(), ind1) not in done:
+							nnew.addLink(n2new, ind0, ind1)
+							done.add((nnew.id(), ind0, n2new.id(), ind1))
+							done.add((n2new.id(), ind1, nnew.id(), ind0))
+
+		return nn, newNodeOldID, oldNodeNewID, newBucketOldIDind, oldBucketNewIDind
+
+	def view(self, nodes, mergeL=True, compressL=True, eps=1e-4):
+		'''
+		This method calculates the effective Tensor represented by the Network connecting to the given Nodes.
+
+		The way we do this is straightforward: we go through marking Nodes as rejected
+		as if we were deleting them. This includes following compression/merger bonds
+		where appropriate. We then copy the highest-level Nodes remaining into a new
+		Network and contract it.
+
+		This method takes three keywork arguments:
+			mergeL 	  - 	If the merger results in a Node which has multiple Links in common with
+						another Node, the Links will be merged.
+			compressL -	Attempts to compress all Links (if any) resulting from a Link merger.
+			eps		  -	The accuracy of the compression to perform.
+		'''
+		new = self.filterSubset(nodes)
+		new = new.difference(nodes)
+		nn, newNodeOldID, oldNodeNewID, newBucketOldIDind, oldBucketNewIDind = self.copySubset(new)
+
+		# Contract new Network
+		nn.contract(mergeL=mergeL, compressL=compressL, eps=eps)
+
+		# Build contracted Tensor and bucketList
+		arr, logS, buckets = nn.topLevelRepresentation()
+		bucketList = []
+
+		for n in nn.topLevelNodes():
+			for b in n.buckets():
+				nb = b.bottomNode()
+				ind = nb.bucketIndex(b)
+				oldNode = oldNodeNewID[nb.id()]
+				bucketList.append(oldNode.buckets()[ind].otherBucket())
+
+		return nn, arr[0], bucketList
 
 	def trace(self):
 		'''
@@ -391,102 +449,4 @@ class Network:
 			todo = list(todo)
 			link, _, _ = compress(todo[0], eps=eps)
 			compressed.add(link)
-
-	def view(self, nodes, mergeL=True, compressL=True, eps=1e-4):
-		'''
-		This method calculates the effective Tensor represented by the Network connecting to the given Nodes.
-
-		The way we do this is straightforward: we go through marking Nodes as rejected
-		as if we were deleting them. This includes following compression/merger bonds
-		where appropriate. We then copy the highest-level Nodes remaining into a new
-		Network and contract it.
-
-		This method takes three keywork arguments:
-			mergeL 	  - 	If the merger results in a Node which has multiple Links in common with
-						another Node, the Links will be merged.
-			compressL -	Attempts to compress all Links (if any) resulting from a Link merger.
-			eps		  -	The accuracy of the compression to perform.
-		'''
-		todo = set(nodes)
-		rejected = set()
-
-		while len(todo) > 0:
-			n = todo.pop()
-
-			if n not in rejected:
-				rejected.add(n)
-				if n.parent() is not None:
-					todo.add(n.parent())
-
-				if len(n.children()) == 1:
-					for b in n.buckets():
-						link = b.link()
-						bo = link.otherBucket(b)
-						no = bo.bottomNode()
-						if len(no.children()) == 1:
-							todo.add(no)
-
-		new1 = set(self._nodes).difference(rejected)
-		new2 = set(self._nodes).difference(rejected)
-
-		for n in new1:
-			if n.parent() in new1:
-				new2.remove(n)
-
-		# Build the new Network
-		nn = Network()
-
-		# Build the new Nodes
-		oldIDs = {}	#	Returns the old Node corresponding to the given new ID.
-		newIDs = {}	#	Returns the new Node corresponding to the given old ID.
-
-		newNodes = set()
-
-		for n in new2:
-			n1 = nn.addNodeFromArray(n.tensor().array())
-
-			oldIDs[n1.id()] = n
-			newIDs[n.id()] = n1
-
-			newNodes.add(n1)
-
-
-		# Link up new Nodes
-		done = set()
-
-		for n1 in new2:
-			n1new = newIDs[n1.id()]
-			for ind0, b in enumerate(n1.buckets()):
-				if b.linked():
-					otherB = b.otherBucket()
-					intersection = set(otherB.nodes()).intersection(new2)
-					if len(intersection) > 0:
-						n2 = intersection.pop()
-						ind1 = n2.buckets().index(otherB)
-						n2new = newIDs[n2.id()]
-						if (n1new.id(), ind0, n2new.id(), ind1) not in done:
-							n1new.addLink(n2new, ind0, ind1)
-							done.add((n1new.id(), ind0, n2new.id(), ind1))
-							done.add((n2new.id(), ind1, n1new.id(), ind0))
-
-		# Contract new Network
-		nn.contract(mergeL=mergeL, compressL=compressL, eps=eps)
-
-		# Build contracted Tensor and bucketList
-		arr = np.array([1.])
-		bucketList = []
-
-		for n in nn.topLevelNodes():
-			arr = np.tensordot(arr, n.tensor().array(), axes=0)
-			for b in n.buckets():
-				nb = b.bottomNode()
-				ind = nb.bucketIndex(b)
-				oldNode = oldIDs[nb.id()]
-				bucketList.append(oldNode.buckets()[ind].otherBucket())
-
-		return nn, arr[0], bucketList
-
-
-
-
 
