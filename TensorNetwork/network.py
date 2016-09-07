@@ -456,8 +456,10 @@ class Network:
 		new2 = set(self._nodes).difference(rejected)
 
 		for n in new1:
-			if n.parent() in new1:
-				new2.remove(n)
+			intersection = set(n.allNChildren()).intersection(new1)
+			for q in intersection:
+				if q in new2:
+					new2.remove(q)
 
 		conn = set()
 		for n in new1:
