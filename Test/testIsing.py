@@ -22,6 +22,27 @@ for j in np.linspace(-1,1,num=10):
 	q /= (nX*nY)
 	print('J=',j,'lnZ (calculated)=',q,'lnZ (exact)=',exactIsing2D(j))
 
+##################
+# 2D Correlator ##
+##################
+
+print('Testing 2D Regular Ising Model - Correlator')
+
+nX = 10
+nY = 10
+
+network, lattice = IsingModel2D(nX, nY, 0, -0.4)
+network.contract(mergeL=True, compressL=True, eps=1e-4)
+arr, logS, _ = network.topLevelRepresentation()
+q = np.log(arr) + logS
+q /= (nX*nY)
+
+lattice[0][0].addDim()
+lattice[0][1].addDim()
+
+network.contract(mergeL=True, compressL=True, eps=1e-4)
+print(network.topLevelRepresentation())
+
 #######
 # 2D ##
 #######
