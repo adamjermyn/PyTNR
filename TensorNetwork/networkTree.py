@@ -301,7 +301,7 @@ class NetworkTree:
 		newBucketOldIDind = {}
 		oldBucketNewIDind = {}
 
-		nn = Network()
+		nn = NetworkTree()
 
 		# Copy Nodes
 		for n in subset:
@@ -369,7 +369,7 @@ class NetworkTree:
 			for b in n.buckets():
 				print(len(set(b.otherNodes()).intersection(new)))
 				assert len(set(b.otherNodes()).intersection(new)) == 1
-		new = new.difference(nodes)
+		new = new.nodes().difference(nodes)
 		assert len(set(nodes).intersection(new)) == 0
 		nn, newNodeOldID, oldNodeNewID, newBucketOldIDind, oldBucketNewIDind = self.copySubset(new)
 
