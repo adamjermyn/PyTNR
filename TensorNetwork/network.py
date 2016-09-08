@@ -281,11 +281,21 @@ class Network:
 						if len(b.link().children()) > 0 and n == b.bottomNode():
 							# Means this Node formed from a Link merge or compression
 							intersection = set(b.otherNodes()).intersection(nodeSet)
+							otherB = b.otherBucket()
 							if len(intersection) > 0:
 								# TODO: Iterate over all nodes in otherBucket
 								assert len(intersection) == 1
 								nn = intersection.pop()
 								nodeSet.remove(nn)
+
+								while nn != otherB.bottomNode():
+									c = nn.children()
+									for nnn in c:
+										if otherB in nnn.buckets():
+											nn = nnn
+										else:
+											nodeSet.add(nnn)
+
 								nodeSet.add(nn.children()[0])
 								assert len(nn.children()) == 1
 
