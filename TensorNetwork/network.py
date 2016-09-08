@@ -80,12 +80,20 @@ class Network:
 
 		for n in cc:
 			self._nodes.add(n)
+
+		for n in cc:
 			for b in n.buckets():
-				while len(set(b.otherNodes().intersection(self._nodes))) == 0:
-					intersection = b.otherTopNode().ancestors().intersection(self._nodes)
-					assert len(intersection) == 1
-					nn = intersection.pop()
-					self.descend(nn)
+				if b.linked():
+					while len(set(b.otherNodes()).intersection(self._nodes)) == 0:
+						intersection = b.otherTopNode().ancestors().intersection(self._nodes)
+						if len(intersection) == 0:
+							self.descend(n)
+							return 	# We can do this because the other nodes in cc
+									# will be processed when we get back to this loop
+									# on the children of n.
+						else:
+							nn = intersection.pop()
+							self.descend(nn)
 
 
 	def ascend(self, node):

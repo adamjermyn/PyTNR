@@ -14,7 +14,7 @@ class NetworkTree:
 	for manipulating those Nodes.
 	'''
 
-	def __init__(self, network):
+	def __init__(self):
 		'''
 		Method for initializing an empty Network.
 		'''
@@ -268,7 +268,7 @@ class NetworkTree:
 		from the subset of interest and if so we add its children to the working
 		set.
 		'''
-		nn = Network(self._bottomLevelNodes)
+		nn = Network(self.topLevelNodes())
 		remaining = nn.nodes().difference(subset)
 
 		while len(nn.nodes().intersection(subset)) < len(subset):
@@ -340,9 +340,8 @@ class NetworkTree:
 
 		counter = 0
 		for n in nn.topLevelNodes():
-			print('a',len(n.buckets()))
 			for b in n.buckets():
-				if b.linked():
+				if not b.linked():
 					counter += 1
 		print('b',counter)
 
@@ -363,29 +362,23 @@ class NetworkTree:
 			compressL -	Attempts to compress all Links (if any) resulting from a Link merger.
 			eps		  -	The accuracy of the compression to perform.
 		'''
-		new = self.filterSubset(nodes)
+		new = self.filterSubset(nodes).nodes()
 		assert len(set(nodes).intersection(new)) == len(nodes)
 		for n in new:
 			for b in n.buckets():
-				print(len(set(b.otherNodes()).intersection(new)))
 				assert len(set(b.otherNodes()).intersection(new)) == 1
-		new = new.nodes().difference(nodes)
+		new = new.difference(nodes)
 		assert len(set(nodes).intersection(new)) == 0
 		nn, newNodeOldID, oldNodeNewID, newBucketOldIDind, oldBucketNewIDind = self.copySubset(new)
 
 		# Contract new Network
-		print('c')
 		nn.contract(mergeL=mergeL, compressL=compressL, eps=eps)
-		print('c')
 
 		# Build contracted Tensor and bucketList
 		t = nn.largestTopLevelTensor()
-		print(len(nn.topLevelNodes()),nn.topLevelSize(), t.tensor().shape())
-		exit()
 
 		arr, logS, buckets = nn.topLevelRepresentation()
 		bucketList = []
-		print(arr.shape)
 
 		for n in nn.topLevelNodes():
 			for b in n.buckets():
