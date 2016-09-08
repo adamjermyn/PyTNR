@@ -275,36 +275,33 @@ class Network:
 			n = remaining.pop()
 			if len(set(subset).intersection(n.allNChildren())) > 0:
 				# Means we want to move down to this Node's children
-				if len(n.children()) == 1:
-					# Means we formed this Node from a trace, Link merge, or compression.
-					for b in n.buckets():
-						if len(b.link().children()) > 0 and n == b.bottomNode():
-							# Means this Node formed from a Link merge or compression
-							intersection = set(b.otherNodes()).intersection(nodeSet)
-							otherB = b.otherBucket()
-							if len(intersection) > 0:
-								assert len(intersection) == 1
-								nn = intersection.pop()
-								nodeSet.remove(nn)
-
-								while nn != otherB.bottomNode():
-									c = nn.children()
-									for nnn in c:
-										if otherB in nnn.buckets():
-											nn = nnn
-										else:
-											nodeSet.add(nnn)
-
-								nodeSet.add(nn.children()[0])
-								assert len(nn.children()) == 1
-
 				nodeSet.remove(n)
 				nodeSet.update(n.children())
-
 				remaining = nodeSet.difference(subset)
 
-		return nodeSet
+				# Now we need to make sure that the children are all connected to
+				# the rest of the set as opposed to being connected to descendents
+				# of the rest of the set.
 
+				for nn in n.children():
+					for b in nn.buckets():
+						while len(set(b.otherNodes()).intersection(nodeSet)) == 0:
+							intersection = b.otherTopNode().ancestors().intersection(nodeSet)
+							assert len(intersection) == 1
+							nnn = intersection.pop()
+							nodeSet.remove(nnn)
+							nodeSet.update(nnn.children())
+
+			for n in nodeSet:
+				for b in n.buckets():
+					print(len(set(b.otherNodes()).intersection(nodeSet)))
+					assert len(set(b.otherNodes()).intersection(nodeSet)) == 1
+			print('---')
+
+		return nodeSet
+		# TODO: Break out Network class into NetworkTree and Network
+		# so that methods can be written which enable walking around
+		# a NetworkTree maintaining a consistent Network.
 
 	def copySubset(self, subset):
 		'''
@@ -389,6 +386,7 @@ class Network:
 		assert len(set(nodes).intersection(new)) == len(nodes)
 		for n in new:
 			for b in n.buckets():
+				print(len(set(b.otherNodes()).intersection(new)))
 				assert len(set(b.otherNodes()).intersection(new)) == 1
 		new = new.difference(nodes)
 		assert len(set(nodes).intersection(new)) == 0
