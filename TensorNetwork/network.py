@@ -283,7 +283,6 @@ class Network:
 							intersection = set(b.otherNodes()).intersection(nodeSet)
 							otherB = b.otherBucket()
 							if len(intersection) > 0:
-								# TODO: Iterate over all nodes in otherBucket
 								assert len(intersection) == 1
 								nn = intersection.pop()
 								nodeSet.remove(nn)
