@@ -91,6 +91,7 @@ class Network:
 		bucketList = []
 
 		for n in self._topLevelNodes:
+			print(n)
 			arr = np.tensordot(arr, n.tensor().array(), axes=0)
 			logS += n.logScalar()
 			for b in n.buckets():
@@ -273,9 +274,26 @@ class Network:
 		while len(nodeSet.intersection(subset)) < len(subset):
 			n = remaining.pop()
 			if len(set(subset).intersection(n.allNChildren())) > 0:
+				# Means we want to move down to this Node's children
+				if len(n.children()) == 1:
+					# Means we formed this Node from a trace, Link merge, or compression.
+					for b in n.buckets():
+						if len(b.link().children()) > 0 and n == b.bottomNode():
+							# Means this Node formed from a Link merge or compression
+							intersection = set(b.otherNodes()).intersection(nodeSet)
+							if len(intersection) > 0:
+								# TODO: Iterate over all nodes in otherBucket
+								assert len(intersection) == 1
+								nn = intersection.pop()
+								nodeSet.remove(nn)
+								nodeSet.add(nn.children()[0])
+								assert len(nn.children()) == 1
+
 				nodeSet.remove(n)
 				nodeSet.update(n.children())
+
 				remaining = nodeSet.difference(subset)
+
 		return nodeSet
 
 
@@ -310,22 +328,36 @@ class Network:
 				oldBucketNewIDind[(m.id(),i)] = m.buckets()[i]
 
 		# Link new Nodes
-		done = set()
 
-		for n in subset:
-			nnew = newNodeOldID[n.id()]
-			for ind0, b in enumerate(n.buckets()):
+		for oldN in subset:
+			newN = newNodeOldID[oldN.id()]
+
+			for ind0, b in enumerate(oldN.buckets()):
 				if b.linked():
 					otherB = b.otherBucket()
+
 					intersection = set(otherB.nodes()).intersection(subset)
+
 					if len(intersection) > 0:
-						n2 = intersection.pop()
-						ind1 = n2.buckets().index(otherB)
-						n2new = newNodeOldID[n2.id()]
-						if (nnew.id(), ind0, n2new.id(), ind1) not in done:
-							nnew.addLink(n2new, ind0, ind1)
-							done.add((nnew.id(), ind0, n2new.id(), ind1))
-							done.add((n2new.id(), ind1, nnew.id(), ind0))
+						assert len(intersection) == 1
+						oldNlinked = intersection.pop()
+						ind1 = oldNlinked.buckets().index(otherB)
+
+						newNlinked = newNodeOldID[oldNlinked.id()]
+
+						if not newNlinked.buckets()[ind1].linked():
+							newN.addLink(newNlinked, ind0, ind1)
+
+		print(len(nn.topLevelNodes()))
+		print(len(subset))
+
+		counter = 0
+		for n in nn.topLevelNodes():
+			print('a',len(n.buckets()))
+			for b in n.buckets():
+				if b.linked():
+					counter += 1
+		print('b',counter)
 
 		return nn, newNodeOldID, oldNodeNewID, newBucketOldIDind, oldBucketNewIDind
 
@@ -345,15 +377,27 @@ class Network:
 			eps		  -	The accuracy of the compression to perform.
 		'''
 		new = self.filterSubset(nodes)
+		assert len(set(nodes).intersection(new)) == len(nodes)
+		for n in new:
+			for b in n.buckets():
+				assert len(set(b.otherNodes()).intersection(new)) == 1
 		new = new.difference(nodes)
+		assert len(set(nodes).intersection(new)) == 0
 		nn, newNodeOldID, oldNodeNewID, newBucketOldIDind, oldBucketNewIDind = self.copySubset(new)
 
 		# Contract new Network
+		print('c')
 		nn.contract(mergeL=mergeL, compressL=compressL, eps=eps)
+		print('c')
 
 		# Build contracted Tensor and bucketList
+		t = nn.largestTopLevelTensor()
+		print(len(nn.topLevelNodes()),nn.topLevelSize(), t.tensor().shape())
+		exit()
+
 		arr, logS, buckets = nn.topLevelRepresentation()
 		bucketList = []
+		print(arr.shape)
 
 		for n in nn.topLevelNodes():
 			for b in n.buckets():
@@ -468,6 +512,7 @@ class Network:
 					canDo = False
 					todo.add(c)
 			if not canDo:
+				# SHould add back to todo
 				continue
 			else:
 				optimized = False
@@ -482,6 +527,7 @@ class Network:
 							# for any Node, so we don't mind if the loop
 							# continues after we compress.
 							if link.compressed() and not link.optimized():
+								print('Optimizing...')
 								n1 = n
 								n2 = b.otherNodes()[0]
 
@@ -490,10 +536,13 @@ class Network:
 
 								done.add(n11)
 								done.add(n22)
-
-								doneNodes = []
+								print('Optimizing...')
 
 								_, arr, bs = self.view([n11, n22], mergeL=mergeL, compressL=compressL, eps=eps)
+								print('Optimizing...')
+
+								print(len(bs))
+								print(arr.shape)
 
 								print(len(n11.linksConnecting(n22)))
 
