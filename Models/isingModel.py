@@ -1,13 +1,13 @@
 import sys 
 sys.path.append('../TensorNetwork/') 
-from network import Network 
+from networkTree import NetworkTree
 from latticeNode import latticeNode 
 import numpy as np 
 from scipy.integrate import quad 
 import cProfile 
  
 def IsingModel2D(nX, nY, h, J): 
-	network = Network() 
+	network = NetworkTree() 
  
 	# Place to store the tensors 
 	lattice = [[] for i in range(nX)] 
@@ -51,7 +51,7 @@ def IsingModel2D(nX, nY, h, J):
 	return network, lattice 
  
 def RandomIsingModel2D(nX, nY): 
-	network = Network() 
+	network = NetworkTree() 
  
 	# Place to store the tensors 
 	lattice = [[] for i in range(nX)] 
@@ -106,7 +106,7 @@ def exactIsing2D(J):
 	return np.log(2)/2 + (1/(2*np.pi))*inte 
 
 def IsingModel3D(nX, nY, nZ, h, J):
-	network = Network()
+	network = NetworkTree()
 
 	# Place to store the tensors
 	lattice = [[[] for j in range(nY)] for i in range(nX)]
