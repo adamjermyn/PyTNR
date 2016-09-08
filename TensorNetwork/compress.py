@@ -42,19 +42,20 @@ def compress(link, optimizerArray=None, optimizerBuckets=None, eps=1e-2):
 	arr11 = tensorToMatrix(t1, ind1, front=False)
 	arr22 = tensorToMatrix(t2, ind2, front=True)
 
-	opN = matrixProductLinearOperator(arr11, arr22)
 
 	if optimizerArray is None:
 		optimizerMatrix = None
+		opN = matrixProductLinearOperator(arr11, arr22)
 	else:
+		# We can't use the operator trick with full SVD
+		opN = np.dot(arr11, arr22)
+
 		# First we need to establish correspondence between indices in
 		# optimizerArray and arr1.
 
 		inds1 = {}	# Stores the indices in arr1 as values
 		inds2 = {}	# Stores the indices in arr2 as values
 		inds  = {}	# Stores the indices in optimizerArray as values
-
-		print(len(optimizerBuckets))
 
 		for i,b in enumerate(optimizerBuckets):
 			if b in n1.buckets():
@@ -70,9 +71,6 @@ def compress(link, optimizerArray=None, optimizerBuckets=None, eps=1e-2):
 				print(2,j,i)
 
 		print(len(inds1),len(inds2),len(n1.buckets()),len(n2.buckets()))
-		print(len(inds))
-		print(inds)
-		print(ind1,ind2)
 		# Now we put all indices corresponding to arr1 at the front,
 		# and all indices corresponding to arr2 at the back.
 		perm = []
@@ -83,6 +81,8 @@ def compress(link, optimizerArray=None, optimizerBuckets=None, eps=1e-2):
 		for i in range(len(arr2.shape)):
 			if i != ind2:
 				perm.append(inds[(2,i)])
+
+		print(perm, len(optimizerArray.shape), len(optimizerBuckets))
 
 		optimizerMatrix = np.transpose(optimizerArray, axes=perm)
 
