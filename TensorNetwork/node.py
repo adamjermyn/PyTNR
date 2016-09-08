@@ -123,6 +123,14 @@ class Node:
 			ch = ch | set(c.allNChildren())
 		return ch
 
+	def ancestors(self):
+		anc = set()
+		n = self
+		while n._parent is not None:
+			anc.add(n._parent)
+			n = n._parent
+		return anc
+
 	def setParent(self, parent):
 		self._parent = parent
 
