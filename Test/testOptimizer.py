@@ -5,8 +5,8 @@ import numpy as np
 from isingModel import IsingModel2D, exactIsing2D, IsingModel3D, RandomIsingModel2D
 import cProfile
 
-nX = 10
-nY = 10
+nX = 15
+nY = 15
 
 network, lattice = IsingModel2D(nX, nY, 0.1, 0.5)
 network.contract(mergeL=True, compressL=True, eps=1e-4)
