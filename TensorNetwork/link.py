@@ -34,7 +34,7 @@ class Link:
 	lists of their buckets. They are also added to the link registry of their TensorNetwork.
 	'''
 
-	def __init__(self, b1, b2, network, compressed=False, reduction=0.75, children=None):
+	def __init__(self, b1, b2, network, compressed=False, optimized=False, reduction=0.75, children=None):
 		if children is None:
 			children = []
 		self._b1 = b1
@@ -45,6 +45,7 @@ class Link:
 		self._mergeEntropy = None
 		self._parent = None
 		self._children = children
+		self._optimized = optimized
 		for c in self._children:
 			c.setParent(self)
 			self._network.deregisterLinkTop(c)
@@ -93,6 +94,12 @@ class Link:
 			return self._b1
 		else:
 			raise ValueError
+
+	def optimized(self):
+		return self._optimized
+
+	def setOptimized(self):
+		self._optimized = True
 
 	def mergeEntropy(self):
 		if self._mergeEntropy is None:
