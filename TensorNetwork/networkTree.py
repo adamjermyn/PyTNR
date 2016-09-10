@@ -92,7 +92,6 @@ class NetworkTree:
 		bucketList = []
 
 		for n in self._topLevelNodes:
-			print(n)
 			arr = np.tensordot(arr, n.tensor().array(), axes=0)
 			logS += n.logScalar()
 			for b in n.buckets():
@@ -478,7 +477,6 @@ class NetworkTree:
 		done = set()
 
 		while len(todo) > 0:
-			print(len(todo), len(done))
 			n = todo.pop()
 
 			canDo = True
