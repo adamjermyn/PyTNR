@@ -13,7 +13,7 @@ def IsingModel2D(nX, nY, h, J):
 	lattice = [[] for i in range(nX)] 
 	onSite = [[] for i in range(nX)] 
 	bondV = [[] for i in range(nX)] 
-	bondH = [[] for i in range(nY)] 
+	bondH = [[] for i in range(nX)] 
  
 	# Each lattice site has seven indices of width five, and returns zero if they are unequal and one otherwise. 
 	for i in range(nX): 

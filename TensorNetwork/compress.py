@@ -42,7 +42,6 @@ def compress(link, optimizerArray=None, optimizerBuckets=None, eps=1e-2):
 	arr11 = tensorToMatrix(t1, ind1, front=False)
 	arr22 = tensorToMatrix(t2, ind2, front=True)
 
-
 	if optimizerArray is None:
 		optimizerMatrix = None
 		opN = matrixProductLinearOperator(arr11, arr22)
@@ -62,15 +61,12 @@ def compress(link, optimizerArray=None, optimizerBuckets=None, eps=1e-2):
 				j = n1.bucketIndex(b)
 				inds1[i] = j
 				inds[(1,j)] = i
-				print(1,j,i)
 		for i,b in enumerate(optimizerBuckets):
 			if b in n2.buckets():
 				j = n2.bucketIndex(b)
 				inds2[i] = j
 				inds[(2,j)] = i
-				print(2,j,i)
 
-		print(len(inds1),len(inds2),len(n1.buckets()),len(n2.buckets()))
 		# Now we put all indices corresponding to arr1 at the front,
 		# and all indices corresponding to arr2 at the back.
 		perm = []
@@ -86,10 +82,12 @@ def compress(link, optimizerArray=None, optimizerBuckets=None, eps=1e-2):
 
 		optimizerMatrix = np.transpose(optimizerArray, axes=perm)
 
+
 		sh1m = np.product(tupleReplace(sh1, ind1, None))
 		sh2m = np.product(tupleReplace(sh2, ind2, None))
 
 		optimizerMatrix = np.reshape(optimizerMatrix, (sh1m, sh2m))
+		optimizerMatrix = np.transpose(optimizerMatrix)
 
 	u, lam, v, _, cp = generalSVD(opN, bondDimension=min(sh1[ind1], min(opN.shape)-1), optimizerMatrix=optimizerMatrix)
 

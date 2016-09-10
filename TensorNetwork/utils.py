@@ -44,6 +44,9 @@ def kroneckerDelta(dim, length):
 		np.fill_diagonal(arr,1.0)
 		return arr
 
+def adjoint(m):
+	return np.transpose(np.conjugate(m))
+
 ###################################
 # Linear Operator and SVD Functions
 ###################################
@@ -186,16 +189,21 @@ def generalSVD(matrix, bondDimension=np.inf, optimizerMatrix=None):
 
 		lams = np.sqrt(lame)
 
+		print(lams.shape, ve.shape, matrix.shape, ue.shape, lams.shape)
+
 		mmod = lams*np.dot(ve,np.dot(matrix,ue))*lams
 
 		um, lamm, vm = np.linalg.svd(mmod, full_matrices=0)
 
 		lamms = np.sqrt(lamm)
 
-		uf = np.einsum('ij,j,jk->ik',np.transpose(np.conjugate(ve)),1/lamms,um)
-		vf = np.einsum('ij,j,jk->ik',vm,1/lamms,np.transpose(np.conjugate(um)))
+		uf = np.einsum('ij,j,jk->ik',adjoint(ve),1/lamms,um)
+		vf = np.einsum('ij,j,jk->ik',vm,1/lamms,adjoint(ue))
 
 		u, lam, v = uf, lamm, vf
+
+		assert u.shape[0] == matrix.shape[0]
+		assert v.shape[1] == matrix.shape[1]
 
 	p = lam**2
 	p /= np.sum(p)

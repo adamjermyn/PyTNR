@@ -72,7 +72,7 @@ class Network:
 		order to maintain all Links.
 		'''
 		cc = node.children()
-		
+
 		if len(cc) == 0:
 			return
 
@@ -81,20 +81,21 @@ class Network:
 		for n in cc:
 			self._nodes.add(n)
 
+		
 		for n in cc:
+			descendSelf = False
 			for b in n.buckets():
 				if b.linked():
-					while len(set(b.otherNodes()).intersection(self._nodes)) == 0:
+					if len(set(b.otherNodes()).intersection(self._nodes)) == 0:
 						intersection = b.otherTopNode().ancestors().intersection(self._nodes)
 						if len(intersection) == 0:
-							self.descend(n)
-							return 	# We can do this because the other nodes in cc
-									# will be processed when we get back to this loop
-									# on the children of n.
+							descendSelf = True
 						else:
 							nn = intersection.pop()
 							self.descend(nn)
-
+			if descendSelf:
+				self.descend(n)
+				return
 
 	def ascend(self, node):
 		'''
@@ -114,7 +115,7 @@ class Network:
 			self._nodes.remove(c)
 
 		for b in p.buckets():
-			while len(set(b.otherNodes().intersection(self._nodes))) == 0:
+			while len(set(b.otherNodes()).intersection(self._nodes)) == 0:
 				intersection = b.otherTopNode().allNChildren().intersection(self._nodes)
 				assert len(intersection) == 1
 				nn = intersection.pop()

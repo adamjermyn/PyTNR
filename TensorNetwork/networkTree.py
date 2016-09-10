@@ -277,6 +277,10 @@ class NetworkTree:
 				# Means we want to move down to this Node's children
 				nn.descend(n)
 				remaining = nn.nodes().difference(subset)
+			elif len(set(subset).intersection(set(n.ancestors()))) > 0:
+				# Means we want to move up to this Node's parent
+				nn.ascend(n)
+				remaining = nn.nodes().difference(subset)
 
 			for n in nn.nodes():
 				for b in n.buckets():
@@ -335,16 +339,6 @@ class NetworkTree:
 						if not newNlinked.buckets()[ind1].linked():
 							newN.addLink(newNlinked, ind0, ind1)
 
-		print(len(nn.topLevelNodes()))
-		print(len(subset))
-
-		counter = 0
-		for n in nn.topLevelNodes():
-			for b in n.buckets():
-				if not b.linked():
-					counter += 1
-		print('b',counter)
-
 		return nn, newNodeOldID, oldNodeNewID, newBucketOldIDind, oldBucketNewIDind
 
 	def view(self, nodes, mergeL=True, compressL=True, eps=1e-4):
@@ -387,7 +381,7 @@ class NetworkTree:
 				oldNode = oldNodeNewID[nb.id()]
 				bucketList.append(oldNode.buckets()[ind].otherBucket())
 
-		return nn, arr[0], bucketList
+		return nn, arr, bucketList
 
 	def trace(self):
 		'''
@@ -501,43 +495,35 @@ class NetworkTree:
 					if b.linked():
 						link = b.link()
 						numC = len(link.children())
-						if b.numNodes() == 1 and numC > 0:
+						if b.numNodes() == 1 and numC == 1:
 							# Means that the Node was generated
-							# by compressing or merging this Link.
+							# by compressing this Link.
 							# Note that there can be at most one such Link
 							# for any Node, so we don't mind if the loop
 							# continues after we compress.
 							if link.compressed() and not link.optimized():
-								print('Optimizing...')
 								n1 = n
 								n2 = b.otherNodes()[0]
+								assert n2 in b.otherBucket().nodes()
 
 								n11 = n1.children()[0]
 								n22 = n2.children()[0]
+								assert b in n1.buckets()
+								assert n1 in b.nodes()
+								assert b.otherBucket() in n2.buckets()
+								assert n2 in b.otherBucket().nodes()
+								assert n11 in n22.connected()
 
 								done.add(n11)
 								done.add(n22)
-								print('Optimizing...')
 
 								_, arr, bs = self.view([n11, n22], mergeL=mergeL, compressL=compressL, eps=eps)
-								print('Optimizing...')
+								print('Optimizing...',len(arr.shape),len(bs))
 
-								print(len(bs))
-								print(arr.shape)
-
-								print(len(n11.linksConnecting(n22)))
-
-								if numC == 1:
-									# Means we just compressed a single Link
-									prevLink = link.children()[0]
+								# Means we just compressed a single Link
+								prevLink = link.children()[0]
 
 								n1.delete() # We only need to delete one of them, as this deletes the other.
-
-								if numC > 1:
-									# Means we've compressed a multiple Links at once
-									n1, n2, prevLink = mergeLinks(n11, n22, compressLink=False)
-									done.add(n1)
-									done.add(n2)
 
 
 								newLink, n1, n2 = compress(prevLink, optimizerArray=arr, optimizerBuckets=bs, eps=eps)
