@@ -10,7 +10,7 @@ from network import Network
 
 class NetworkTree:
 	'''
-	A Network is an object storing Nodes as well as providing helper methods
+	A NetworkTree is an object storing Nodes as well as providing helper methods
 	for manipulating those Nodes.
 	'''
 

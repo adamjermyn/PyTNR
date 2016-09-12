@@ -50,6 +50,10 @@ class Link:
 			c.setParent(self)
 			self._network.deregisterLinkTop(c)
 		self._network.registerLink(self)
+		self._periodic = False
+		for c in self._children:
+			if c.periodic():
+				self._periodic = True
 
 	def bucket1(self):
 		return self._b1
@@ -74,6 +78,12 @@ class Link:
 
 	def setCompressed(self):
 		self._compressed = True
+
+	def periodic(self):
+		return self._periodic
+
+	def setPeriodic(self):
+		self._periodic = True
 
 	def topContents(self):
 		n1 = self._b1.topNode()

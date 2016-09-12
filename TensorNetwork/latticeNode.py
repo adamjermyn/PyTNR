@@ -7,6 +7,10 @@ from utils import kroneckerDelta
 class latticeNode(Node):
 
 	def __init__(self, length, network):
+		'''
+		length 	-	Local lattice state dimension
+		network -	Network this Node belongs to
+		'''
 		tens = Tensor(tuple(),np.array(1))
 		Node.__init__(self,tens,network,Buckets=[])
 		self._length = length
