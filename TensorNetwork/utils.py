@@ -22,6 +22,35 @@ def tupleReplace(tpl, i, j):
 		tpl = tpl[:i] + tpl[i+1:]
 	return tuple(tpl)
 
+def flatten(l, ltypes=(list, tuple)):
+	'''
+	Flattens a general iterator.
+	This is from Mike C. Fletcher's BasicTypes library, with
+	modifications from
+	http://rightfootin.blogspot.co.uk/2006/09/more-on-python-flatten.html
+	'''
+	ltype = type(l)
+	l = list(l)
+	i = 0
+	while i < len(l):
+		while isinstance(l[i], ltypes):
+			if not l[i]:
+				l.pop(i)
+				i -= 1
+				break
+			else:
+				l[i:i + 1] = l[i]
+		i += 1
+	return ltype(l)
+
+def multiMod(x, dimensions):
+	l = list(x)
+	dims = set()
+	for i in range(len(x)):
+		if x[i] > dimensions[i]:
+			x[i] = x[i]%dimensions[i]
+			dims.add(i)
+	return x, dims
 
 ##################################
 # General Linear Algebra Functions
