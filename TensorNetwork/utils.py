@@ -47,7 +47,7 @@ def multiMod(x, dimensions):
 	l = list(x)
 	dims = set()
 	for i in range(len(x)):
-		if x[i] > dimensions[i]:
+		if x[i] >= dimensions[i]:
 			x[i] = x[i]%dimensions[i]
 			dims.add(i)
 	return x, dims

@@ -84,6 +84,8 @@ class Link:
 
 	def setPeriodic(self):
 		self._periodic = True
+	def setNotPeriodic(self):
+		self._periodic = False
 
 	def topContents(self):
 		n1 = self._b1.topNode()

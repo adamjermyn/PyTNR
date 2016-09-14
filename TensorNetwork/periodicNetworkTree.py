@@ -4,6 +4,8 @@ from node import Node
 from utils import flatten, multiMod
 import numpy as np
 from copy import deepcopy
+from bucket import Bucket
+from tensor import Tensor
 
 class PeriodicNetworkTree(NetworkTree):
 	'''
@@ -13,12 +15,18 @@ class PeriodicNetworkTree(NetworkTree):
 	def __init__(self, latticeLength, dimensions, bondArrays, footprints):
 		self._latticeLength = latticeLength
 		self._dimensions = dimensions
+		self.dimensions = dimensions
 		self._bondArrays = bondArrays
 		self._footprints = footprints
 
 		NetworkTree.__init__(self)
 
-		self._siteIndices = np.meshgrid((range(d) for d in dimensions))
+
+		self._siteIndices = np.meshgrid(*list(list(range(d)) for d in dimensions),indexing='ij')
+		self._siteIndices = np.array(self._siteIndices)
+		self._siteIndices = np.reshape(self._siteIndices, (len(dimensions),-1))
+		self._siteIndices = np.transpose(self._siteIndices)
+
 		self._sites = np.empty(shape=dimensions, dtype='object')
 
 		self._bonds = [np.empty(shape=dimensions, dtype='object') for _ in bondArrays]
@@ -27,20 +35,20 @@ class PeriodicNetworkTree(NetworkTree):
 		self._allPeriodicLinks = set()
 
 		for si in self._siteIndices:
-			self._sites[si] = latticeNode(latticeLength, self)
+			self._sites[tuple(si)] = latticeNode(latticeLength, self)
 			for i in range(len(bondArrays)):
-				self._bonds[i][si] = self.addNodeFromArray(bondArrays[i])
+				self._bonds[i][tuple(si)] = self.addNodeFromArray(bondArrays[i])
 
 		for si in self._siteIndices:
 			for i in range(len(bondArrays)):
 				for q,dj in enumerate(footprints[i]):
-					x, dims = multiMod(np.array(si) + np.array(dj))
-					l = self._sites[si].addLink(self._bonds[i][x],q)
+					x, dims = multiMod(np.array(si) + np.array(dj), dimensions)
+					l = self._sites[tuple(si)].addLink(self._bonds[i][tuple(x)],q)
 					if len(dims) > 0:
 						self._allPeriodicLinks.add(l)
 						l.setPeriodic()
-					for i in dims:
-						self._periodicLinks[i].add(l)
+					for j in dims:
+						self._periodicLinks[j].add(l)
 
 	def merge(self, mergeL=True, compressL=True, eps=1e-4):
 		'''
@@ -53,6 +61,12 @@ class PeriodicNetworkTree(NetworkTree):
 			compressL -	Attempts to compress all Links (if any) resulting from a Link merger.
 			eps		  -	The accuracy of the compression to perform.
 		'''
+
+
+		try:
+			link = self._sortedLinks.pop()
+		except KeyError:
+			return 0
 
 		while link.periodic():
 			try:
@@ -94,21 +108,41 @@ class PeriodicNetworkTree(NetworkTree):
 			if ret == 0:
 				done = True
 
-			if counter%20 == 0:
+			if counter%1 == 0:
 				t = self.largestTopLevelTensor()
 				print(len(self.topLevelNodes()),self.topLevelSize(), t.tensor().shape())
 			counter += 1
+
+	def registerNode(self, node):
+		'''
+		Registers a new Node in the Network.
+		This should only be called when registering a new Node.
+		'''
+		assert node not in self._nodes
+		assert node not in self._topLevelNodes
+
+		self._nodes.add(node)
+		self._topLevelNodes.add(node)
+		if len(node.children()) == 0:
+			self._bottomLevelNodes.add(node)
+
+		children = node.children()
+		for c in children:
+			if c in self._topLevelNodes:
+				self._topLevelNodes.remove(c)
+
+		assert len(set(node.children()).intersection(self._topLevelNodes)) == 0
 
 
 	def expand(self, dimension):
 		self._dimensions[dimension] *= 2
 
 		newNodes = set()
+		newLinks = set()
 		newNodeOldID = {}
 		oldNodeNewID = {}
 		newBucketOldIDind = {}
 		oldBucketNewIDind = {}
-
 		nn = NetworkTree()
 
 		subset = set(self._topLevelNodes)
@@ -116,9 +150,10 @@ class PeriodicNetworkTree(NetworkTree):
 		# Copy top-level Nodes
 
 		for n in subset:
-			m = Node(n.tensor(), self, children=n.children(), logScalar = n.logScalar())
+			t = Tensor(n.tensor().shape(), n.tensor().array())
+			buckets = [Bucket(self) for _ in n.buckets()]
+			m = Node(t, self, children=n.children(), Buckets=buckets, logScalar = n.logScalar())
 			newNodes.add(m)
-
 			newNodeOldID[n.id()] = m
 			oldNodeNewID[m.id()] = n
 
@@ -145,10 +180,35 @@ class PeriodicNetworkTree(NetworkTree):
 						newNlinked = newNodeOldID[oldNlinked.id()]
 
 						if not newNlinked.buckets()[ind1].linked():
-							newN.addLink(newNlinked, ind0, ind1)
+							l = newN.addLink(newNlinked, ind0, ind1)
+							newLinks.add(l)
+							if b.link().periodic():
+								l.setPeriodic()
+								self._allPeriodicLinks.add(l)
+								for i in range(len(self._periodicLinks)):
+									if b.link() in self._periodicLinks[i]:
+										self._periodicLinks[i].add(l)
 
 		# Fix periodic Links
-		# Do this by bucket swapping
+
+		for l in self._topLevelLinks:
+			if l.periodic():
+				b1 = l.bucket1()
+				b2 = l.bucket2()
+				n1 = b1.topNode()
+				n2 = b2.topNode()
+				ind1 = n1.buckets().index(b1)
+				ind2 = n2.buckets().index(b2)
+				if l not in newLinks:
+					if n1.id() in newNodeOldID.keys():
+						n1new = newNodeOldID[n1.id()]
+						n2new = newNodeOldID[n2.id()]
+						b1new = n1new.buckets()[ind1]
+						b2new = n2new.buckets()[ind2]
+						n1new.setBucket(ind1, b1)
+						n1.setBucket(ind1, b1new)
+						b1.nodes()[-1] = n1new
+						b1new.nodes()[-1] = n1
+						l.setNotPeriodic()
 
 
-		other = 

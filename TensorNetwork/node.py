@@ -188,6 +188,9 @@ class Node:
 	def buckets(self):
 		return self._buckets
 
+	def setBucket(self, index, bucket):
+		self._buckets[index] = bucket
+
 	def removeBucket(self, b):
 		assert b in self._buckets
 		self._buckets.remove(b)
@@ -370,9 +373,10 @@ class Node:
 			n = todo.pop()
 			done.add(n)
 
-			n1, n2, _ = mergeLinks(n1, n, compressLink = compressL)
+			n1, n2, newLink = mergeLinks(n1, n, compressLink = compressL, eps=eps)
 
-			assert len(n1.children()) == len(n2.children())
+			if newLink is not None:
+				assert len(n1.children()) == len(n2.children())
 
 			new.add(n2)
 

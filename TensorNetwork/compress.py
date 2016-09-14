@@ -5,6 +5,10 @@ from utils import tupleReplace
 import numpy as np
 
 def cutBond(u, v, ind1, ind2, link):
+	if link.periodic():
+		n1, n2, _, _, sh1, sh2 = link.topContents()
+		return link, n1, n2
+
 	n1, n2, _, _, sh1, sh2 = link.topContents()
 
 	sh1m = tupleReplace(sh1, ind1, None)

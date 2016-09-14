@@ -11,8 +11,8 @@ import cProfile
 
 print('Testing 2D Regular Ising Model - J sweep, h=0:')
 
-nX = 10
-nY = 10
+nX = 2
+nY = 2
 
 for j in np.linspace(-1,1,num=10):
 	network, lattice = IsingModel2D(nX, nY, 0, j)

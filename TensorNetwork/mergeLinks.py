@@ -10,16 +10,26 @@ def mergeLinks(n1, n2, compressLink=False, eps=1e-4):
 
 	links = n1.linksConnecting(n2)
 
+	counter = 0
+	for l in links:
+		if not l.periodic():
+			counter += 1
+	if counter < 2:
+		return n1, n2, None
+
 	indices1 = []
 	indices2 = []
 
 	for link in links:
-		if link.bucket1().topNode() == n1:
-			indices1.append(n1.bucketIndex(link.bucket1()))
-			indices2.append(n2.bucketIndex(link.bucket2()))
-		else:
-			indices1.append(n1.bucketIndex(link.bucket2()))
-			indices2.append(n2.bucketIndex(link.bucket1()))
+		if not link.periodic():
+			if link.bucket1().topNode() == n1:
+				indices1.append(n1.bucketIndex(link.bucket1()))
+				indices2.append(n2.bucketIndex(link.bucket2()))
+			else:
+				indices1.append(n1.bucketIndex(link.bucket2()))
+				indices2.append(n2.bucketIndex(link.bucket1()))
+
+
 
 	perm1 = [i for i in range(len(n1.tensor().shape())) if i not in indices1]
 	perm2 = [i for i in range(len(n2.tensor().shape())) if i not in indices2]

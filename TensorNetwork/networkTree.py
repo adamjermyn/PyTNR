@@ -92,7 +92,6 @@ class NetworkTree:
 		bucketList = []
 
 		for n in self._topLevelNodes:
-			print(n)
 			arr = np.tensordot(arr, n.tensor().array(), axes=0)
 			logS += n.logScalar()
 			for b in n.buckets():
@@ -244,13 +243,16 @@ class NetworkTree:
 		return idd
 
 
-	def addNodeFromArray(self, arr):
+	def addNodeFromArray(self, arr, logS=None):
 		'''
 		Takes as input an array and constructs a Tensor and Node around it,
 		then adds the Node to this Network.
 		'''
 		t = Tensor(arr.shape, arr)
-		return Node(t, self, Buckets=[Bucket(self) for _ in range(len(arr.shape))])
+		if logS is None:
+			return Node(t, self, Buckets=[Bucket(self) for _ in range(len(arr.shape))])
+		else:
+			return Node(t, self, Buckets=[Bucket(self) for _ in range(len(arr.shape))], logScalar = logS)
 
 	def filterSubset(self, subset):
 		'''
@@ -309,7 +311,8 @@ class NetworkTree:
 
 		# Copy Nodes
 		for n in subset:
-			m = nn.addNodeFromArray(n.tensor().array())
+			m = nn.addNodeFromArray(n.tensor().array(),logS=n.logScalar())
+
 
 			newNodeOldID[n.id()] = m
 			oldNodeNewID[m.id()] = n
