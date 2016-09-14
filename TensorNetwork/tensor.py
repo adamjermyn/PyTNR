@@ -17,7 +17,7 @@ def read(fname):
 	fi = open(fname,'rb')
 	arr = np.load(fi)
 	fi.close()
-	return arr	
+	return arr
 
 class Tensor:
 	'''
@@ -126,6 +126,8 @@ class Tensor:
 
 		return Tensor(arr.shape,arr)
 
+	def __deepcopy__(self):
+		return self
 
 
 

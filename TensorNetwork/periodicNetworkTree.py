@@ -113,6 +113,9 @@ class PeriodicNetworkTree(NetworkTree):
 				print(len(self.topLevelNodes()),self.topLevelSize(), t.tensor().shape())
 			counter += 1
 
+	def connect(self, other, dimension):
+		
+
 	def registerNode(self, node):
 		'''
 		Registers a new Node in the Network.
@@ -145,49 +148,9 @@ class PeriodicNetworkTree(NetworkTree):
 		oldBucketNewIDind = {}
 		nn = NetworkTree()
 
-		subset = set(self._topLevelNodes)
+		# Copy all Nodes
 
-		# Copy top-level Nodes
-
-		for n in subset:
-			t = Tensor(n.tensor().shape(), n.tensor().array())
-			buckets = [Bucket(self) for _ in n.buckets()]
-			m = Node(t, self, children=n.children(), Buckets=buckets, logScalar = n.logScalar())
-			newNodes.add(m)
-			newNodeOldID[n.id()] = m
-			oldNodeNewID[m.id()] = n
-
-			for i in range(len(n.buckets())):
-				newBucketOldIDind[(n.id(),i)] = n.buckets()[i]
-				oldBucketNewIDind[(m.id(),i)] = m.buckets()[i]
-
-		# Link new Nodes
-
-		for oldN in subset:
-			newN = newNodeOldID[oldN.id()]
-
-			for ind0, b in enumerate(oldN.buckets()):
-				if b.linked():
-					otherB = b.otherBucket()
-
-					intersection = set(otherB.nodes()).intersection(subset)
-
-					if len(intersection) > 0:
-						assert len(intersection) == 1
-						oldNlinked = intersection.pop()
-						ind1 = oldNlinked.buckets().index(otherB)
-
-						newNlinked = newNodeOldID[oldNlinked.id()]
-
-						if not newNlinked.buckets()[ind1].linked():
-							l = newN.addLink(newNlinked, ind0, ind1)
-							newLinks.add(l)
-							if b.link().periodic():
-								l.setPeriodic()
-								self._allPeriodicLinks.add(l)
-								for i in range(len(self._periodicLinks)):
-									if b.link() in self._periodicLinks[i]:
-										self._periodicLinks[i].add(l)
+		newTopLevel = deepcopy(self._topLevelNodes)
 
 		# Fix periodic Links
 
