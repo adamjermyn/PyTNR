@@ -50,6 +50,12 @@ class PeriodicNetworkTree(NetworkTree):
 					for j in dims:
 						self._periodicLinks[j].add(l)
 
+	def combineNetworks(self, other):
+		self._topLevelNodes = self._topLevelNodes.update(other.topLevelNodes())
+		self._topLevelLinks = self._topLevelLinks.update(other.topLevelLinks())
+		
+
+
 	def merge(self, mergeL=True, compressL=True, eps=1e-4):
 		'''
 		Performs the next best merger (contraction) between Nodes based on entropy heuristics.
@@ -113,9 +119,6 @@ class PeriodicNetworkTree(NetworkTree):
 				print(len(self.topLevelNodes()),self.topLevelSize(), t.tensor().shape())
 			counter += 1
 
-	def connect(self, other, dimension):
-		
-
 	def registerNode(self, node):
 		'''
 		Registers a new Node in the Network.
@@ -150,7 +153,9 @@ class PeriodicNetworkTree(NetworkTree):
 
 		# Copy all Nodes
 
-		newTopLevel = deepcopy(self._topLevelNodes)
+		newNetwork = deepcopy(self)
+
+
 
 		# Fix periodic Links
 
