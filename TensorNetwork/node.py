@@ -85,6 +85,9 @@ class Node:
 	def id(self):
 		return self._id
 
+	def setID(self, idd):
+		self._id = idd
+
 	def __str__(self):
 		return 'Node with ID: ' + str(self._id) + '  and tensor shape ' + str(self._tensor.shape())
 
@@ -136,6 +139,9 @@ class Node:
 
 	def network(self):
 		return self._network
+
+	def setNetwork(self, network):
+		self._network = network
 
 	def connected(self):
 		c = []

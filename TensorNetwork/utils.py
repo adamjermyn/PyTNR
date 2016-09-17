@@ -210,8 +210,10 @@ def generalSVD(matrix, bondDimension=np.inf, optimizerMatrix=None):
 	if optimizerMatrix is None:
 		if bondDimension > 0 and bondDimension < matrix.shape[0] and bondDimension < matrix.shape[1]:
 			# Required so sparse bond is properly represented
+			print('fast',matrix.shape)
 			u, lam, v = bigSVD(matrix, bondDimension)
 		else:
+			print('slow',matrix.shape)
 			u, lam, v = np.linalg.svd(matrix, full_matrices=0)
 	else:
 		ue, lame, ve = np.linalg.svd(optimizerMatrix, full_matrices=0)

@@ -1,6 +1,6 @@
 import sys
 sys.path.append('../TensorNetwork/')
-from network import Network
+from networkTree import NetworkTree
 from latticeNode import latticeNode
 import numpy as np
 from scipy.integrate import quad
@@ -18,7 +18,7 @@ def otherIsingSolve(nX, nY, nZ, h, J, q):
 	# TODO: The logic here should probably be standardised to make
 	# solving lattices systematically easier. It should also be parallelised. 
 
-	network = Network()
+	network = NetworkTree()
 
 	# Place to store the tensors
 	lattice = [[[] for j in range(nY)] for i in range(nX)]
@@ -219,7 +219,7 @@ def otherIsingSolve(nX, nY, nZ, h, J, q):
 
 	return np.log(list(network.topLevelNodes())[0].tensor().array()) + list(network.topLevelNodes())[0].logScalar()
 
-print(otherIsingSolve(20,20,20,-0.2,-0.2,1.))
+print(otherIsingSolve(4,4,4,-0.2,-0.2,1.))
 #cProfile.run('otherIsingSolve(4,4,4,-0.2,-0.2,1.)')
 exit()
 

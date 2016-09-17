@@ -33,5 +33,5 @@ class PriorityQueue:
 			if task is not self.REMOVED:
 				del self.entry_finder[task]
 				self.length -= 1
-				return task
+				return task, priority
 		raise KeyError('pop from an empty priority queue')

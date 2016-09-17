@@ -39,6 +39,7 @@ class Link:
 			children = []
 		self._b1 = b1
 		self._b2 = b2
+		self._id = network.nextLinkID()
 		self._compressed = compressed
 		self._network = network
 		self._reduction = reduction
@@ -55,11 +56,20 @@ class Link:
 			if c.periodic():
 				self._periodic = True
 
+	def id(self):
+		return self._id
+
 	def bucket1(self):
 		return self._b1
 
 	def bucket2(self):
 		return self._b2
+
+	def setBucket1(self, b1):
+		self._b1 = b1
+
+	def setBucket2(self, b2):
+		self._b2 = b2
 
 	def network(self):
 		return self._network
@@ -84,8 +94,13 @@ class Link:
 
 	def setPeriodic(self):
 		self._periodic = True
+		if self in self._network.topLevelLinks():
+			self.update()
+
 	def setNotPeriodic(self):
 		self._periodic = False
+		if self in self._network.topLevelLinks():
+			self.update()
 
 	def topContents(self):
 		n1 = self._b1.topNode()

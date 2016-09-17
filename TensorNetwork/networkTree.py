@@ -25,8 +25,8 @@ class NetworkTree:
 		self._topLevelLinks = set()
 		self._cutLinks = set()
 		self._sortedLinks = PriorityQueue()
-		self._idDict = {}
 		self._idCounter = 0
+		self._linkIDcounter = 0
 
 	def __str__(self):
 		'''
@@ -37,6 +37,22 @@ class NetworkTree:
 		for n in self._topLevelNodes:
 			s = s + str(n) + '\n'
 		return s
+
+	def addNetworkTree(self, other):
+		# Note: Destroys other Network
+		self._nodes.update(other.nodes())
+		self._topLevelNodes.update(other.topLevelNodes())
+		self._bottomLevelNodes.update(other.bottomLevelNodes())
+		self._allLinks.update(other.allLinks())
+		self._topLevelLinks.update(other.topLevelLinks())
+		self._cutLinks.update(other.cutLinks())
+		for n in other.nodes():
+			n.setID(self.nextID())
+			n.setNetwork(self)
+		while other.sortedLinks().length > 0:
+			link, priority = other.sortedLinks().pop()
+			self._sortedLinks.add(link, priority=priority)
+
 
 	def size(self):
 		'''
@@ -62,11 +78,26 @@ class NetworkTree:
 		'''
 		return set(self._topLevelNodes)
 
+	def bottomLevelNodes(self):
+		'''
+		Returns a copy of the set of all bottom-level Nodes in the Network.
+		'''
+		return set(self._topLevelNodes)
+
 	def topLevelLinks(self):
 		'''
 		Returns a copy of the set of all top-level Links in the Network.
 		'''
 		return set(self._topLevelLinks)
+
+	def sortedLinks(self):
+		return self._sortedLinks
+
+	def allLinks(self):
+		return self._allLinks
+
+	def cutLinks(self):
+		return self._cutLinks
 
 	def largestTensor(self):
 		'''
@@ -187,7 +218,8 @@ class NetworkTree:
 		to be contracted.
 		'''
 		self._sortedLinks.remove(link)
-		self._sortedLinks.add(link, link.mergeEntropy())
+		if not link.periodic():
+			self._sortedLinks.add(link, link.mergeEntropy())
 
 	def registerNode(self, node):
 		'''
@@ -242,6 +274,10 @@ class NetworkTree:
 		self._idCounter += 1
 		return idd
 
+	def nextLinkID(self):
+		idd = self._linkIDcounter
+		self._linkIDcounter += 1
+		return idd
 
 	def addNodeFromArray(self, arr, logS=None):
 		'''
@@ -253,6 +289,18 @@ class NetworkTree:
 			return Node(t, self, Buckets=[Bucket(self) for _ in range(len(arr.shape))])
 		else:
 			return Node(t, self, Buckets=[Bucket(self) for _ in range(len(arr.shape))], logScalar = logS)
+
+	def addNodeFromTensor(self, t, logS=None):
+		'''
+		Takes as input a Tensor and constructs a Node around it,
+		then adds the Node to this Network. The Tensor is not copied,
+		so this allows multiple Nodes to have the same Tensor.
+		'''
+		if logS is None:
+			return Node(t, self, Buckets=[Bucket(self) for _ in range(len(t.shape()))])
+		else:
+			return Node(t, self, Buckets=[Bucket(self) for _ in range(len(t.shape()))], logScalar = logS)
+
 
 	def filterSubset(self, subset):
 		'''
@@ -406,7 +454,7 @@ class NetworkTree:
 			eps		  -	The accuracy of the compression to perform.
 		'''
 
-		link = self._sortedLinks.pop()
+		link, _ = self._sortedLinks.pop()
 
 		assert link in self._topLevelLinks
 
@@ -527,7 +575,6 @@ class NetworkTree:
 								prevLink = link.children()[0]
 
 								n1.delete() # We only need to delete one of them, as this deletes the other.
-
 
 								newLink, n1, n2 = compress(prevLink, optimizerArray=arr, optimizerBuckets=bs, eps=eps)
 

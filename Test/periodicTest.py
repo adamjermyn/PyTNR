@@ -2,12 +2,13 @@ import sys
 sys.path.append('../TensorNetwork/') 
 sys.path.append('../Models/') 
 from networkTree import NetworkTree
-from periodicNetworkTree import PeriodicNetworkTree
 from latticeNode import latticeNode 
 import numpy as np 
 from scipy.integrate import quad 
 import cProfile 
 from isingModel import exactIsing2D
+from tileTree import makeTileTreeFromArrays, linkTrees
+
 
 def isingModel2Dperiodic(h,j):
 	latticeLength = 2
@@ -23,28 +24,21 @@ def isingModel2Dperiodic(h,j):
 	footprints.append([[0,0],[0,1]])
 	footprints.append([[0,0],[1,0]])
 
-	p = PeriodicNetworkTree(latticeLength, dimensions, bondArrays, footprints)
+	nt, periodicLinks = makeTileTreeFromArrays(latticeLength, dimensions, bondArrays, footprints)
 
-	for _ in range(4):
-		p.contract(mergeL=True,compressL=True,eps=1e-10)
-		p.expand(0)
-		p.contract(mergeL=True,compressL=True,eps=1e-10)
-		p.expand(1)
-	p.contract(mergeL=True,compressL=True,eps=1e-10)
+	nt.contract(mergeL=True, compressL=True, eps=1e-10)
 
-	dims = p.dimensions
+	arr, logS, _ = nt.topLevelRepresentation()
+	print(logS)
 
-	pp, _, _, _, _ = p.copySubset(set(p.topLevelNodes()))
+	nt, periodicLinks = linkTrees(0, nt, periodicLinks)
 
-	pp.contract(mergeL=True, compressL=True, eps=1e-10)
+	nt.contract(mergeL=True, compressL=True, eps=1e-10)
 
-	arr, logS, _ = pp.topLevelRepresentation()
-	print(logS/(np.product(dims)))
+	arr, logS, _ = nt.topLevelRepresentation()
+	print(logS)
 
-	if h == 0:
-		print(exactIsing2D(j))
-	elif j == 0:
-		print(np.log((np.exp(-h)+np.exp(h))))
-
+print('----')
 isingModel2Dperiodic(3.0,0)
+print('----')
 isingModel2Dperiodic(0.0,0.3333)

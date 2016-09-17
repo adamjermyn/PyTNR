@@ -11,8 +11,8 @@ import cProfile
 
 print('Testing 2D Regular Ising Model - J sweep, h=0:')
 
-nX = 2
-nY = 2
+nX = 10
+nY = 10
 
 for j in np.linspace(-1,1,num=10):
 	network, lattice = IsingModel2D(nX, nY, 0, j)
@@ -65,9 +65,9 @@ print('lnZ (calculated)=',q)
 
 print('Testing 3D Regular Ising Model - J=0.5,h=0.5:')
 
-nX = 6
-nY = 6
-nZ = 6
+nX = 8
+nY = 8
+nZ = 8
 
 network, lattice=  IsingModel3D(nX, nY, nZ, 0.5, 0.5)
 network.contract(mergeL=True, compressL=True, eps=1e-4)

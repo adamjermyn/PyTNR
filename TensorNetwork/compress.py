@@ -40,6 +40,8 @@ def compress(link, optimizerArray=None, optimizerBuckets=None, eps=1e-2):
 
 	shI = sh1[ind1] # Must be the same as arr2.shape[ind2]
 
+	print(sh1,sh2,shI)
+
 	if shI == 1: # Means we just cut the bond 
 		return cutBond(arr1, arr2, ind1, ind2, link) 
 

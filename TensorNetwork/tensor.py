@@ -6,7 +6,7 @@ from utils import ndArrayToMatrix, matrixToNDArray
 
 tempdir = tempfile.TemporaryDirectory()
 executor = ThreadPoolExecutor(max_workers=10)
-maxSize = 500000
+maxSize = 1e99
 
 def write(fname, arr):
 	fi = open(fname,'wb+')
@@ -126,7 +126,7 @@ class Tensor:
 
 		return Tensor(arr.shape,arr)
 
-	def __deepcopy__(self):
+	def __deepcopy__(self, memo):
 		return self
 
 
