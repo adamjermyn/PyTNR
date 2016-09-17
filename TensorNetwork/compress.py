@@ -89,10 +89,12 @@ def compress(link, optimizerArray=None, optimizerBuckets=None, eps=1e-2):
 		optimizerMatrix = np.reshape(optimizerMatrix, (sh1m, sh2m))
 		optimizerMatrix = np.transpose(optimizerMatrix)
 
-	u, lam, v, _, cp = generalSVD(opN, bondDimension=min(sh1[ind1], min(opN.shape)-1), optimizerMatrix=optimizerMatrix)
+	u, lam, v, _, cp = generalSVD(opN, bondDimension=min(sh1[ind1], min(opN.shape)-1), optimizerMatrix=optimizerMatrix, arr1=arr11, arr2=arr22)
 
 	ind = np.searchsorted(cp, eps, side='left')
 	ind = len(cp) - ind
+
+	print('Compression saved: ',len(cp) - ind,' out of ',len(cp),' for a percentage saving of ',1.0*(len(cp) - ind)/len(cp))
 
 	if ind == len(cp): 
 		# This means that we can't compress this bond, and so

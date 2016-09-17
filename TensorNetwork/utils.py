@@ -144,7 +144,7 @@ def bigSVD(matrix, bondDimension):
 	v = v[inds, :]
 	return u, s, v
 
-def generalSVD(matrix, bondDimension=np.inf, optimizerMatrix=None):
+def generalSVD(matrix, bondDimension=np.inf, optimizerMatrix=None, arr1=None, arr2=None):
 	'''
 	This is a helper method for SVD calculations.
 
@@ -177,8 +177,20 @@ def generalSVD(matrix, bondDimension=np.inf, optimizerMatrix=None):
 
 	As a result of the above definitions, p and cp are both sorted in descending order.
 	'''
+	if arr1 is not None and arr2 is not None:
+		u1, s1, v1 = np.linalg.svd(arr1, full_matrices=0)
+		print('SVD 1 Done!')
+		u2, s2, v2 = np.linalg.svd(arr2, full_matrices=0)
+		print('SVD 2 Done!')
 
-	if optimizerMatrix is None:
+		arr3 = np.dot(v1, u2)
+		arr3 = np.einsum('i,ij,j->ij',s1,arr3,s2)
+
+		up, lam, vp = np.linalg.svd(arr3, full_matrices=0)
+		print('SVD 3 Done!')
+		u = np.dot(u1, up)
+		v = np.dot(vp, v2)
+	elif optimizerMatrix is None:
 		if bondDimension > 0 and bondDimension < matrix.shape[0] and bondDimension < matrix.shape[1]:
 			# Required so sparse bond is properly represented
 			u, lam, v = bigSVD(matrix, bondDimension)
