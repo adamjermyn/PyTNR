@@ -1,6 +1,6 @@
 import sys
 sys.path.append('../TensorNetwork/')
-from network import Network
+from networkTree import NetworkTree
 from latticeNode import latticeNode
 import numpy as np
 from scipy.integrate import quad
@@ -18,7 +18,7 @@ def otherIsingSolve(nX, nY, nZ, h, J, q):
 	# TODO: The logic here should probably be standardised to make
 	# solving lattices systematically easier. It should also be parallelised. 
 
-	network = Network()
+	network = NetworkTree()
 
 	# Place to store the tensors
 	lattice = [[[] for j in range(nY)] for i in range(nX)]
@@ -117,7 +117,7 @@ def otherIsingSolve(nX, nY, nZ, h, J, q):
 		for j in range(nY):
 			print(i,j)
 			for k in range(nZ):
-				lattice[i][j][k] = lattice[i][j][k].merge(bondL[i][j][k], mergeL=True, compressL=True,eps=1e-5)
+				lattice[i][j][k] = lattice[i][j][k].merge(bondL[i][j][k], mergeL=True, compressL=True,eps=0.3)
 
 	nnX = nX
 	nnY = nY
@@ -129,6 +129,9 @@ def otherIsingSolve(nX, nY, nZ, h, J, q):
 			break
 
 		print(len(network.topLevelNodes()))
+
+		network.compressLinks()
+		print(network)
 
 		if nnX > 1:
 			for ii in range(nnX//2):
@@ -151,6 +154,8 @@ def otherIsingSolve(nX, nY, nZ, h, J, q):
 				for j in range(nnY):
 					for k in range(nnZ):
 							makeTop(lattice[i][j][k])
+		print(network)
+		network.compressLinks()
 		print(network)
 
 		if nnX == 1 and nnY == 1 and nnZ == 1 or stop:
@@ -179,6 +184,8 @@ def otherIsingSolve(nX, nY, nZ, h, J, q):
 				for j in range(nnY):
 					for k in range(nnZ):
 							makeTop(lattice[i][j][k])
+		print(network)
+		network.compressLinks()
 		print(network)
 
 		if nnX == 1 and nnY == 1 and nnZ == 1 or stop:
@@ -219,7 +226,7 @@ def otherIsingSolve(nX, nY, nZ, h, J, q):
 
 	return np.log(list(network.topLevelNodes())[0].tensor().array()) + list(network.topLevelNodes())[0].logScalar()
 
-print(otherIsingSolve(20,20,20,-0.2,-0.2,1.))
+print(otherIsingSolve(5,5,5,0.2,0.2,-5.0))
 #cProfile.run('otherIsingSolve(4,4,4,-0.2,-0.2,1.)')
 exit()
 

@@ -2,11 +2,11 @@ import numpy as np
 import tempfile
 import os
 from concurrent.futures import ThreadPoolExecutor
-from utils import ndArrayToMatrix, matrixToNDArray
+from utils import ndArrayToMatrix, matrixToNDArray, optimalFactor, dumbFactor
 
 tempdir = tempfile.TemporaryDirectory()
 executor = ThreadPoolExecutor(max_workers=10)
-maxSize = 500000
+maxSize = 50000
 
 def write(fname, arr):
 	fi = open(fname,'wb+')
@@ -29,6 +29,9 @@ class Tensor:
 
 		self._shape = shape
 		self._size = tens.size
+
+#		optimalFactor(tens)
+		dumbFactor(tens)
 
 		# We normalize the Tensor by factoring out the log of the
 		# maximum-magnitude element.
@@ -85,6 +88,7 @@ class Tensor:
 
 		Returns a Tensor containing the contraction of this Tensor with the other.
 		'''
+		print(self.shape(),other.shape())
 		arr = np.tensordot(self.array(),other.array(),axes=((ind,otherInd)))
 		return Tensor(arr.shape,arr)
 

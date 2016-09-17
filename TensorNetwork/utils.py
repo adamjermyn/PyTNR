@@ -223,4 +223,22 @@ def generalSVD(matrix, bondDimension=np.inf, optimizerMatrix=None, arr1=None, ar
 
 	return u, lam, v, p, cp
 
+def optimalFactor(array, eps=1e-4):
+	bestRed = (0,-1,-1)
+	for i in range(len(array.shape)):
+		mat = ndArrayToMatrix(np.copy(array), i)
+		u, lam, v, p, cp = generalSVD(mat)
+		ind = np.searchsorted(cp, eps, side='left')
+		ind = len(cp) - ind
+		if len(cp) - ind > bestRed[0]:
+			bestRed = (ind, len(cp), cp)
+	if bestRed[1] - bestRed[0] > 0:
+		print(bestRed)
+
+def dumbFactor(array, eps=1e-4):
+	mat = np.reshape(array, (-1, np.product(array.shape[:len(array.shape)//2])))
+	u, lam, v, p, cp = generalSVD(mat)
+	ind = np.searchsorted(cp, eps, side='left')
+	ind = len(cp) - ind
+	print('aaaaa',ind/len(cp))
 
