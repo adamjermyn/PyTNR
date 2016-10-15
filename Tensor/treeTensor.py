@@ -40,6 +40,10 @@ class treeTensor(Tensor):
 		return self._logScalar
 
 	def eliminateLoop(self, nodes):
+		# Nodes must be a list of all nodes involved in the loop.
+		n1 = nodes[0]
+		n2 = nodes[1]
+
 		raise NotImplementedError
 
 	def contract(self, ind, other, otherInd):
@@ -62,6 +66,16 @@ class treeTensor(Tensor):
 			if n1 not in net1.nodes: # Ensure that n1 is in net1 and that n2 is in net2
 				n1, n2 = n2, n1
 
+			# Check for loops involving n1 and n2
+			nodes = []
+			for c in n2.connected():
+				if c in net1.nodes:
+					nodes.append(c)
+			if len(nodes) == 2: # Indicates a loop, so we find it
+				loop = net1.pathBetween(nodes[0], nodes[1])
+			elif len(nodes) > 2:
+				raise ValueError('Too many connections for a single node!')
+
 			# Move the Node over
 			net2.deregisterNode(n2)
 			net1.registerNode(n2)
@@ -71,12 +85,8 @@ class treeTensor(Tensor):
 				if b.link is not None and b.link.otherBucket(b).node in net2:
 					links.append(b.link)
 
-			# Check for loops involving n1 and n2
-			nodes = []
-			for c in n2.connected():
-				if c in net1.nodes:
-					nodes.append(c)
-			if len(nodes) > 1: # Indicates a loop
-				self.eliminateLoop(nodes)
+			# Eliminate loop
+			if len(nodes) == 2:
+				net1.eliminateLoop(loop + [n2])
 
 		return treeTensor(net1)
