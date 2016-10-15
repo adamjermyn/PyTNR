@@ -2,6 +2,7 @@ from tensor import Tensor
 from treeNetwork import treeNetwork
 from node import Node
 from link import Link
+from bucket import Bucket
 from operator import mul
 from copy import deepcopy
 
@@ -91,3 +92,12 @@ class treeTensor(Tensor):
 				net1.eliminateLoop(loop + [n2])
 
 		return treeTensor(net1)
+
+def tensorTreeFromArrayTensor(tensor):
+	assert hasattr(tensor, 'array')
+
+	if len(tensor.shape) <= 3:
+		network = treeNetwork()
+		n = Node(tensor, network, Buckets=[Bucket() for _ in tensor.shape])
+	else:
+		# Factor
