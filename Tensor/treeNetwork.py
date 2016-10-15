@@ -40,11 +40,3 @@ class treeNetwork(Network):
 					return [node1] + path2
 
 		return []
-
-	def copy(self):
-		'''
-		Returns a copy of self.
-		All Nodes, Links, and Buckets are deep-copied, but all Tensors are left as references.
-		'''
-
-		raise NotImplementedError

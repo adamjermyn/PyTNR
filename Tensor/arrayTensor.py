@@ -80,3 +80,6 @@ class ArrayTensor(Tensor):
 				ind1[j] -= d1
 
 		return ArrayTensor(arr.shape,arr)
+
+	def __deepcopy__(self, memo):
+		return self

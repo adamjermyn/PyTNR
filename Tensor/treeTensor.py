@@ -3,6 +3,7 @@ from treeNetwork import treeNetwork
 from node import Node
 from link import Link
 from operator import mul
+from copy import deepcopy
 
 class treeTensor(Tensor):
 
@@ -48,8 +49,8 @@ class treeTensor(Tensor):
 
 	def contract(self, ind, other, otherInd):
 		# We copy the two networks first
-		net1 = self.network.copy()
-		net2 = other.network.copy()
+		net1 = deepcopy(self.network)
+		net2 = deepcopy(other.network)
 
 		# We then connect the two networks at the relevant places
 		links = []
