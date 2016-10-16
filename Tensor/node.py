@@ -49,3 +49,30 @@ class Node:
 
 	def bucketIndex(self, b):
 		return self.buckets.index(b)
+
+	def mergeNodes(self, other):
+		self.network.deregisterNode(self)
+		self.network.deregisterNode(other)
+
+		n1 = self
+		n2 = other
+
+		links = []
+		for i,b in enumerate(n1.buckets):
+			if b.link is not None:
+				if b.otherBucket in n2.buckets:
+					links.append((i,n2.bucketIndex(b.otherBucket)))
+
+		t = n1.tensor.contract(links[0], n2.tensor, links[1])
+
+		buckets = []
+		for b in n1.buckets:
+			if b.otherBucket not in n2.buckets:
+				buckets.append(b)
+		for b in n2.buckets:
+			if b.otherBucket not in n1.buckets:
+				buckets.append(b)
+
+		n = Node(t, self.network, Buckets=buckets)
+
+		return n

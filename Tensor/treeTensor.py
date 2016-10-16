@@ -47,13 +47,6 @@ class treeTensor(Tensor):
 	def logScalar(self):
 		return self._logScalar
 
-	def eliminateLoop(self, nodes):
-		# Nodes must be a list of all nodes involved in the loop.
-		n1 = nodes[0]
-		n2 = nodes[1]
-
-		raise NotImplementedError
-
 	def contract(self, ind, other, otherInd):
 		# We copy the two networks first
 		net1 = deepcopy(self.network)
@@ -116,6 +109,6 @@ def tensorTreeFromArrayTensor(tensor):
 		todo = [tree]
 		while len(todo) > 0:
 			t = todo[0]
-			for tr in t[1:]
+			for tr in t[1:]:
 				todo.append(tr)
 			n = Node(t[0], network, Buckets=[Bucket() for _ in t[0].shape])

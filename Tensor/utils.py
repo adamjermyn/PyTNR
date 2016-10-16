@@ -279,7 +279,7 @@ def split_chunks(l, n):
 
     return result
 
-def splitArray(array, chunkIndices, ignoreIndex=None, eps=1e-4):
+def splitArray(array, chunkIndices, ignoreIndex=None, accuracy=1e-4):
 	if ignoreIndex is None:
 		ignoreIndex = []
 

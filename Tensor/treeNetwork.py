@@ -5,6 +5,8 @@ from link import Link
 from arrayTensor import ArrayTensor
 from utils import entropy, split_chunks, splitArray
 
+maxSize = 100000
+
 class treeNetwork(Network):
 	'''
 	A treeNetwork is a special case of a Network in which the Network being represented
@@ -76,7 +78,7 @@ class treeNetwork(Network):
 
 			chunkIndices = [[i[0] for i in chunks[0]],[i[0] for i in chunks[1]]]
 
-			u, v, prevIndices, indices1, indices2 = splitArray(array, [chunkIndices[0],chunkIndices[1]], ignoreIndex=prevIndex, accuracy=self.accuracy)
+			u, v, prevIndices, indices1, indices2 = splitArray(array, [chunkIndices[0], chunkIndices[1]], ignoreIndex=prevIndex, accuracy=self.accuracy)
 
 			b1 = Bucket()
 			b2 = Bucket()
@@ -93,7 +95,7 @@ class treeNetwork(Network):
 				return [n2, self.splitNode(n1, prevIndex=[len(u.shape)-1])]
 
 			self.deregisterNode(n2)
-			q, v, prevIndices, indices1, indices2 = splitArray(v, [chunkIndices[1],[0]], ignoreIndex=[0] + prevIndices, accuracy=self.accuracy)
+			q, v, prevIndices, indices1, indices2 = splitArray(v, [chunkIndices[1], [0]], ignoreIndex=[0] + prevIndices, accuracy=self.accuracy)
 			b1 = Bucket()
 			b2 = Bucket()
 			n3 = Node(ArrayTensor(q), self, Buckets=[n2.buckets[i] for i in indices1] + [b1])
@@ -104,3 +106,54 @@ class treeNetwork(Network):
 			return [n4, self.splitNode(n1, prevIndex=[len(u.shape)-1]), self.splitNode(n3, prevIndex=[len(q.shape)-1])]
 		else:
 			return node
+
+	def eliminateLoop(self, loop):
+		'''
+		Takes as input a list of Nodes which have been linked in a loop.
+		The nodes are assumed to be in linkage order (i.e. loop[i] and loop[i+1] are linked),
+		and the list is assumed to wrap-around (so loop[0] and loop[-1] are linked).
+
+		The loop is assumed to be the only loop in the Network.
+
+		The loop is eliminated by iteratively contracting along the loop and factoring out
+		extra indices as memory requires. This proceeds until the loop has length 3, and then
+		one of the three links is cut via SVD (putting all of that link's entropy in the remaining
+		two links).
+		'''
+		assert len(loop) >= 3
+
+		while len(loop) > 3:
+			n1 = loop[1]
+			n2 = loop[2]
+			ind1 = n1.indexConnecting(loop[0])
+			ind2 = n2.indexConnecting(loop[3])
+			b1 = n1.buckets[ind1]
+			b2 = n2.buckets[ind2]
+
+			n = n1.mergeNodes(n2)
+
+			loop.pop(1)
+
+			if n.tensor.size > maxSize and n.tensor.rank > 3:
+				nodes = self.splitNode(n, prevIndex=[n.bucketIndex(b1),n.bucketIndex(b2)])
+				n = nodes[0] # The ignored indices always end up in the first node
+
+			loop[1] = n
+
+		if loop[1].tensor.rank > 3:
+			ind1 = n1.indexConnecting(loop[0])
+			ind2 = n2.indexConnecting(loop[2])
+			b1 = n1.buckets[ind1]
+			b2 = n2.buckets[ind2]
+			self.splitNode(n, prevIndex=[n.bucketIndex(b1),n.bucketIndex(b2)])
+
+		assert len(loop) == 3
+
+		n1 = loop[0]
+		n2 = loop[1]
+		n3 = loop[2]
+		n = n1.mergeNodes(n2)
+		n = n.mergeNodes(n3)
+
+		if n.tensor.size > maxSize and n.tensor.rank > 3:
+			self.splitNode(n)
