@@ -28,7 +28,7 @@ class Network:
 		assert node not in self.nodes
 
 		self.nodes.add(node)
-		self.idDict[node.id] = node
+		self.idDict[node.ID] = node
 		self.idCounter += 1
 
 	def deregisterNode(self, node):
@@ -42,4 +42,4 @@ class Network:
 		assert node in self.nodes
 
 		self.nodes.remove(node)
-		self.idDict.pop(node.id)
+		self.idDict.pop(node.ID)

@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 class Tensor(ABC):
 	'''
 	A tensor is a multilinear function mapping a series of vectors (also known as indices) to a scalar.
-	It must have shape and size attributes and an attribute returning the logarithm of the largest-magnitude element.
+	It must have shape, rank, and size attributes and an attribute returning the logarithm of the largest-magnitude element.
 	It must implement __str__ (for printing), as well as contraction with another tensor and tracing between
 	a pair of its indices.
 	'''
@@ -20,6 +20,14 @@ class Tensor(ABC):
 	def shape(self):
 		'''
 		Returns the shape of the Tensor as a tuple.
+		'''
+		pass	
+
+	@property
+	@abstractmethod
+	def rank(self):
+		'''
+		Returns the rank of the Tensor as a tuple.
 		'''
 		pass	
 

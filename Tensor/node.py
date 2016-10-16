@@ -1,4 +1,3 @@
-
 class Node:
 
 	def __init__(self, tensor, network, Buckets=None):
@@ -12,7 +11,7 @@ class Node:
 		self.buckets = Buckets
 
 		for b in Buckets:
-			b.addNode(self)
+			b.node = self
 
 		self.network.registerNode(self)
 

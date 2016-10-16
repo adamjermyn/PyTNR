@@ -1,8 +1,8 @@
 
 class Bucket:
 
-	def __init__(self, node):
-		self.node = node
+	def __init__(self):
+		self.node = None
 		self.link = None
 
 	@property

@@ -3,10 +3,10 @@ from tensor import Tensor
 
 class ArrayTensor(Tensor):
 
-	def __init__(self, shape, tens):
-		assert shape == tens.shape
+	def __init__(self, tens):
+		self._shape = tens.shape
+		self._rank = len(self._shape)
 
-		self._shape = shape
 		self._size = tens.size
 
 		# We normalize the Tensor by factoring out the log of the
@@ -16,11 +16,15 @@ class ArrayTensor(Tensor):
 		self.array = np.copy(tens/m)
 
 	def __str__(self):
-		return 'Tensor of shape '+str(self.shape())+'.'
+		return 'Tensor of shape '+str(self.shape)+'.'
 
 	@property
 	def shape(self):
-		return self.shape
+		return self._shape
+
+	@property
+	def rank(self):
+		return self._rank
 
 	@property
 	def size(self):

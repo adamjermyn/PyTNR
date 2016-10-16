@@ -5,6 +5,7 @@ from link import Link
 from bucket import Bucket
 from operator import mul
 from copy import deepcopy
+from factor import iterativeSplit
 
 class treeTensor(Tensor):
 
@@ -88,7 +89,9 @@ class treeTensor(Tensor):
 					links.append(b.link)
 
 			# Eliminate loop
-			if len(nodes) == 2:
+			if len(nodes) == 2 and len(loop) > 0:
+				# The second condition allows us to ignore the case where no loop formed despite two nodes connecting.
+				# This corresponds to the case where the network contains multiple disjoint trees.
 				net1.eliminateLoop(loop + [n2])
 
 		return treeTensor(net1)
@@ -96,8 +99,18 @@ class treeTensor(Tensor):
 def tensorTreeFromArrayTensor(tensor):
 	assert hasattr(tensor, 'array')
 
+	network = treeNetwork()
+
 	if len(tensor.shape) <= 3:
-		network = treeNetwork()
 		n = Node(tensor, network, Buckets=[Bucket() for _ in tensor.shape])
+		return network
 	else:
-		# Factor
+		tree = iterativeSplit(tensor.array)
+		nodeTree = []
+
+		todo = [tree]
+		while len(todo) > 0:
+			t = todo[0]
+			for tr in t[1:]
+				todo.append(tr)
+			n = Node(t[0], network, Buckets=[Bucket() for _ in t[0].shape])
