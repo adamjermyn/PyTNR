@@ -36,8 +36,6 @@ class treeNetwork(Network):
 		Returns the unique path between node1 and node2.
 		This is done by treating node1 as the root of the binary tree and performing a depth-first search.
 		'''
-		path = []
-
 		if node1 == node2: # Found it!
 			return [node1]
 
