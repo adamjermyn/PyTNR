@@ -23,7 +23,8 @@ def split_chunks(l, n):
                 result[i].append((j,e))
                 break
         sums[i] += e
-        c = min(sums.values())    
+        c = min(sums.values()) 
+
     return result
 
 def splitArray(array, chunkIndices, ignoreIndex=None, eps=1e-4):
@@ -38,18 +39,24 @@ def splitArray(array, chunkIndices, ignoreIndex=None, eps=1e-4):
 	c2 = 0
 	sh1 = []
 	sh2 = []
+	indices1 = []
+	indices2 = []
+
 	for i in range(len(array.shape)):
 		if i in chunkIndices[0]:
 			perm.append(c1)
 			sh1.append(array.shape[i])
+			indices1.append(i)
 			c1 += 1
 		elif i in chunkIndices[1]:
 			perm.append(len(chunkIndices[0]) + c2)
 			sh2.append(array.shape[i])
+			indices2.append(i)
 			c2 += 1
 		elif i in ignoreIndex:
 			perm.append(len(chunkIndices[0]) + c2)
 			sh2.append(array.shape[i])
+			indices2.append(i)
 			c2 += 1
 			prevIndices.append(len(sh2))
 
@@ -57,7 +64,7 @@ def splitArray(array, chunkIndices, ignoreIndex=None, eps=1e-4):
 
 	array2 = np.reshape(array2, (np.product(sh1),np.product(sh2)))
 
-	u, lam, v = svd(array2)
+	u, lam, v = svd(array2, full_matrices=0)
 
 	p = lam**2
 	p /= np.sum(p)
@@ -76,7 +83,7 @@ def splitArray(array, chunkIndices, ignoreIndex=None, eps=1e-4):
 	u = np.reshape(u, sh1 + [ind])
 	v = np.reshape(v, [ind] + sh2)
 
-	return u,v,prevIndices
+	return u,v,prevIndices,indices1,indices2
 
 def iterativeSplit(array, prevIndex=None, eps=1e-4):
 	if len(array.shape) <= 3:
@@ -112,11 +119,11 @@ def iterativeSplit(array, prevIndex=None, eps=1e-4):
 
 		return [v, iterativeSplit(u, prevIndex=[len(u.shape)-1], eps=eps), iterativeSplit(q, prevIndex=[len(q.shape)-1], eps=eps)]
 
-def treeIterator(tree):
-	ret = []
-	ret.append(tree[0].shape)
+def treeIterator(tree, level):
+	ret = ''
+	ret = ret + ' '*level + str(tree[0].shape) + '\n'
 	for t in tree[1:]:
-		ret.append(treeIterator(t))
+		ret = ret + treeIterator(t, level+1)
 	return ret
 
 def treeSize(tree):
@@ -126,9 +133,12 @@ def treeSize(tree):
 		ret += treeSize(t)
 	return ret
 
-#array = np.random.randn(4,4,4,4,4,4,4)
-array = np.einsum('ij,jka,jml,aqw->ikmlqw',np.random.randn(8,8),np.random.randn(8,4,4),np.random.randn(8,3,4),np.random.randn(4,4,4))
+x = np.linspace(0,1,num=5)
+y = np.linspace(0,1,num=5)
+
+array = np.einsum('i,j,k,q,er,l->ijkqerl',x,y,np.exp(x),np.exp(y),np.exp(np.outer(x,y)),np.sin(x))
+print(array.shape)
 
 split = iterativeSplit(array)
-print(treeSize(split)/array.size)
-print(treeIterator(split))
+print(float(treeSize(split))/array.size)
+print(treeIterator(split,0))
