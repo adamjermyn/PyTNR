@@ -15,6 +15,7 @@ class treeTensor(Tensor):
 		'''
 		self._shape = ()
 		self._size = 1
+		self._rank = 0
 		self._logScalar = 0.0
 
 		if network is None:
@@ -27,12 +28,16 @@ class treeTensor(Tensor):
 				n = b.node
 				shape.append(n.tensor.shape[n.bucketIndex(b)])
 			self._shape = tuple(shape)
+			self._rank = len(shape)
 			self._size = reduce(mul, shape)
-
 
 	@property
 	def shape(self):
-		return self.shape
+		return self._shape
+
+	@property
+	def rank(self):
+		return self._rank
 
 	@property
 	def size(self):
