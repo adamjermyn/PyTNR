@@ -8,3 +8,11 @@ class Bucket:
 	@property
 	def otherBucket(self):
 		return self.link.otherBucket(self)
+
+	@property
+	def otherNode(self):
+		return self.link.otherBucket(self).node
+
+	@property
+	def linked(self):
+		return (self.link is not None)

@@ -7,12 +7,10 @@ class Network:
 
 	def __init__(self):
 		self.nodes = set()
-
-		self.idDict = {}
-		self.idCounter = 0
-
+		self.buckets = set()
+		self.internalBuckets = set()
+		self.externalBuckets = set()
 		self.size = 0
-
 
 	def __str__(self):
 		s = 'Network\n'
@@ -20,18 +18,28 @@ class Network:
 			s = s + str(n) + '\n'
 		return s
 
-	def registerNode(self, node):
+	def addNode(self, node):
 		'''
 		Registers a new Node in the Network.
 		This should only be called when registering a new Node.
+		All links between this node and other nodes in this network
+		must already exist, so in that sense adding the Node ought to
+		be the last thing that is done.
 		'''
 		assert node not in self.nodes
 
 		self.nodes.add(node)
-		self.idDict[node.ID] = node
-		self.idCounter += 1
+		self.buckets.update(node.buckets)
+		for b in node.buckets:
+			if b.linked and b.otherNode in self.nodes:
+				self.internalBuckets.add(b)
+				self.internalBuckets.add(b.otherBucket)
+				if b.otherBucket in self.externalBuckets:
+					self.externalBuckets.remove(b.otherBucket)
+			else:
+				self.externalBuckets.add(b)
 
-	def deregisterNode(self, node):
+	def removeNode(self, node):
 		'''
 		De-registers a Node from the Network.
 		This should only be called when deleting a Node.
@@ -42,4 +50,23 @@ class Network:
 		assert node in self.nodes
 
 		self.nodes.remove(node)
-		self.idDict.pop(node.ID)
+		self.buckets = self.buckets.difference(node.buckets)
+		for b in node.buckets:
+			if b in self.internalBuckets:
+				self.internalBuckets.remove(b)
+				if b.otherBucket in self.internalBuckets:
+					self.externalBuckets.add(b.otherBucket)
+			if b in self.externalBuckets:
+				self.externalBuckets.remove(b)
+
+	def mergeNodes(self, n1, n2):
+		'''
+		Merges the specified Nodes.
+		'''
+		n = n1.mergeNodes(n2)
+
+		self.addNode(n)
+		self.removeNode(n1)
+		self.removeNode(n2)
+
+		return n

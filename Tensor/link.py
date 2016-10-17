@@ -4,6 +4,8 @@ class Link:
 	def __init__(self, b1, b2):
 		self.bucket1 = b1
 		self.bucket2 = b2
+		b1.link = self
+		b2.link = self
 
 	def otherBucket(self, bucket):
 		if bucket == self.bucket1:
