@@ -11,6 +11,7 @@ class Network:
 		self.buckets = set()
 		self.internalBuckets = set()
 		self.externalBuckets = set()
+		self.bucketNodeDict = {}	# Dictionary returning the node containing a given Bucket
 		self.size = 0
 
 	def __str__(self):
@@ -30,8 +31,9 @@ class Network:
 		assert node not in self.nodes
 
 		self.nodes.add(node)
-		self.buckets.update(node.buckets)
 		for b in node.buckets:
+			self.buckets.add(b)
+			self.bucketNodeDict[b] = b.node
 			if b.linked and b.otherNode in self.nodes:
 				self.internalBuckets.add(b)
 				self.internalBuckets.add(b.otherBucket)
@@ -51,8 +53,9 @@ class Network:
 		assert node in self.nodes
 
 		self.nodes.remove(node)
-		self.buckets = self.buckets.difference(node.buckets)
 		for b in node.buckets:
+			self.buckets.remove(b)
+			self.bucketNodeDict.pop(b)
 			if b in self.internalBuckets:
 				self.internalBuckets.remove(b)
 				if b.otherBucket in self.internalBuckets:
