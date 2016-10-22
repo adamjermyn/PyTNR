@@ -83,7 +83,7 @@ class ArrayTensor(Tensor):
 				ind0[j] -= d0
 				ind1[j] -= d1
 
-		return ArrayTensor(arr.shape,arr)
+		return ArrayTensor(arr)
 
 	def __deepcopy__(self, memo):
 		return self
