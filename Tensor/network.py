@@ -1,3 +1,4 @@
+from node import Node
 
 class Network:
 	'''
@@ -63,10 +64,30 @@ class Network:
 		'''
 		Merges the specified Nodes.
 		'''
-		n = n1.mergeNodes(n2)
 
-		self.addNode(n)
+		links = []
+		for i,b in enumerate(n1.buckets):
+			if b.link is not None:
+				if b.otherBucket in n2.buckets:
+					links.append((i,n2.bucketIndex(b.otherBucket)))
+
+		t = n1.tensor.contract(links[0], n2.tensor, links[1])
+
+		buckets = []
+		for b in n1.buckets:
+			if b.otherBucket not in n2.buckets:
+				buckets.append(b)
+		for b in n2.buckets:
+			if b.otherBucket not in n1.buckets:
+				buckets.append(b)
+
+		n = Node(t, Buckets=buckets)
+
+		# The order matters here: we have to remove the old nodes before
+		# adding the new one to make sure that the correct buckets end up
+		# in the network.
 		self.removeNode(n1)
 		self.removeNode(n2)
+		self.addNode(n)
 
 		return n
