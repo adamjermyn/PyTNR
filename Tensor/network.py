@@ -70,6 +70,8 @@ class Network:
 			if b.otherBucket in n2.buckets:
 				links.append((i,b.otherBucket.index))
 
+		links = list(zip(*links))
+
 		t = n1.tensor.contract(links[0], n2.tensor, links[1])
 
 		buckets = []
