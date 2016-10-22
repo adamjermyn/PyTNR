@@ -18,8 +18,8 @@ class TreeNetwork(Network):
 	so no assumptions should be made about the Nodes in this object, just the external
 	Buckets.
 
-	Internally all Nodes of a treeNetwork have rank-3 Tensors. SVD factoring is used
-	to enforce this.
+	Internally all Nodes of a treeNetwork have Tensors of rank at most 3.
+	SVD factoring is used to enforce this.
 	'''
 
 	def __init__(self, accuracy=1e-4):
@@ -38,7 +38,6 @@ class TreeNetwork(Network):
 		Note that this search only iterates through the internal buckets in the network: it will not consider
 		nodes in another network.
 		'''
-		print(node1, node2)
 		if node1 == node2: # Found it!
 			print('found!')
 			return [node1]
@@ -53,6 +52,47 @@ class TreeNetwork(Network):
 					return [node1] + path2
 
 		return []
+
+	def contractNode(self, n):
+		'''
+		This method adds the node n to this network.
+		This node must be at most of rank 3.
+		The node may be linked already to members of this network.
+		This method handles the logic of removing any loops which arise in the process.
+
+		This method is distinct from addNode in that it does not simply append the node
+		to the network. In that sense this method is more specialised and obeys more
+		stringent conditions.
+		'''
+		assert n.tensor.rank <= 3
+
+		connected = []
+		for c in n.connectedNodes:
+			if c in self.nodes:
+				connected.append(c)
+
+		# Because of the assertion, len(connected) <= 3
+		# If len(connected) <= 1 there's nothing for us
+		# to do, but if len(connected) > 1 we have to
+		# eliminate loops and such.
+		if len(connected) == 2:
+			n1 = connected[0]
+			n2 = connected[1]
+			if n1 == n2:
+				self.addNode(n)
+				n = self.mergeNodes(n, n1)
+			else:
+				# Means there's a loop
+				print(n1, n2)
+				loop = self.pathBetween(n1, n2)
+				if len(loop) > 0:
+					self.addNode(n)
+					self.eliminateLoop(loop + [n])
+		elif len(connected) == 3:
+			###
+			print('meh')
+		self.checkLinks()
+
 
 	def splitNode(self, node, prevIndex=None):
 		'''
@@ -127,20 +167,7 @@ class TreeNetwork(Network):
 		two links).
 		'''
 
-		assert len(loop) >= 2
-
-		if len(loop) == 2:
-			# This means that the loop is just two multiply-linked nodes, so
-			# we just merge them
-			n = self.mergeNodes(loop[0], loop[1])
-
-			# Now n is rank-2, so we merge it with whatever it was connected to
-			c = self.internalConnected(n)
-
-			assert len(c) == 1
-
-			n = self.mergeNodes(n, c[0])
-			return
+		assert len(loop) >= 3
 
 		while len(loop) > 3:
 			n1 = loop[1]
