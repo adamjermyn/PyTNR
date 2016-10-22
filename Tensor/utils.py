@@ -322,7 +322,7 @@ def splitArray(array, chunkIndices, ignoreIndex=None, accuracy=1e-4):
 	p /= np.sum(p)
 	cp = np.cumsum(p[::-1])
 
-	ind = np.searchsorted(cp, eps, side='left')
+	ind = np.searchsorted(cp, accuracy, side='left')
 	ind = len(cp) - ind
 
 	u = u[:,:ind]

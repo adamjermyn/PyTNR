@@ -1,15 +1,14 @@
 from tensor import Tensor
-from treeNetwork import treeNetwork
+from treeNetwork import TreeNetwork
 from node import Node
 from link import Link
 from bucket import Bucket
 from operator import mul
 from copy import deepcopy
-from factor import iterativeSplit
 
-class treeTensor(Tensor):
+class TreeTensor(Tensor):
 
-	def __init__(self, network=None):
+	def __init__(self, network):
 		'''
 		If network is specified, it must be a treeNetwork and must not be connected to any other treeNetworks.
 		'''
@@ -17,19 +16,27 @@ class treeTensor(Tensor):
 		self._size = 1
 		self._rank = 0
 		self._logScalar = 0.0
+		self.network = network
 
-		if network is None:
-			self.network = treeNetwork()
-		else:
-			self.network = network
+		externalBuckets = []
+		shape = []
+		for n in self.network.nodes:
+			for b in n.buckets:
+				if b.link is None:
+					externalBuckets.append(b)
+					shape.append(n.tensor.shape[n.bucketIndex(b)])
 
-			shape = []
-			for b in network.externalBuckets:
-				n = b.node
-				shape.append(n.tensor.shape[n.bucketIndex(b)])
-			self._shape = tuple(shape)
-			self._rank = len(shape)
-			self._size = reduce(mul, shape)
+		self.externalBuckets = externalBuckets
+		self._shape = tuple(shape)
+		self._rank = len(shape)
+		for s in shape:
+			self._size *= s
+
+	def __str__(self):
+		s = ''
+		s = s + 'Tree Tensor with Network:\n'
+		s = s + str(self.network)
+		return s
 
 	@property
 	def shape(self):
@@ -49,42 +56,84 @@ class treeTensor(Tensor):
 
 	def contract(self, ind, other, otherInd):
 		# We copy the two networks first
-		net1 = deepcopy(self.network)
-		net2 = deepcopy(other.network)
+		t1 = deepcopy(self)
+		t2 = deepcopy(other)
 
 		# We then connect the two networks at the relevant places
-		links = []
+		bucketsLeftSelf = []
+		bucketsLeftOther = []
+
 		for i,j in zip(*(ind,otherInd)):
-			links.append(Link(net1.externalBuckets[i],net2.externalBuckets[j]))
+			bucketsLeftSelf.append(t1.externalBuckets[i])
+			bucketsLeftOther.append(t2.externalBuckets[j])
 
 		# Iterate through all links dividing the networks until none are left.
-		while len(links) > 0:
-			link = links[0]
+		while len(bucketsLeftSelf) > 0:
+			# Process the next pair of buckets
+			b1 = bucketsLeftSelf[0]
+			b2 = bucketsLeftOther[0]
 
-			n1 = link.bucket1.node
-			n2 = link.bucket2.node
+			n1 = b1.node
+			n2 = b2.node
 
-			if n1 not in net1.nodes: # Ensure that n1 is in net1 and that n2 is in net2
+			# Identify all bucket pairs to be contracted between these nodes.
+			# Remove them all from the list of buckets to be processed and link them.
+
+			print(len(bucketsLeftSelf),len(bucketsLeftOther))
+
+			for b1 in n1.buckets:
+				if b1 in bucketsLeftSelf:
+					ind = bucketsLeftSelf.index(b1)
+					b2 = bucketsLeftOther[ind]
+					bucketsLeftSelf.remove(b1)
+					bucketsLeftOther.remove(b2)
+					Link(b1, b2)
+
+			print(len(bucketsLeftSelf),len(bucketsLeftOther))
+
+			if n1 not in t1.network.nodes: # Ensure that n1 is in net1 and that n2 is in net2
 				n1, n2 = n2, n1
+
+			print(n1 in t1.network.nodes, n2 in t2.network.nodes, n1 in t2.network.nodes, n2 in t1.network.nodes)
+			net1 = t1.network
+			net2 = t2.network
 
 			# Check for loops involving n1 and n2
 			nodes = []
 			for c in n2.connected():
 				if c in net1.nodes:
 					nodes.append(c)
+			nodes = list(set(nodes))
 			if len(nodes) == 2: # Indicates a loop, so we find it
 				loop = net1.pathBetween(nodes[0], nodes[1])
 			elif len(nodes) > 2:
 				raise ValueError('Too many connections for a single node!')
 
 			# Move the Node over
-			net2.deregisterNode(n2)
-			net1.registerNode(n2)
+			net2.removeNode(n2)
+			net1.addNode(n2)
 
-			# Add new Links to be processed
+			print(net1)
+			print(net2)
+			print(n1 in t1.network.nodes, n2 in t2.network.nodes, n1 in t2.network.nodes, n2 in t1.network.nodes)
+			print('---')
+
+			for i in range(len(bucketsLeftSelf)):
+				assert bucketsLeftSelf[i].node in net1.nodes
+				assert bucketsLeftOther[i].node in net2.nodes
+
+			# Add new Links to be processed and remove now-redundant ones
 			for b in n2.buckets:
-				if b.link is not None and b.link.otherBucket(b).node in net2:
-					links.append(b.link)
+				if b.link is not None and b.otherBucket.node in net2.nodes:
+					bucketsLeftSelf.append(b)
+					bucketsLeftOther.append(b.otherBucket)
+					# Need to erase any existing link to avoid prematurely coupling the rest of net2
+					b.otherBucket.link = None
+					b.link = None
+
+			for i in range(len(bucketsLeftSelf)):
+				assert bucketsLeftSelf[i].node in net1.nodes
+				assert bucketsLeftOther[i].node in net2.nodes
 
 			# Eliminate loop
 			if len(nodes) == 2 and len(loop) > 0:
@@ -92,23 +141,9 @@ class treeTensor(Tensor):
 				# This corresponds to the case where the network contains multiple disjoint trees.
 				net1.eliminateLoop(loop + [n2])
 
-		return treeTensor(net1)
 
-def tensorTreeFromArrayTensor(tensor):
-	assert hasattr(tensor, 'array')
 
-	network = treeNetwork()
+		return TreeTensor(net1)
 
-	if len(tensor.shape) <= 3:
-		n = Node(tensor, network, Buckets=[Bucket() for _ in tensor.shape])
-		return network
-	else:
-		tree = iterativeSplit(tensor.array)
-		nodeTree = []
-
-		todo = [tree]
-		while len(todo) > 0:
-			t = todo[0]
-			for tr in t[1:]:
-				todo.append(tr)
-			n = Node(t[0], network, Buckets=[Bucket() for _ in t[0].shape])
+	def trace(self, ind0, ind1):
+		raise NotImplementedError

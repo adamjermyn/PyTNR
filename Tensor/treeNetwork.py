@@ -7,7 +7,7 @@ from utils import entropy, split_chunks, splitArray
 
 maxSize = 100000
 
-class treeNetwork(Network):
+class TreeNetwork(Network):
 	'''
 	A treeNetwork is a special case of a Network in which the Network being represented
 	contains no cycles. This allows matrix elements of a treeNetwork to be efficiently
@@ -31,14 +31,13 @@ class treeNetwork(Network):
 
 		self.accuracy = accuracy
 
-		self.externalBuckets = []
-
 	def pathBetween(self, node1, node2, calledFrom=None):
 		'''
 		Returns the unique path between node1 and node2.
 		This is done by treating node1 as the root of the binary tree and performing a depth-first search.
 		'''
 		if node1 == node2: # Found it!
+			print('found!')
 			return [node1]
 
 		if len(node1.connected()) == 1 and calledFrom is not None:	# Nothing left to search
@@ -59,7 +58,7 @@ class treeNetwork(Network):
 		used to enforce an ordering of indices.
 		'''
 		if len(node.tensor.shape) > 3:
-			self.deregisterNode(node)
+			self.removeNode(node)
 
 			array = node.tensor.array
 
@@ -82,8 +81,10 @@ class treeNetwork(Network):
 
 			b1 = Bucket()
 			b2 = Bucket()
-			n1 = Node(ArrayTensor(u), self, Buckets=[node.buckets[i] for i in indices1] + [b1])
-			n2 = Node(ArrayTensor(v), self, Buckets=[b2] + [node.buckets[i] for i in indices2])
+			n1 = Node(ArrayTensor(u), Buckets=[node.buckets[i] for i in indices1] + [b1])
+			n2 = Node(ArrayTensor(v), Buckets=[b2] + [node.buckets[i] for i in indices2])
+			self.addNode(n1)
+			self.addNode(n2)
 			l = Link(b1,b2)
 
 			chunkIndices[1] = []
@@ -94,14 +95,15 @@ class treeNetwork(Network):
 			if len(v.shape) <= 3:
 				return [n2, self.splitNode(n1, prevIndex=[len(u.shape)-1])]
 
-			self.deregisterNode(n2)
+			self.removeNode(n2)
 			q, v, prevIndices, indices1, indices2 = splitArray(v, [chunkIndices[1], [0]], ignoreIndex=[0] + prevIndices, accuracy=self.accuracy)
 			b1 = Bucket()
 			b2 = Bucket()
-			n3 = Node(ArrayTensor(q), self, Buckets=[n2.buckets[i] for i in indices1] + [b1])
-			n4 = Node(ArrayTensor(v), self, Buckets=[b2] + [n2.buckets[i] for i in indices2])
+			n3 = Node(ArrayTensor(q), Buckets=[n2.buckets[i] for i in indices1] + [b1])
+			n4 = Node(ArrayTensor(v), Buckets=[b2] + [n2.buckets[i] for i in indices2])
+			self.addNode(n3)
+			self.addNode(n4)
 			l = Link(b1,b2)
-
 
 			return [n4, self.splitNode(n1, prevIndex=[len(u.shape)-1]), self.splitNode(n3, prevIndex=[len(q.shape)-1])]
 		else:
@@ -130,7 +132,7 @@ class treeNetwork(Network):
 			b1 = n1.buckets[ind1]
 			b2 = n2.buckets[ind2]
 
-			n = n1.mergeNodes(n2)
+			n = self.mergeNodes(n1, n2)
 
 			loop.pop(1)
 
@@ -145,15 +147,20 @@ class treeNetwork(Network):
 			ind2 = n2.indexConnecting(loop[2])
 			b1 = n1.buckets[ind1]
 			b2 = n2.buckets[ind2]
-			self.splitNode(n, prevIndex=[n.bucketIndex(b1),n.bucketIndex(b2)])
+			nodes = self.splitNode(n, prevIndex=[n.bucketIndex(b1),n.bucketIndex(b2)])
+			n = nodes[0]
+			loop[1] = n
 
 		assert len(loop) == 3
 
 		n1 = loop[0]
 		n2 = loop[1]
 		n3 = loop[2]
-		n = n1.mergeNodes(n2)
-		n = n.mergeNodes(n3)
+		n = self.mergeNodes(n1, n2)
+		n = self.mergeNodes(n, n3)
 
 		if n.tensor.size > maxSize and n.tensor.rank > 3:
 			self.splitNode(n)
+
+		for n in self.nodes:
+			assert n.tensor.rank <= 3

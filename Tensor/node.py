@@ -1,9 +1,7 @@
 class Node:
 
-	def __init__(self, tensor, network, Buckets=None):
+	def __init__(self, tensor, Buckets=None):
 		self.tensor = tensor
-		self.network = network
-		self.ID = self.network.idCounter
 
 		if Buckets is None:
 			Buckets = []
@@ -13,21 +11,19 @@ class Node:
 		for b in Buckets:
 			b.node = self
 
-		self.network.registerNode(self)
-
 	def __str__(self):
-		return 'Node with ID: ' + str(self.ID) + '  and tensor shape ' + str(self.tensor.shape)
+		return 'Node with tensor shape ' + str(self.tensor.shape)
 
 	def connected(self):
 		c = []
 		for b in self.buckets:
-			if b.linked():
-				c.extend(b.otherNodes())
+			if b.link is not None:
+				c.extend(set([b.otherBucket.node]))
 		return c
 
 	def findLink(self, other):
 		for b in self.buckets:
-			if b.linked():
+			if b.link is not None:
 				if other in b.otherNodes():
 					return b.link()
 		return None
@@ -35,15 +31,15 @@ class Node:
 	def linksConnecting(self, other):
 		links = []
 		for b in self.buckets:
-			if b.linked():
+			if b.link is not None:
 				if other in b.otherNodes():
 					links.append(b.link())
 		return links
 
 	def indexConnecting(self, other):
 		for i,b in enumerate(self.buckets):
-			if b.linked():
-				if other in b.otherNodes():
+			if b.link is not None:
+				if other == b.otherBucket.node:
 					return i
 		return None		
 
@@ -51,9 +47,6 @@ class Node:
 		return self.buckets.index(b)
 
 	def mergeNodes(self, other):
-		self.network.deregisterNode(self)
-		self.network.deregisterNode(other)
-
 		n1 = self
 		n2 = other
 
@@ -73,6 +66,6 @@ class Node:
 			if b.otherBucket not in n1.buckets:
 				buckets.append(b)
 
-		n = Node(t, self.network, Buckets=buckets)
+		n = Node(t, Buckets=buckets)
 
 		return n
