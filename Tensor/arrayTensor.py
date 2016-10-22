@@ -43,9 +43,9 @@ class ArrayTensor(Tensor):
 
 		Returns a Tensor containing the contraction of this Tensor with the other.
 		'''
-		print(self.shape,other.shape)
+		print(self.shape,other.shape,ind,otherInd)
 		arr = np.tensordot(self.array,other.array,axes=((ind,otherInd)))
-		return Tensor(arr)
+		return ArrayTensor(arr)
 
 	def trace(self, ind0, ind1):
 		'''

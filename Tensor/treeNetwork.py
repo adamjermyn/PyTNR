@@ -35,15 +35,18 @@ class TreeNetwork(Network):
 		'''
 		Returns the unique path between node1 and node2.
 		This is done by treating node1 as the root of the binary tree and performing a depth-first search.
+		Note that this search only iterates through the internal buckets in the network: it will not consider
+		nodes in another network.
 		'''
+		print(node1, node2)
 		if node1 == node2: # Found it!
 			print('found!')
 			return [node1]
 
-		if len(node1.connectedNodes) == 1 and calledFrom is not None:	# Nothing left to search
+		if len(self.internalConnected(node1)) == 1 and calledFrom is not None:	# Nothing left to search
 			return []
 
-		for c in node1.connectedNodes: # Search children
+		for c in self.internalConnected(node1): # Search children
 			if c is not calledFrom:
 				path2 = self.pathBetween(c, node2, calledFrom=node1)
 				if len(path2) > 0:
@@ -123,7 +126,21 @@ class TreeNetwork(Network):
 		one of the three links is cut via SVD (putting all of that link's entropy in the remaining
 		two links).
 		'''
-		assert len(loop) >= 3
+
+		assert len(loop) >= 2
+
+		if len(loop) == 2:
+			# This means that the loop is just two multiply-linked nodes, so
+			# we just merge them
+			n = self.mergeNodes(loop[0], loop[1])
+
+			# Now n is rank-2, so we merge it with whatever it was connected to
+			c = self.internalConnected(n)
+
+			assert len(c) == 1
+
+			n = self.mergeNodes(n, c[0])
+			return
 
 		while len(loop) > 3:
 			n1 = loop[1]

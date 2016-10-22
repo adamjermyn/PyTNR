@@ -48,12 +48,13 @@ class TreeTensor(Tensor):
 		t1 = deepcopy(self)
 		t2 = deepcopy(other)
 
-		# Link the Networks
+		# Link the networks
 		links = []
 		for i,j in zip(*(ind,otherInd)):
 			b1, b2 = t1.externalBuckets[i], t2.externalBuckets[j]
 			links.append(Link(b1, b2))
 
+		# Incrementally merge the networks
 		while len(links) > 0:
 			l = links.pop()
 			b1 = l.bucket1
@@ -110,7 +111,6 @@ class TreeTensor(Tensor):
 						if c != n1:
 							l = c.findLink(n2)
 							links.remove(l)
-				nodes = list(set(nodes))
 				loop = t1.network.pathBetween(nodes[0], nodes[1])
 
 				# Next we move the node over.
@@ -123,7 +123,8 @@ class TreeTensor(Tensor):
 						links.append(n2.findLink(n))
 
 				# Finally we eliminate the loop
-				t1.network.eliminateLoop(loop + [n2])
+				if len(loop) > 0:
+					t1.network.eliminateLoop(loop + [n2])
 			elif nt1 == 3:
 				# This case means that there are two loops introduced by n2.
 				# We get around this by manipulating the externalBucket lists
@@ -138,10 +139,10 @@ class TreeTensor(Tensor):
 						if c != n1:
 							l = c.findLink(n2)
 							links.remove(l)
-				nodes = list(set(nodes))
 				
 				# Now we pick two of them, thereby defining the first loop.
-				loop = t1.network.pathBetween(nodes[0], nodes[1])
+				if len(loop) > 0:
+					loop = t1.network.pathBetween(nodes[0], nodes[1])
 
 				# Next we move the node over.
 				t2.network.removeNode(n2)
@@ -174,8 +175,9 @@ class TreeTensor(Tensor):
 				t1.network.externalBuckets.remove(b2)
 
 				# Now we eliminate the second loop
-				t1.network.eliminateLoop(loop) 	# Nothing to add here because we used two
-												# connected nodes in defining loop this time.
+				if len(loop) > 0:
+					t1.network.eliminateLoop(loop) 	# Nothing to add here because we used two
+													# connected nodes in defining loop this time.
 
 		#TODO: Handle reindexing of external buckets for t1
 
