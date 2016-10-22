@@ -1,16 +1,8 @@
-import itertools
-
 class Bucket:
-
-	newid = itertools.count().next
 
 	def __init__(self):
 		self.node = None
 		self.link = None
-		self.id = Bucket.newid()
-
-	def __hash__(self):
-		return self.id
 
 	@property
 	def otherBucket(self):
@@ -23,3 +15,7 @@ class Bucket:
 	@property
 	def linked(self):
 		return (self.link is not None)
+
+	@property
+	def index(self):
+		return self.node.bucketIndex(self)

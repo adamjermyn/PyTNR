@@ -14,6 +14,8 @@ net.addNode(n)
 net.splitNode(n)
 tf = TT(net)
 
+print(tf)
+
 x = np.random.randn(5,5,5,5,5,5)
 t = AT(x)
 net = TN()
@@ -22,7 +24,7 @@ net.addNode(n)
 net.splitNode(n)
 tf2 = TT(net)
 
-print(tf)
+print(tf2)
 
 tf3 = tf.contract([0,1,2,3,4],tf2,[0,1,2,3,4])
 

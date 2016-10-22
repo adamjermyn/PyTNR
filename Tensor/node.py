@@ -1,7 +1,11 @@
+import itertools
+
 class Node:
+	newid = itertools.count().__next__
 
 	def __init__(self, tensor, Buckets=None):
 		self.tensor = tensor
+		self.id = Node.newid()
 
 		if Buckets is None:
 			Buckets = []
@@ -12,7 +16,7 @@ class Node:
 			b.node = self
 
 	def __str__(self):
-		return 'Node with tensor shape ' + str(self.tensor.shape)
+		return 'Node with ID ' + str(self.id) + ' and tensor shape ' + str(self.tensor.shape)
 
 	@property
 	def linkedBuckets(self):

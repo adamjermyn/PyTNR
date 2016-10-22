@@ -11,7 +11,6 @@ class Network:
 		self.buckets = set()
 		self.internalBuckets = set()
 		self.externalBuckets = set()
-		self.bucketNodeDict = {}	# Dictionary returning the node containing a given Bucket
 		self.size = 0
 
 	def __str__(self):
@@ -33,7 +32,6 @@ class Network:
 		self.nodes.add(node)
 		for b in node.buckets:
 			self.buckets.add(b)
-			self.bucketNodeDict[b] = b.node
 			if b.linked and b.otherNode in self.nodes:
 				self.internalBuckets.add(b)
 				self.internalBuckets.add(b.otherBucket)
@@ -55,7 +53,6 @@ class Network:
 		self.nodes.remove(node)
 		for b in node.buckets:
 			self.buckets.remove(b)
-			self.bucketNodeDict.pop(b)
 			if b in self.internalBuckets:
 				self.internalBuckets.remove(b)
 				if b.otherBucket in self.internalBuckets:
@@ -69,10 +66,9 @@ class Network:
 		'''
 
 		links = []
-		for i,b in enumerate(n1.buckets):
-			if b.link is not None:
-				if b.otherBucket in n2.buckets:
-					links.append((i,n2.bucketIndex(b.otherBucket)))
+		for i,b in enumerate(n1.linkedBuckets):
+			if b.otherBucket in n2.buckets:
+				links.append((i,b.otherBucket.index))
 
 		t = n1.tensor.contract(links[0], n2.tensor, links[1])
 
@@ -94,3 +90,6 @@ class Network:
 		self.addNode(n)
 
 		return n
+
+	def internalConnected(self, node):
+		return self.nodes.intersection(set(node.connectedNodes))
