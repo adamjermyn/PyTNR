@@ -40,10 +40,10 @@ class TreeNetwork(Network):
 			print('found!')
 			return [node1]
 
-		if len(node1.connected()) == 1 and calledFrom is not None:	# Nothing left to search
+		if len(node1.connectedNodes) == 1 and calledFrom is not None:	# Nothing left to search
 			return []
 
-		for c in node1.connected(): # Search children
+		for c in node1.connectedNodes: # Search children
 			if c is not calledFrom:
 				path2 = self.pathBetween(c, node2, calledFrom=node1)
 				if len(path2) > 0:
@@ -57,7 +57,7 @@ class TreeNetwork(Network):
 		Any indices listed in prevIndex will be ignored in balancing the split, so this may be
 		used to enforce an ordering of indices.
 		'''
-		if len(node.tensor.shape) > 3:
+		if node.tensor.rank > 3:
 			self.removeNode(node)
 
 			array = node.tensor.array
@@ -67,6 +67,7 @@ class TreeNetwork(Network):
 
 			s = []
 			indices = list(range(len(array.shape)))
+
 			for i in prevIndex:
 				indices.remove(i)
 
