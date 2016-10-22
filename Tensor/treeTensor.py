@@ -18,15 +18,12 @@ class TreeTensor(Tensor):
 		self._logScalar = 0.0
 		self.network = network
 
-		externalBuckets = []
 		shape = []
 		for n in self.network.nodes:
 			for b in n.buckets:
 				if b.link is None:
-					externalBuckets.append(b)
 					shape.append(n.tensor.shape[n.bucketIndex(b)])
 
-		self.externalBuckets = externalBuckets
 		self._shape = tuple(shape)
 		self._rank = len(shape)
 		for s in shape:
@@ -37,6 +34,10 @@ class TreeTensor(Tensor):
 		s = s + 'Tree Tensor with Network:\n'
 		s = s + str(self.network)
 		return s
+
+	@property
+	def externalBuckets(self):
+		return self.network.externalBuckets
 
 	@property
 	def shape(self):
@@ -53,6 +54,7 @@ class TreeTensor(Tensor):
 	@property
 	def logScalar(self):
 		return self._logScalar
+
 
 	def contract(self, ind, other, otherInd):
 		# We copy the two networks first
