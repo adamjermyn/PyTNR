@@ -45,7 +45,7 @@ class ArrayTensor(Tensor):
 		'''
 		print(self.shape,other.shape)
 		arr = np.tensordot(self.array,other.array,axes=((ind,otherInd)))
-		return Tensor(arr.shape,arr)
+		return Tensor(arr)
 
 	def trace(self, ind0, ind1):
 		'''
