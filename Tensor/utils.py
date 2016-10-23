@@ -280,15 +280,15 @@ def entropy(array, indices):
 	s = -np.sum(p*np.log(p))
 	return s
 
-def splitArray(array, chunkIndices, accuracy=1e-4):
+def splitArray(array, indices, accuracy=1e-4):
 	perm = []
 
-	sh1 = [array.shape[i] for i in chunkIndices]
-	sh2 = [array.shape[i] for i in range(len(array.shape)) if i not in chunkIndices]
-	indices1 = list(chunkIndices)
-	indices2 = [i for i in range(len(array.shape)) if i not in chunkIndices]
+	sh1 = [array.shape[i] for i in indices]
+	sh2 = [array.shape[i] for i in range(len(array.shape)) if i not in indices]
+	indices1 = list(indices)
+	indices2 = [i for i in range(len(array.shape)) if i not in indices]
 
-	arr = permuteIndices(array, chunkIndices)
+	arr = permuteIndices(array, indices)
 	arr = np.reshape(arr, (np.product(sh1), np.product(sh2)))
 	u, lam, v, p, cp = generalSVD(arr)
 
