@@ -82,6 +82,19 @@ def matrixToTensor(matrix, shape, index, front=True):
 # Linear Operator and SVD Functions
 ###################################
 
+def permuteIndices(arr, indices):
+	'''
+	This method moves the indices specified in indices
+	to be the first ones in the array.
+	'''
+	shape = arr.shape
+	perm = list(range(len(shape)))
+	for i in indices:
+		perm.remove(i)
+	for j,i in enumerate(indices):
+		perm.insert(j, i)
+	return np.transpose(arr, axes=perm)
+
 def ndArrayToMatrix(arr, index, front=True):
 		'''
 		This method flattens the array along all indices other than
@@ -255,17 +268,15 @@ def generalSVD(matrix, bondDimension=np.inf, optimizerMatrix=None, arr1=None, ar
 	return u, lam, v, p, cp
 
 def entropy(array, indices):
-	sumInd = list(range(len(array.shape)))
-	for i in indices:
-		sumInd.remove(i)
-	array2 = np.tensordot(array, np.conjugate(array), axes=[sumInd,sumInd])
-	s = 1
-	for i in range(len(array2.shape)//2):
-		s *= array2.shape[i]
+	arr = permuteIndices(array, indices)
+	sh = arr.shape[:len(indices)]
+	s = np.product(sh)
+	arr = np.reshape(arr, (s,-1))
+	u, lam, v, p, cp = generalSVD(arr)
 
-	array2 = np.reshape(array2, (s,s))
-	array2 /= np.trace(array2)
-	return -np.trace(np.dot(array2,logm(array2)))
+	s = -np.sum(p*np.log(p))
+
+	return s
 
 def splitArray(array, chunkIndices, accuracy=1e-4):
 	perm = []
