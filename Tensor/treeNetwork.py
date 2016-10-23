@@ -6,8 +6,6 @@ from arrayTensor import ArrayTensor
 from utils import entropy, splitArray
 from itertools import combinations
 
-maxSize = 100000
-
 class TreeNetwork(Network):
 	'''
 	A treeNetwork is a special case of a Network in which the Network being represented
@@ -40,30 +38,17 @@ class TreeNetwork(Network):
 		nodes in another network.
 		'''
 		if node1 == node2: # Found it!
-			print('found!')
 			return [node1]
 
 		if len(self.internalConnected(node1)) == 1 and calledFrom is not None:	# Nothing left to search
 			return []
 
 		for c in self.internalConnected(node1): # Search children
-			assert c in node1.connectedNodes
 			l = node1.findLink(c)
-			assert l.bucket1 in node1.buckets or l.bucket2 in node1.buckets
-			assert l.bucket1 in c.buckets or l.bucket2 in c.buckets
-			assert l.bucket1.link is l
-			assert l.bucket2.link is l
-			assert node1 in c.connectedNodes
 			if c is not calledFrom:
 				path = self.pathBetween(c, node2, calledFrom=node1)
 				if len(path) > 0: # Means the recursive call found it
-					assert c in path
-					assert c == path[0]
-					assert node1 in c.connectedNodes
-					assert node1 in path[0].connectedNodes
 					path2 = [node1] + path
-					for i in range(len(path2)-1):
-						assert path2[i] in path2[i+1].connectedNodes
 					return path2
 
 		return []
@@ -150,11 +135,24 @@ class TreeNetwork(Network):
 
 			u, v, indices1, indices2 = splitArray(array, p, accuracy=self.accuracy)
 
+			for b in node.linkedBuckets:
+				print(b.id, b.size, b.otherSize)
+
+
 			b1 = Bucket()
 			b2 = Bucket()
 			n1 = Node(ArrayTensor(u), Buckets=[node.buckets[i] for i in indices1] + [b1])
 			n2 = Node(ArrayTensor(v), Buckets=[b2] + [node.buckets[i] for i in indices2])
 			l = Link(b1,b2) # This line has to happen before addNode to prevent b1 and b2 from becoming externalBuckets
+			print(u.shape, v.shape)
+			print(b1.id, b2.id)
+			for b in n1.linkedBuckets:
+				print(b.id, b.otherSize, b.size, b.index)
+				assert b.otherSize == b.size
+			for b in n2.linkedBuckets:
+				print(b.id, b.otherSize, b.size, b.index)
+				assert b.otherSize == b.size
+
 			self.addNode(n1)
 			self.addNode(n2)
 			nodes.append(n1)
@@ -194,11 +192,13 @@ class TreeNetwork(Network):
 			b1 = n1.buckets[ind1]
 			b2 = n2.buckets[ind2]
 
+			l = n1.findLink(n2)
+			print(l.bucket1.size, l.bucket1.otherSize, l.bucket2.size, l.bucket2.otherSize)
 			n = self.mergeNodes(n1, n2)
 
 			loop.pop(1)
 
-			if n.tensor.size > maxSize and n.tensor.rank > 3:
+			if n.tensor.rank > 3:
 				nodes = self.splitNode(n, ignore=[n.bucketIndex(b1),n.bucketIndex(b2)])
 				n = nodes[0] # The ignored indices always end up in the first node
 
@@ -221,8 +221,5 @@ class TreeNetwork(Network):
 		n = self.mergeNodes(n1, n2)
 		n = self.mergeNodes(n, n3)
 
-		if n.tensor.size > maxSize and n.tensor.rank > 3:
+		if n.tensor.rank > 3:
 			self.splitNode(n)
-
-		for n in self.nodes:
-			assert n.tensor.rank <= 3
