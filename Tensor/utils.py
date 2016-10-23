@@ -254,38 +254,21 @@ def generalSVD(matrix, bondDimension=np.inf, optimizerMatrix=None, arr1=None, ar
 
 	return u, lam, v, p, cp
 
-def entropy(array, index):
-	array2 = np.swapaxes(np.copy(array), 0, index)
-	array2 = np.reshape(array2, (array.shape[index],-1))
-	array2 = np.dot(array2, np.transpose(np.conjugate(array2)))
+def entropy(array, indices):
+	sumInd = list(range(len(array.shape)))
+	for i in indices:
+		sumInd.remove(i)
+	array2 = np.tensordot(array, np.conjugate(array), axes=[sumInd,sumInd])
+	s = 1
+	for i in range(len(array2.shape)//2):
+		s *= array2.shape[i]
+
+	array2 = np.reshape(array2, (s,s))
 	array2 /= np.trace(array2)
 	return -np.trace(np.dot(array2,logm(array2)))
 
-def split_chunks(l, n):
-    """ 
-       Splits list l into n chunks with approximately equals sum of values
-       see  http://stackoverflow.com/questions/6855394/splitting-list-in-chunks-of-balanced-weight
-    """
-    result = [[] for i in range(n)]
-    sums   = {i:0 for i in range(n)}
-    c = 0
-    for j,e in l:
-        for i in sums:
-            if c == sums[i]:
-                result[i].append((j,e))
-                break
-        sums[i] += e
-        c = min(sums.values()) 
-
-    return result
-
-def splitArray(array, chunkIndices, ignoreIndex=None, accuracy=1e-4):
-	if ignoreIndex is None:
-		ignoreIndex = []
-
-
+def splitArray(array, chunkIndices, accuracy=1e-4):
 	perm = []
-	prevIndices = []
 
 	c1 = 0
 	c2 = 0
@@ -295,22 +278,16 @@ def splitArray(array, chunkIndices, ignoreIndex=None, accuracy=1e-4):
 	indices2 = []
 
 	for i in range(len(array.shape)):
-		if i in chunkIndices[0]:
+		if i in chunkIndices:
 			perm.append(c1)
 			sh1.append(array.shape[i])
 			indices1.append(i)
 			c1 += 1
-		elif i in chunkIndices[1]:
-			perm.append(len(chunkIndices[0]) + c2)
+		else:
+			perm.append(len(chunkIndices) + c2)
 			sh2.append(array.shape[i])
 			indices2.append(i)
 			c2 += 1
-		elif i in ignoreIndex:
-			perm.append(len(chunkIndices[0]) + c2)
-			sh2.append(array.shape[i])
-			indices2.append(i)
-			c2 += 1
-			prevIndices.append(len(sh2))
 
 	array2 = np.transpose(array, axes=perm)
 
@@ -335,7 +312,7 @@ def splitArray(array, chunkIndices, ignoreIndex=None, accuracy=1e-4):
 	u = np.reshape(u, sh1 + [ind])
 	v = np.reshape(v, [ind] + sh2)
 
-	return u,v,prevIndices,indices1,indices2
+	return u,v,indices1,indices2
 
 
 

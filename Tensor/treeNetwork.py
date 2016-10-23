@@ -3,7 +3,8 @@ from node import Node
 from bucket import Bucket
 from link import Link
 from arrayTensor import ArrayTensor
-from utils import entropy, split_chunks, splitArray
+from utils import entropy, splitArray
+from itertools import combinations
 
 maxSize = 100000
 
@@ -116,34 +117,31 @@ class TreeNetwork(Network):
 
 
 
-	def splitNode(self, node, prevIndex=None):
+	def splitNode(self, node):
 		'''
-		Takes as input a Node and ensures that it is at most rank 3 by splitting it recursively.
-		Any indices listed in prevIndex will be ignored in balancing the split, so this may be
-		used to enforce an ordering of indices.
+		Takes as input a Node and ensures that it is at most rank 3 by factoring rank 3 tensors
+		out of it until what remains is rank 3. The factoring is done via a greedy algorithm,
+		where the pair of indices with the least correlation with the rest are factored out.
+		This is determined by explicitly tracing out all but those indices from the density
+		matrix and computing the entropy.
 		'''
-		if node.tensor.rank > 3:
+		nodes = []
+
+		while node.tensor.rank > 3:
 			self.removeNode(node)
 
 			array = node.tensor.array
 
-			if prevIndex is None:
-				prevIndex = []
-
 			s = []
-			indices = list(range(len(array.shape)))
+			pairs = list(combinations(range(len(array.shape)),2))
 
-			for i in prevIndex:
-				indices.remove(i)
+			for p in pairs:
+				s.append(entropy(array, p))
 
-			for i in indices:
-				s.append((i, entropy(array, i)))
+			ind = s.index(min(s))
+			p = pairs[ind]
 
-			chunks = split_chunks(s, 2)
-
-			chunkIndices = [[i[0] for i in chunks[0]],[i[0] for i in chunks[1]]]
-
-			u, v, prevIndices, indices1, indices2 = splitArray(array, [chunkIndices[0], chunkIndices[1]], ignoreIndex=prevIndex, accuracy=self.accuracy)
+			u, v, indices1, indices2 = splitArray(array, p, accuracy=self.accuracy)
 
 			b1 = Bucket()
 			b2 = Bucket()
@@ -152,37 +150,13 @@ class TreeNetwork(Network):
 			self.addNode(n1)
 			self.addNode(n2)
 			l = Link(b1,b2)
-			assert b1.size == b2.size
+			nodes.append(n1)
 
-			for b in node.buckets:
-				assert (b in n1.buckets) or (b in n2.buckets)
+			node = n2
 
-			chunkIndices[1] = []
-			for i in range(len(v.shape)):
-				if i != 0 and i not in prevIndices:
-					chunkIndices[1].append(i)
+		nodes.append(node)
 
-			if len(v.shape) <= 3:
-				return [n2, self.splitNode(n1, prevIndex=[len(u.shape)-1])]
-
-			self.removeNode(n2)
-			q, v, prevIndices, indices1, indices2 = splitArray(v, [chunkIndices[1], [0]], ignoreIndex=[0] + prevIndices, accuracy=self.accuracy)
-			b1 = Bucket()
-			b2 = Bucket()
-			n3 = Node(ArrayTensor(q), Buckets=[n2.buckets[i] for i in indices1] + [b1])
-			n4 = Node(ArrayTensor(v), Buckets=[b2] + [n2.buckets[i] for i in indices2])
-			self.addNode(n3)
-			self.addNode(n4)
-			l = Link(b1,b2)
-			assert b1.size == b2.size
-
-			for b in node.buckets:
-				assert (b in n1.buckets) or (b in n2.buckets) or (b in n3.buckets) or (b in n4.buckets)
-
-
-			return [n4, self.splitNode(n1, prevIndex=[len(u.shape)-1]), self.splitNode(n3, prevIndex=[len(q.shape)-1])]
-		else:
-			return node
+		return nodes
 
 	def eliminateLoop(self, loop):
 		'''
