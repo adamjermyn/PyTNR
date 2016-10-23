@@ -277,42 +277,20 @@ def entropy(array, indices):
 	s = np.product(sh)
 	arr = np.reshape(arr, (s,-1))
 	u, lam, v, p, cp = generalSVD(arr)
-
 	s = -np.sum(p*np.log(p))
-
 	return s
 
 def splitArray(array, chunkIndices, accuracy=1e-4):
 	perm = []
 
-	c1 = 0
-	c2 = 0
-	sh1 = []
-	sh2 = []
-	indices1 = []
-	indices2 = []
+	sh1 = [array.shape[i] for i in chunkIndices]
+	sh2 = [array.shape[i] for i in range(len(array.shape)) if i not in chunkIndices]
+	indices1 = list(chunkIndices)
+	indices2 = [i for i in range(len(array.shape)) if i not in chunkIndices]
 
-	for i in range(len(array.shape)):
-		if i in chunkIndices:
-			perm.append(c1)
-			sh1.append(array.shape[i])
-			indices1.append(i)
-			c1 += 1
-		else:
-			perm.append(len(chunkIndices) + c2)
-			sh2.append(array.shape[i])
-			indices2.append(i)
-			c2 += 1
-
-	array2 = np.transpose(array, axes=perm)
-
-	array2 = np.reshape(array2, (np.product(sh1),np.product(sh2)))
-
-	u, lam, v = svd(array2, full_matrices=0)
-
-	p = lam**2
-	p /= np.sum(p)
-	cp = np.cumsum(p[::-1])
+	arr = permuteIndices(array, chunkIndices)
+	arr = np.reshape(arr, (np.product(sh1), np.product(sh2)))
+	u, lam, v, p, cp = generalSVD(arr)
 
 	ind = np.searchsorted(cp, accuracy, side='left')
 	ind = len(cp) - ind
@@ -326,8 +304,6 @@ def splitArray(array, chunkIndices, accuracy=1e-4):
 
 	u = np.reshape(u, sh1 + [ind])
 	v = np.reshape(v, [ind] + sh2)
-
-	assert u.shape[-1] == v.shape[0]
 
 	return u,v,indices1,indices2
 
