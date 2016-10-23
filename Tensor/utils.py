@@ -114,13 +114,17 @@ def ndArrayToMatrix(arr, index, front=True):
 		shI = shape[index]
 
 		if front:
-			perm.insert(0, index)
-			arr = np.transpose(arr, axes=perm)
-			arr = np.reshape(arr, [shI, np.product(shm)])
+			indices = [index]
 		else:
-			perm.append(index)
-			arr = np.transpose(arr, axes=perm)
-			arr = np.reshape(arr, [np.product(shm), shI])
+			indices = list(range(len(shape)))
+			indices.remove(index)
+
+		sh = [arr.shape[i] for i in indices]
+		s = np.product(sh)
+		sm = arr.size / s
+
+		arr = permuteIndices(arr, [index])
+		arr = np.reshape(arr, [s, sm])
 
 		return arr
 
