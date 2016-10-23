@@ -65,21 +65,23 @@ class Network:
 		Merges the specified Nodes.
 		'''
 
-		links = []
-		for i,b in enumerate(n1.linkedBuckets):
-			if b.otherBucket in n2.buckets:
-				links.append((i,b.otherBucket.index))
+		links = n1.linksConnecting(n2)
+		indices = [[],[]]
+		for l in links:
+			b1, b2 = l.bucket1, l.bucket2
+			if b1 in n2.buckets:
+				b1, b2 = b2, b1
+			indices[0].append(b1.index)
+			indices[1].append(b2.index)
 
-		links = list(zip(*links))
-
-		t = n1.tensor.contract(links[0], n2.tensor, links[1])
+		t = n1.tensor.contract(indices[0], n2.tensor, indices[1])
 
 		buckets = []
 		for b in n1.buckets:
-			if b.otherBucket not in n2.buckets:
+			if not b.linked or b.otherBucket not in n2.buckets:
 				buckets.append(b)
 		for b in n2.buckets:
-			if b.otherBucket not in n1.buckets:
+			if not b.linked or b.otherBucket not in n1.buckets:
 				buckets.append(b)
 
 		n = Node(t, Buckets=buckets)

@@ -85,6 +85,7 @@ class TreeTensor(Tensor):
 			for n in n2.connectedNodes:
 				if n in t2.network.nodes:
 					links.append(n2.findLink(n))
+					print(links[-1].id)
 
 
 			print(n1 in t1.network.nodes, n2 in t2.network.nodes, n1 in t2.network.nodes, n2 in t1.network.nodes)

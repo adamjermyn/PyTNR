@@ -27,3 +27,7 @@ class Bucket:
 	@property
 	def size(self):
 		return self.node.tensor.shape[self.index]
+
+	@property
+	def otherSize(self):
+		return self.otherNode.tensor.shape[self.otherBucket.index]

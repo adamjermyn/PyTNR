@@ -312,6 +312,8 @@ def splitArray(array, chunkIndices, accuracy=1e-4):
 	u = np.reshape(u, sh1 + [ind])
 	v = np.reshape(v, [ind] + sh2)
 
+	assert u.shape[-1] == v.shape[0]
+
 	return u,v,indices1,indices2
 
 

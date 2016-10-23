@@ -6,7 +6,7 @@ from treeNetwork import TreeNetwork as TN
 import numpy as np
 
 
-x = np.random.randn(5,5,5,5,5,5)
+x = np.random.randn(4,4,4,4,4,4)
 t = AT(x)
 net = TN()
 n = Node(t, Buckets=[Bucket() for _ in range(t.rank)])
@@ -16,7 +16,7 @@ tf = TT(net)
 
 print(tf)
 
-x = np.random.randn(5,5,5,5,5,5)
+x = np.random.randn(4,4,4,4,4,4)
 t = AT(x)
 net = TN()
 n = Node(t, Buckets=[Bucket() for _ in range(t.rank)])
