@@ -147,9 +147,9 @@ class TreeNetwork(Network):
 			b2 = Bucket()
 			n1 = Node(ArrayTensor(u), Buckets=[node.buckets[i] for i in indices1] + [b1])
 			n2 = Node(ArrayTensor(v), Buckets=[b2] + [node.buckets[i] for i in indices2])
+			l = Link(b1,b2) # This line has to happen before addNode to prevent b1 and b2 from becoming externalBuckets
 			self.addNode(n1)
 			self.addNode(n2)
-			l = Link(b1,b2)
 			nodes.append(n1)
 
 			node = n2
