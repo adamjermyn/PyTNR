@@ -274,19 +274,15 @@ def splitArray(array, chunkIndices, accuracy=1e-4):
 	c2 = 0
 	sh1 = []
 	sh2 = []
-	indices1 = []
-	indices2 = []
 
 	for i in range(len(array.shape)):
 		if i in chunkIndices:
 			perm.append(c1)
 			sh1.append(array.shape[i])
-			indices1.append(i)
 			c1 += 1
 		else:
 			perm.append(len(chunkIndices) + c2)
 			sh2.append(array.shape[i])
-			indices2.append(i)
 			c2 += 1
 
 	array2 = np.transpose(array, axes=perm)
