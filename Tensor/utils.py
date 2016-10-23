@@ -1,9 +1,10 @@
 import numpy as np
 from numpy.linalg import svd
-from scipy.linalg import logm
 from scipy.sparse.linalg import aslinearoperator
 from scipy.sparse.linalg import LinearOperator
 from scipy.sparse.linalg import svds
+
+from arrayTensor import ArrayTensor
 
 ################################
 # Miscillaneous Helper Functions
@@ -63,7 +64,7 @@ def tensorToMatrix(tens, index, front=True):
 		then the special index is pushed to the beginning. If front is False then the
 		special index is pushed to the back.
 		'''
-		return ndArrayToMatrix(tens.array(), index, front=front)
+		return ndArrayToMatrix(tens.array, index, front=front)
 
 def matrixToTensor(matrix, shape, index, front=True):
 		'''
@@ -71,12 +72,13 @@ def matrixToTensor(matrix, shape, index, front=True):
 		The reshape operation only modifies one of the axes of the matrix.
 		This is either the first (front) or last (not front) depending on the
 		boolean variable front. Whichever index is not reshaped is then
-		put in the position specified by index.
+		put in the position specified by index. The result is returned as an
+		ArrayTensor.
 
 		This method is meant to be the inverse of tensorToMatrix.
 		'''
 		arr = matrixToNDArray(matrix, shape, index, front=front)
-		return Tensor(arr.shape, arr)
+		return ArrayTensor(arr)
 
 ###################################
 # Linear Operator and SVD Functions
@@ -306,6 +308,4 @@ def splitArray(array, indices, accuracy=1e-4):
 	v = np.reshape(v, [ind] + sh2)
 
 	return u,v,indices1,indices2
-
-
 
