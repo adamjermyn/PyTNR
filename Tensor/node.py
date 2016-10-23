@@ -30,11 +30,20 @@ class Node:
 	def connectedNodes(self):
 		return [b.otherBucket.node for b in self.linkedBuckets]
 
-	def findLink(self, other):
+	def findLinks(self, other):
+		links = []
 		for b in self.linkedBuckets:
 			if other == b.otherNode:
-				return b.link
-		return None
+				links.append(b.link)
+		return links
+
+
+	def findLink(self, other):
+		links = self.findLinks(other)
+		if len(links) > 0:
+			return links[0]
+		else:
+			return None
 
 	def linksConnecting(self, other):
 		links = []
@@ -44,9 +53,9 @@ class Node:
 		return links
 
 	def indexConnecting(self, other):
-		for i,b in enumerate(self.linkedBuckets):
-			if other == b.otherBucket.node:
-				return i
+		for b in self.linkedBuckets:
+			if other == b.otherNode:
+				return b.index
 		return None
 
 	def bucketIndex(self, b):

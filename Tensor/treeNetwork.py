@@ -37,6 +37,8 @@ class TreeNetwork(Network):
 		Note that this search only iterates through the internal buckets in the network: it will not consider
 		nodes in another network.
 		'''
+		if calledFrom is not None:
+			print(node1.id,node2.id,calledFrom.id)
 		if node1 == node2: # Found it!
 			return [node1]
 
@@ -87,8 +89,8 @@ class TreeNetwork(Network):
 			else:
 				# Means there's a loop
 				print(n1, n2)
-				loop = self.pathBetween(n1, n2)
 				print('Checking for loop...')
+				loop = self.pathBetween(n1, n2)
 				if len(loop) > 0:
 					print('Loop found. Eliminating...')
 					self.addNode(n)
@@ -138,20 +140,11 @@ class TreeNetwork(Network):
 			for b in node.linkedBuckets:
 				print(b.id, b.size, b.otherSize)
 
-
 			b1 = Bucket()
 			b2 = Bucket()
 			n1 = Node(ArrayTensor(u), Buckets=[node.buckets[i] for i in indices1] + [b1])
 			n2 = Node(ArrayTensor(v), Buckets=[b2] + [node.buckets[i] for i in indices2])
 			l = Link(b1,b2) # This line has to happen before addNode to prevent b1 and b2 from becoming externalBuckets
-			print(u.shape, v.shape)
-			print(b1.id, b2.id)
-			for b in n1.linkedBuckets:
-				print(b.id, b.otherSize, b.size, b.index)
-				assert b.otherSize == b.size
-			for b in n2.linkedBuckets:
-				print(b.id, b.otherSize, b.size, b.index)
-				assert b.otherSize == b.size
 
 			self.addNode(n1)
 			self.addNode(n2)
@@ -192,6 +185,16 @@ class TreeNetwork(Network):
 			b1 = n1.buckets[ind1]
 			b2 = n2.buckets[ind2]
 
+			assert loop[0] != loop[1]
+			assert loop[1] != loop[2]
+			assert loop[2] != loop[3]
+			links = n1.linksConnecting(n2)
+			for l in links:
+				assert l.bucket1 != b1
+				assert l.bucket2 != b1
+				assert l.bucket1 != b2
+				assert l.bucket2 != b2
+
 			l = n1.findLink(n2)
 			print(l.bucket1.size, l.bucket1.otherSize, l.bucket2.size, l.bucket2.otherSize)
 			n = self.mergeNodes(n1, n2)
@@ -199,6 +202,10 @@ class TreeNetwork(Network):
 			loop.pop(1)
 
 			if n.tensor.rank > 3:
+				assert b1 in n.buckets
+				assert b2 in n.buckets
+				assert b1.node is n
+				assert b2.node is n
 				nodes = self.splitNode(n, ignore=[n.bucketIndex(b1),n.bucketIndex(b2)])
 				n = nodes[0] # The ignored indices always end up in the first node
 

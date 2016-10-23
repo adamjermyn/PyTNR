@@ -76,16 +76,14 @@ class TreeTensor(Tensor):
 				b2, b1 = b1, b2
 
 			# Remove any other links that this node pair handles
-			for c in n2.connectedNodes:
-				if c in t1.network.nodes:
-					if c != n1 or c.findLink(n2) != l:
-						links.remove(c.findLink(n2))
+			for b in n2.linkedBuckets:
+				if b.otherNode in t1.network.nodes and b.link != l:
+					links.remove(b.link)
 
 			# Add the links to t2.network to the todo list
-			for n in n2.connectedNodes:
-				if n in t2.network.nodes:
-					links.append(n2.findLink(n))
-					print(links[-1].id)
+			for b in n2.linkedBuckets:
+				if b.otherNode in t2.network.nodes:
+					links.append(b.link)
 
 
 			print(n1 in t1.network.nodes, n2 in t2.network.nodes, n1 in t2.network.nodes, n2 in t1.network.nodes)
