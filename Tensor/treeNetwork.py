@@ -117,13 +117,17 @@ class TreeNetwork(Network):
 
 
 
-	def splitNode(self, node):
+	def splitNode(self, node, ignore=None):
 		'''
 		Takes as input a Node and ensures that it is at most rank 3 by factoring rank 3 tensors
 		out of it until what remains is rank 3. The factoring is done via a greedy algorithm,
 		where the pair of indices with the least correlation with the rest are factored out.
 		This is determined by explicitly tracing out all but those indices from the density
 		matrix and computing the entropy.
+
+		ignore may be None or a pair of indices.
+		In the latter case, the pair of indices will be required to stay together.
+		This is enforced by having the pair be the first one factored.
 		'''
 		nodes = []
 
@@ -135,11 +139,14 @@ class TreeNetwork(Network):
 			s = []
 			pairs = list(combinations(range(len(array.shape)),2))
 
-			for p in pairs:
-				s.append(entropy(array, p))
-
-			ind = s.index(min(s))
-			p = pairs[ind]
+			if ignore is not None:
+				p = ignore
+				ignore = None
+			else:
+				for p in pairs:
+					s.append(entropy(array, p))
+				ind = s.index(min(s))
+				p = pairs[ind]
 
 			u, v, indices1, indices2 = splitArray(array, p, accuracy=self.accuracy)
 
@@ -192,7 +199,7 @@ class TreeNetwork(Network):
 			loop.pop(1)
 
 			if n.tensor.size > maxSize and n.tensor.rank > 3:
-				nodes = self.splitNode(n, prevIndex=[n.bucketIndex(b1),n.bucketIndex(b2)])
+				nodes = self.splitNode(n, ignore=[n.bucketIndex(b1),n.bucketIndex(b2)])
 				n = nodes[0] # The ignored indices always end up in the first node
 
 			loop[1] = n
@@ -202,7 +209,7 @@ class TreeNetwork(Network):
 			ind2 = n2.indexConnecting(loop[2])
 			b1 = n1.buckets[ind1]
 			b2 = n2.buckets[ind2]
-			nodes = self.splitNode(n, prevIndex=[n.bucketIndex(b1),n.bucketIndex(b2)])
+			nodes = self.splitNode(n, ignore=[n.bucketIndex(b1),n.bucketIndex(b2)])
 			n = nodes[0]
 			loop[1] = n
 
