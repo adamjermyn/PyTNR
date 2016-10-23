@@ -1,6 +1,10 @@
+import itertools
+
 class Bucket:
+	newid = itertools.count().__next__
 
 	def __init__(self):
+		self.id = Bucket.newid()
 		self.node = None
 		self.link = None
 
@@ -19,3 +23,7 @@ class Bucket:
 	@property
 	def index(self):
 		return self.node.bucketIndex(self)
+
+	@property
+	def size(self):
+		return self.node.tensor.shape[self.index]

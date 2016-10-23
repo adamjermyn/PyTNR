@@ -93,14 +93,5 @@ class Network:
 
 		return n
 
-	def checkLinks(self):
-		for n in self.nodes:
-			for c in self.internalConnected(n):
-				links = n.linksConnecting(c)
-				for l in links:
-					b1 = l.bucket1
-					b2 = l.bucket2
-					print(b1.node.tensor.shape[b1.index], b2.node.tensor.shape[b2.index])
-
 	def internalConnected(self, node):
 		return self.nodes.intersection(set(node.connectedNodes))

@@ -46,10 +46,24 @@ class TreeNetwork(Network):
 			return []
 
 		for c in self.internalConnected(node1): # Search children
+			assert c in node1.connectedNodes
+			l = node1.findLink(c)
+			assert l.bucket1 in node1.buckets or l.bucket2 in node1.buckets
+			assert l.bucket1 in c.buckets or l.bucket2 in c.buckets
+			assert l.bucket1.link is l
+			assert l.bucket2.link is l
+			assert node1 in c.connectedNodes
 			if c is not calledFrom:
-				path2 = self.pathBetween(c, node2, calledFrom=node1)
-				if len(path2) > 0:
-					return [node1] + path2
+				path = self.pathBetween(c, node2, calledFrom=node1)
+				if len(path) > 0: # Means the recursive call found it
+					assert c in path
+					assert c == path[0]
+					assert node1 in c.connectedNodes
+					assert node1 in path[0].connectedNodes
+					path2 = [node1] + path
+					for i in range(len(path2)-1):
+						assert path2[i] in path2[i+1].connectedNodes
+					return path2
 
 		return []
 
@@ -72,26 +86,34 @@ class TreeNetwork(Network):
 				connected.append(c)
 
 		# Because of the assertion, len(connected) <= 3
-		# If len(connected) <= 1 there's nothing for us
+		# If len(connected) <= 1 there's nothing tricky for us
 		# to do, but if len(connected) > 1 we have to
 		# eliminate loops and such.
-		if len(connected) == 2:
+		if len(connected) == 1:
+			self.addNode(n)
+		elif len(connected) == 2:
 			n1 = connected[0]
 			n2 = connected[1]
 			if n1 == n2:
 				self.addNode(n)
 				n = self.mergeNodes(n, n1)
+				print('Just merging.')
 			else:
 				# Means there's a loop
 				print(n1, n2)
 				loop = self.pathBetween(n1, n2)
+				print('Checking for loop...')
 				if len(loop) > 0:
+					print('Loop found. Eliminating...')
 					self.addNode(n)
 					self.eliminateLoop(loop + [n])
+					print('Loop eliminated.')
+				else:
+					self.addNode(n)
+					print('No loop found.')
 		elif len(connected) == 3:
-			###
-			print('meh')
-		self.checkLinks()
+			raise NotImplementedError('len(connected) == 3')
+
 
 
 	def splitNode(self, node, prevIndex=None):
@@ -130,6 +152,10 @@ class TreeNetwork(Network):
 			self.addNode(n1)
 			self.addNode(n2)
 			l = Link(b1,b2)
+			assert b1.size == b2.size
+
+			for b in node.buckets:
+				assert (b in n1.buckets) or (b in n2.buckets)
 
 			chunkIndices[1] = []
 			for i in range(len(v.shape)):
@@ -148,6 +174,11 @@ class TreeNetwork(Network):
 			self.addNode(n3)
 			self.addNode(n4)
 			l = Link(b1,b2)
+			assert b1.size == b2.size
+
+			for b in node.buckets:
+				assert (b in n1.buckets) or (b in n2.buckets) or (b in n3.buckets) or (b in n4.buckets)
+
 
 			return [n4, self.splitNode(n1, prevIndex=[len(u.shape)-1]), self.splitNode(n3, prevIndex=[len(q.shape)-1])]
 		else:
@@ -166,6 +197,11 @@ class TreeNetwork(Network):
 		one of the three links is cut via SVD (putting all of that link's entropy in the remaining
 		two links).
 		'''
+		print('Eliminating loop...')
+		for n in loop:
+			print(n.id,' ',)
+		for i in range(len(loop)):
+			assert loop[i-1] in loop[i].connectedNodes
 
 		assert len(loop) >= 3
 

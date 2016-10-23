@@ -52,6 +52,13 @@ class TreeTensor(Tensor):
 		links = []
 		for i,j in zip(*(ind,otherInd)):
 			b1, b2 = t1.externalBuckets[i], t2.externalBuckets[j]
+			assert b1 in t1.network.buckets and b1 not in t2.network.buckets
+			assert b2 in t2.network.buckets and b2 not in t1.network.buckets
+			print(i,j,b1.id,b2.id)
+			if b1.linked:
+				print(b1.id,b1.link.id,b1.otherBucket.id,b1.otherBucket in t1.network.buckets)
+			if b2.linked:
+				print(b2.id,b2.link.id,b2.otherBucket.id,b2.otherBucket in t2.network.buckets)
 			links.append(Link(b1, b2))
 
 		# Incrementally merge the networks
@@ -68,22 +75,29 @@ class TreeTensor(Tensor):
 				n2, n1 = n1, n2
 				b2, b1 = b1, b2
 
-			print(n1 in t1.network.nodes, n2 in t2.network.nodes)
-
-			# Move the node over
-			t2.network.removeNode(n2)
-			t1.network.contractNode(n2)
+			# Remove any other links that this node pair handles
+			for c in n2.connectedNodes:
+				if c in t1.network.nodes:
+					if c != n1 or c.findLink(n2) != l:
+						links.remove(c.findLink(n2))
 
 			# Add the links to t2.network to the todo list
 			for n in n2.connectedNodes:
 				if n in t2.network.nodes:
 					links.append(n2.findLink(n))
 
-			for c in n2.connectedNodes:
-				if c in t1.network.nodes:
-					if c != n1:
-						l = c.findLink(n2)
-						links.remove(l)
+
+			print(n1 in t1.network.nodes, n2 in t2.network.nodes, n1 in t2.network.nodes, n2 in t1.network.nodes)
+			print(n1, n2)
+
+			# Move the node over
+			t2.network.removeNode(n2)
+			t1.network.contractNode(n2)
+
+			for l in links:
+				print(l.bucket1.node.id, l.bucket2.node.id, l.id)
+				assert l.bucket1 in t1.network.buckets or l.bucket1 in t2.network.buckets
+				assert l.bucket2 in t1.network.buckets or l.bucket2 in t2.network.buckets
 
 
 		#TODO: Handle reindexing of external buckets for t1

@@ -1,7 +1,12 @@
-
+import itertools
 
 class Link:
+	newid = itertools.count().__next__
+
 	def __init__(self, b1, b2):
+		assert not b1.linked
+		assert not b2.linked
+		self.id = Link.newid()
 		self.bucket1 = b1
 		self.bucket2 = b2
 		b1.link = self

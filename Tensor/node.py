@@ -16,7 +16,11 @@ class Node:
 			b.node = self
 
 	def __str__(self):
-		return 'Node with ID ' + str(self.id) + ' and tensor shape ' + str(self.tensor.shape)
+		s = 'Node with ID ' + str(self.id) + ' and tensor shape ' + str(self.tensor.shape)
+		s = s + '\n'
+		for n in self.connectedNodes:
+			s = s + str(n.id) + '\n'
+		return s
 
 	@property
 	def linkedBuckets(self):
@@ -43,7 +47,7 @@ class Node:
 		for i,b in enumerate(self.linkedBuckets):
 			if other == b.otherBucket.node:
 				return i
-		return None		
+		return None
 
 	def bucketIndex(self, b):
 		return self.buckets.index(b)

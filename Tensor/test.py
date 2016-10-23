@@ -26,6 +26,8 @@ tf2 = TT(net)
 
 print(tf2)
 
+print('-------')
+
 tf3 = tf.contract([0,1,2,3,4],tf2,[0,1,2,3,4])
 
 print(tf3)
