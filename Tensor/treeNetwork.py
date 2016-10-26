@@ -5,6 +5,7 @@ from link import Link
 from arrayTensor import ArrayTensor
 from utils import entropy, splitArray
 from itertools import combinations
+import numpy as np
 
 class TreeNetwork(Network):
 	'''
@@ -100,8 +101,29 @@ class TreeNetwork(Network):
 					self.addNode(n)
 					print('No loop found.')
 		elif len(connected) == 3:
-			raise NotImplementedError('len(connected) == 3')
+			'''
+			This case is somewhat complicated to handle, so we're going to do it
+			in a roundabout way. First we insert a rank-2 identity tensor between
+			n and one of the nodes it connects to. Then, we contract n (which sends
+			it to the len(connected)==2 case), and finally we contract the identity.
+			'''
 
+			# Build the identity and move over bucket, linking it to this network
+			b1 = n.buckets[0]
+			b2 = Bucket()
+			s = b1.size
+			identity = Node(ArrayTensor(np.identity(s)), Buckets=[b1, b2])
+
+			# Link the identity to n
+			b3 = Bucket()
+			n.buckets[0] = b3
+			b3.node = n
+			l = Link(b2, b3)
+
+			# Contract n
+			self.contractNode(n)
+			# Contract the identity
+			self.contractNode(identity)
 
 
 	def splitNode(self, node, ignore=None):

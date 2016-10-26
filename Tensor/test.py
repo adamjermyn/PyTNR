@@ -16,8 +16,8 @@ tf = TT(net)
 
 print(tf)
 
-x = np.random.randn(4,4,4,4,4,4)
-t = AT(x)
+xx = np.random.randn(4,4,4,4,4,4)
+t = AT(xx)
 net = TN()
 n = Node(t, Buckets=[Bucket() for _ in range(t.rank)])
 net.addNode(n)
@@ -31,3 +31,9 @@ print('-------')
 tf3 = tf.contract([0,1,2,3,4],tf2,[0,1,2,3,4])
 
 print(tf3)
+
+n = tf3.network.nodes.pop()
+
+print(n)
+print(n.tensor.array)
+print(np.einsum('ijklmp,ijklmq->pq',x,xx))

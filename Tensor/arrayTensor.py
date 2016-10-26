@@ -13,7 +13,7 @@ class ArrayTensor(Tensor):
 		# maximum-magnitude element.
 		m = np.max(np.abs(tens))
 		self._logScalar = np.log(m)
-		self.array = np.copy(tens/m)
+		self._array = np.copy(tens/m)
 
 	def __str__(self):
 		return 'Tensor of shape '+str(self.shape)+'.'
@@ -33,6 +33,10 @@ class ArrayTensor(Tensor):
 	@property
 	def logScalar(self):
 		return self._logScalar
+
+	@property
+	def array(self):
+		return self._array*np.exp(self.logScalar)
 
 	def contract(self, ind, other, otherInd):
 		'''
