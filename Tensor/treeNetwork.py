@@ -5,6 +5,7 @@ from link import Link
 from arrayTensor import ArrayTensor
 from utils import entropy, splitArray
 from itertools import combinations
+from copy import deepcopy
 import numpy as np
 
 class TreeNetwork(Network):
@@ -20,6 +21,13 @@ class TreeNetwork(Network):
 
 	Internally all Nodes of a treeNetwork have Tensors of rank at most 3.
 	SVD factoring is used to enforce this.
+
+	TODO: Enforce ordering of externalBuckets for consistency.
+	That is, the order in which they are added in addNode should be the order
+	in which they remain through all later operations. Contraction operations
+	must obey a similar rule: when contracting a node with this network, that node's
+	external buckets go at the end of this network's list of external buckets.
+	This is consistent with the notion used in arrayTensor contraction.
 	'''
 
 	def __init__(self, accuracy=1e-4):
@@ -30,6 +38,23 @@ class TreeNetwork(Network):
 		super().__init__()
 
 		self.accuracy = accuracy
+
+	def array(self):
+		'''
+		Contracts the tree down to an array object.
+		Indices are ordered according to the external buckets listed in buckets.
+		'''
+		net = deepcopy(self)
+		while len(net.nodes) > 1:
+			n = net.nodes.pop()
+			net.nodes.add(n)
+			c = net.internalConnected(n)
+			c = c.pop()
+			net.mergeNodes(n,c)
+
+		n = net.nodes.pop()
+		arr = n.tensor.array
+		return arr
 
 	def pathBetween(self, node1, node2, calledFrom=None):
 		'''
@@ -86,20 +111,15 @@ class TreeNetwork(Network):
 			if n1 == n2:
 				self.addNode(n)
 				n = self.mergeNodes(n, n1)
-				print('Just merging.')
 			else:
 				# Means there's a loop
 				print(n1, n2)
-				print('Checking for loop...')
 				loop = self.pathBetween(n1, n2)
 				if len(loop) > 0:
-					print('Loop found. Eliminating...')
 					self.addNode(n)
 					self.eliminateLoop(loop + [n])
-					print('Loop eliminated.')
 				else:
 					self.addNode(n)
-					print('No loop found.')
 		elif len(connected) == 3:
 			'''
 			This case is somewhat complicated to handle, so we're going to do it
@@ -140,6 +160,8 @@ class TreeNetwork(Network):
 		'''
 		nodes = []
 
+		x = self.array()
+
 		while node.tensor.rank > 3:
 			self.removeNode(node)
 
@@ -176,6 +198,8 @@ class TreeNetwork(Network):
 
 		nodes.append(node)
 
+		assert abs(1 - np.sum(self.array()**2)/np.sum(x**2)) < self.accuracy
+
 		return nodes
 
 	def eliminateLoop(self, loop):
@@ -191,11 +215,9 @@ class TreeNetwork(Network):
 		one of the three links is cut via SVD (putting all of that link's entropy in the remaining
 		two links).
 		'''
-		print('Eliminating loop...')
-		for n in loop:
-			print(n.id,' ',)
 		for i in range(len(loop)):
 			assert loop[i-1] in loop[i].connectedNodes
+		x = self.array()
 
 		assert len(loop) >= 3
 
@@ -252,3 +274,5 @@ class TreeNetwork(Network):
 
 		if n.tensor.rank > 3:
 			self.splitNode(n)
+
+		assert abs(1 - np.sum(self.array()**2)/np.sum(x**2)) < self.accuracy

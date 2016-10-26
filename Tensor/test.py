@@ -6,7 +6,7 @@ from treeNetwork import TreeNetwork as TN
 import numpy as np
 
 
-x = np.random.randn(4,4,4,4,4,4)
+x = np.random.randn(4,4,4)
 t = AT(x)
 net = TN()
 n = Node(t, Buckets=[Bucket() for _ in range(t.rank)])
@@ -16,7 +16,7 @@ tf = TT(net)
 
 print(tf)
 
-xx = np.random.randn(4,4,4,4,4,4)
+xx = np.random.randn(4,4,4)
 t = AT(xx)
 net = TN()
 n = Node(t, Buckets=[Bucket() for _ in range(t.rank)])
@@ -28,12 +28,11 @@ print(tf2)
 
 print('-------')
 
-tf3 = tf.contract([0,1,2,3,4],tf2,[0,1,2,3,4])
+tf3 = tf.contract([0,1],tf2,[0,1])
 
 print(tf3)
 
-n = tf3.network.nodes.pop()
-
-print(n)
-print(n.tensor.array)
-print(np.einsum('ijklmp,ijklmq->pq',x,xx))
+print(tf3.network.array())
+print(np.einsum('ijp,ijq->pq',x,xx))
+print(np.sum(tf3.network.array()**2))
+print(np.sum(np.einsum('ijp,ijq->pq',x,xx)**2))
