@@ -103,4 +103,12 @@ class TreeTensor(Tensor):
 		return t1
 
 	def trace(self, ind0, ind1):
-		raise NotImplementedError
+		t = deepcopy(self)
+
+		b1 = t.externalBuckets[ind0]
+		b2 = t.externalBuckets[ind1]
+
+		t.network.trace(b1, b2)
+
+		t.externalBuckets.remove(b1)
+		t.externalBuckets.remove(b2)

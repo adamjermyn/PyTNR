@@ -106,7 +106,6 @@ class TreeNetwork(Network):
 				n = self.mergeNodes(n, n1)
 			else:
 				# Means there's a loop
-				print(n1, n2)
 				loop = self.pathBetween(n1, n2)
 				if len(loop) > 0:
 					self.addNode(n)
@@ -138,6 +137,41 @@ class TreeNetwork(Network):
 			# Contract the identity
 			self.contractNode(identity)
 
+
+	def trace(self, b1, b2):
+		'''
+		Links external buckets b1 and b2 and eliminates any loops which result.
+		'''
+		assert b1 in self.externalBuckets
+		assert b2 in self.externalBuckets
+		assert b1 != b2
+		n1 = b1.node
+		n2 = b2.node
+
+		if n1 == n2:
+			# So we're just tracing an arrayTensor.
+			n1.tensor = n1.tensor.trace([b1.index], [b2.index])
+			n1.buckets.remove(b1)
+			n1.buckets.remove(b2)
+			self.externalBuckets.remove(b1)
+			self.externalBuckets.remove(b2)
+		else:
+			# We may be introducing a loop
+			loop = self.pathBetween(n1, n2)
+			if len(loop) > 0:
+				if len(loop) == 2:
+					# This special case is not possible when contracting in a new node.
+					# The easy way to handle it is just to merge the two nodes and then
+					# split them if the resulting rank is too high.
+					l = Link(b1, b2)
+					n = self.mergeNodes(n1, n2)
+					if n.tensor.rank > 3:
+						self.splitNode(n)
+				else:
+					l = Link(b1, b2)
+					self.eliminateLoop(loop + [n1])
+					self.externalBuckets.remove(b1)
+					self.externalBuckets.remove(b2)
 
 	def splitNode(self, node, ignore=None):
 		'''
@@ -190,8 +224,6 @@ class TreeNetwork(Network):
 			node = n2
 
 		nodes.append(node)
-
-		assert abs(1 - np.sum(self.array()**2)/np.sum(x**2)) < 2*self.accuracy
 
 		return nodes
 
@@ -267,5 +299,3 @@ class TreeNetwork(Network):
 
 		if n.tensor.rank > 3:
 			self.splitNode(n)
-
-		assert abs(1 - np.sum(self.array()**2)/np.sum(x**2)) < self.accuracy
