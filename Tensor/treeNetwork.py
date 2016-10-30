@@ -21,13 +21,6 @@ class TreeNetwork(Network):
 
 	Internally all Nodes of a treeNetwork have Tensors of rank at most 3.
 	SVD factoring is used to enforce this.
-
-	TODO: Enforce ordering of externalBuckets for consistency.
-	That is, the order in which they are added in addNode should be the order
-	in which they remain through all later operations. Contraction operations
-	must obey a similar rule: when contracting a node with this network, that node's
-	external buckets go at the end of this network's list of external buckets.
-	This is consistent with the notion used in arrayTensor contraction.
 	'''
 
 	def __init__(self, accuracy=1e-4):
