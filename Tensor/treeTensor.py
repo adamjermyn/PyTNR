@@ -61,6 +61,10 @@ class TreeTensor(Tensor):
 			assert b2 in t2.network.buckets and b2 not in t1.network.buckets
 			links.append(Link(b1, b2))
 
+		for l in links:
+			t1.externalBuckets.remove(l.bucket1)
+			t2.externalBuckets.remove(l.bucket2)
+
 		# Incrementally merge the networks
 		while len(links) > 0:
 			l = links.pop()
@@ -94,7 +98,7 @@ class TreeTensor(Tensor):
 				assert l.bucket2 in t1.network.buckets or l.bucket2 in t2.network.buckets
 
 
-		#TODO: Handle reindexing of external buckets for t1
+		t1.externalBuckets = t1.externalBuckets + t2.externalBuckets
 
 		return t1
 
