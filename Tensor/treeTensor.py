@@ -8,7 +8,7 @@ from copy import deepcopy
 
 class TreeTensor(Tensor):
 
-	def __init__(self, network):
+	def __init__(self):
 		'''
 		If network is specified, it must be a treeNetwork and must not be connected to any other treeNetworks.
 		'''
