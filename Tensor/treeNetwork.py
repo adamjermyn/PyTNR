@@ -191,7 +191,7 @@ class TreeNetwork(Network):
 
 		nodes.append(node)
 
-		assert abs(1 - np.sum(self.array()**2)/np.sum(x**2)) < self.accuracy
+		assert abs(1 - np.sum(self.array()**2)/np.sum(x**2)) < 2*self.accuracy
 
 		return nodes
 

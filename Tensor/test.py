@@ -22,11 +22,11 @@ print(tf2)
 
 print('-------')
 
-tf3 = tf.contract([0,1,2,3],tf2,[0,1,2,3])
+tf3 = tf.contract([0,1,2],tf2,[2,3,4])
 
 print(tf3)
 
 print(tf3.network.array())
-print(np.einsum('ijrwp,ijrwq->pq',x,xx))
+print(np.einsum('ijrwp,sqijr->wspq',x,xx))
 print(np.sum(tf3.network.array()**2))
-print(np.sum(np.einsum('ijrwp,ijrwq->pq',x,xx)**2))
+print(np.sum(np.einsum('ijrwp,sqijr->wspq',x,xx)**2))
