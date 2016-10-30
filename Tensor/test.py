@@ -6,14 +6,14 @@ from treeNetwork import TreeNetwork as TN
 import numpy as np
 
 
-x = np.random.randn(4,4,4)
+x = np.random.randn(4,4,4,4,4)
 t = AT(x)
 tf = TT()
 tf.addTensor(t)
 
 print(tf)
 
-xx = np.random.randn(4,4,4)
+xx = np.random.randn(4,4,4,4,4)
 t = AT(xx)
 tf2 = TT()
 tf2.addTensor(t)
@@ -22,11 +22,11 @@ print(tf2)
 
 print('-------')
 
-tf3 = tf.contract([0,1],tf2,[0,1])
+tf3 = tf.contract([0,1,2,3],tf2,[0,1,2,3])
 
 print(tf3)
 
 print(tf3.network.array())
-print(np.einsum('ijp,ijq->pq',x,xx))
+print(np.einsum('ijrwp,ijrwq->pq',x,xx))
 print(np.sum(tf3.network.array()**2))
-print(np.sum(np.einsum('ijp,ijq->pq',x,xx)**2))
+print(np.sum(np.einsum('ijrwp,ijrwq->pq',x,xx)**2))

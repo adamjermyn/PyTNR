@@ -19,7 +19,7 @@ class TreeTensor(Tensor):
 	def addTensor(self, tensor):
 		n = Node(tensor, Buckets=[Bucket() for _ in range(tensor.rank)])
 		self.network.addNode(n)
-		self.externalBuckets.append(n.buckets)
+		self.externalBuckets.extend(n.buckets)
 		if tensor.rank > 3:
 			self.network.splitNode(n)
 
@@ -59,11 +59,6 @@ class TreeTensor(Tensor):
 			b1, b2 = t1.externalBuckets[i], t2.externalBuckets[j]
 			assert b1 in t1.network.buckets and b1 not in t2.network.buckets
 			assert b2 in t2.network.buckets and b2 not in t1.network.buckets
-			print(i,j,b1.id,b2.id)
-			if b1.linked:
-				print(b1.id,b1.link.id,b1.otherBucket.id,b1.otherBucket in t1.network.buckets)
-			if b2.linked:
-				print(b2.id,b2.link.id,b2.otherBucket.id,b2.otherBucket in t2.network.buckets)
 			links.append(Link(b1, b2))
 
 		# Incrementally merge the networks
@@ -90,16 +85,11 @@ class TreeTensor(Tensor):
 				if b.otherNode in t2.network.nodes:
 					links.append(b.link)
 
-
-			print(n1 in t1.network.nodes, n2 in t2.network.nodes, n1 in t2.network.nodes, n2 in t1.network.nodes)
-			print(n1, n2)
-
 			# Move the node over
 			t2.network.removeNode(n2)
 			t1.network.contractNode(n2)
 
 			for l in links:
-				print(l.bucket1.node.id, l.bucket2.node.id, l.id)
 				assert l.bucket1 in t1.network.buckets or l.bucket1 in t2.network.buckets
 				assert l.bucket2 in t1.network.buckets or l.bucket2 in t2.network.buckets
 
