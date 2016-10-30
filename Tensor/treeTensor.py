@@ -13,10 +13,15 @@ class TreeTensor(Tensor):
 		If network is specified, it must be a treeNetwork and must not be connected to any other treeNetworks.
 		'''
 		self._logScalar = 0.0
-		self.network = network
+		self.network = TreeNetwork()
 		self.externalBuckets = []
-		for b in self.network.externalBuckets:
-			self.externalBuckets.append(b)
+
+	def addTensor(self, tensor):
+		n = Node(tensor, Buckets=[Bucket() for _ in range(tensor.rank)])
+		self.network.addNode(n)
+		self.externalBuckets.append(n.buckets)
+		if tensor.rank > 3:
+			self.network.splitNode(n)
 
 	def __str__(self):
 		s = ''

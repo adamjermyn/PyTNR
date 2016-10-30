@@ -8,21 +8,15 @@ import numpy as np
 
 x = np.random.randn(4,4,4)
 t = AT(x)
-net = TN()
-n = Node(t, Buckets=[Bucket() for _ in range(t.rank)])
-net.addNode(n)
-net.splitNode(n)
-tf = TT(net)
+tf = TT()
+tf.addTensor(t)
 
 print(tf)
 
 xx = np.random.randn(4,4,4)
 t = AT(xx)
-net = TN()
-n = Node(t, Buckets=[Bucket() for _ in range(t.rank)])
-net.addNode(n)
-net.splitNode(n)
-tf2 = TT(net)
+tf2 = TT()
+tf2.addTensor(t)
 
 print(tf2)
 
