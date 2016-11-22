@@ -1,4 +1,5 @@
 import itertools
+from bucket import Bucket
 
 class Node:
 	newid = itertools.count().__next__
@@ -6,6 +7,7 @@ class Node:
 	def __init__(self, tensor, Buckets=None):
 		self.tensor = tensor
 		self.id = Node.newid()
+		self.network = None
 
 		if Buckets is None:
 			Buckets = []
@@ -60,3 +62,34 @@ class Node:
 
 	def bucketIndex(self, b):
 		return self.buckets.index(b)
+
+	def mergeBuckets(self, buckets):
+		'''
+		This method merges the listed buckets.
+		In the case of an ArrayTensor this just flattens the tensor along the corresponding axes.
+		In the case of a TreeTensor this merges the external legs.
+
+		If the optional network argument is provided, the merged buckets are deregistered
+		from it and the new bucket is added to it.
+		'''
+		inds = [b.index for b in buckets]
+		self.tensor = self.tensor.flatten(inds)
+		self.buckets = [b for i,b in enumerate(self.buckets) if i not in inds]
+		self.buckets.append(Bucket())
+		self.buckets[-1].node = self
+
+		network = self.network
+		if network is not None:
+			network.buckets = network.buckets.difference(set(buckets))
+			network.buckets.add(self.buckets[-1])
+
+			if len(network.internalBuckets.intersection(set(buckets))) == len(buckets):
+				network.internalBuckets = network.internalBuckets.difference(set(buckets))
+				network.internalBuckets.add(self.buckets[-1])
+			elif len(network.externalBuckets.intersection(set(buckets))) == len(buckets):
+				network.externalBuckets = network.externalBuckets.difference(set(buckets))
+				network.externalBuckets.add(self.buckets[-1])
+			else:
+				raise ValueError('Error: Provided buckets are a mixture of internal and external buckets!')
+
+		return self.buckets[-1]

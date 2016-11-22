@@ -56,8 +56,6 @@ class TreeNetwork(Network):
 		Note that this search only iterates through the internal buckets in the network: it will not consider
 		nodes in another network.
 		'''
-		if calledFrom is not None:
-			print(node1.id,node2.id,calledFrom.id)
 		if node1 == node2: # Found it!
 			return [node1]
 
@@ -130,7 +128,7 @@ class TreeNetwork(Network):
 			b3 = Bucket()
 			n.buckets[0] = b3
 			b3.node = n
-			l = Link(b2, b3)
+			_ = Link(b2, b3)
 
 			# Contract n
 			self.contractNode(n)
@@ -163,12 +161,11 @@ class TreeNetwork(Network):
 					# This special case is not possible when contracting in a new node.
 					# The easy way to handle it is just to merge the two nodes and then
 					# split them if the resulting rank is too high.
-					l = Link(b1, b2)
+					_ = Link(b1, b2)
 					n = self.mergeNodes(n1, n2)
-					if n.tensor.rank > 3:
-						self.splitNode(n)
+					self.splitNode(n)
 				else:
-					l = Link(b1, b2)
+					_ = Link(b1, b2)
 					self.eliminateLoop(loop + [n1])
 					self.externalBuckets.remove(b1)
 					self.externalBuckets.remove(b2)
@@ -187,15 +184,13 @@ class TreeNetwork(Network):
 		'''
 		nodes = []
 
-		x = self.array()
-
 		while node.tensor.rank > 3:
 			self.removeNode(node)
 
 			array = node.tensor.array
 
 			s = []
-			pairs = list(combinations(range(len(array.shape)),2))
+			pairs = list(combinations(range(len(array.shape)), 2))
 
 			if ignore is not None:
 				p = ignore
@@ -208,14 +203,11 @@ class TreeNetwork(Network):
 
 			u, v, indices1, indices2 = splitArray(array, p, accuracy=self.accuracy)
 
-			for b in node.linkedBuckets:
-				print(b.id, b.size, b.otherSize)
-
 			b1 = Bucket()
 			b2 = Bucket()
 			n1 = Node(ArrayTensor(u), Buckets=[node.buckets[i] for i in indices1] + [b1])
 			n2 = Node(ArrayTensor(v), Buckets=[b2] + [node.buckets[i] for i in indices2])
-			l = Link(b1,b2) # This line has to happen before addNode to prevent b1 and b2 from becoming externalBuckets
+			_ = Link(b1,b2) # This line has to happen before addNode to prevent b1 and b2 from becoming externalBuckets
 
 			self.addNode(n1)
 			self.addNode(n2)
@@ -242,7 +234,6 @@ class TreeNetwork(Network):
 		'''
 		for i in range(len(loop)):
 			assert loop[i-1] in loop[i].connectedNodes
-		x = self.array()
 
 		assert len(loop) >= 3
 
@@ -265,7 +256,6 @@ class TreeNetwork(Network):
 				assert l.bucket2 != b2
 
 			l = n1.findLink(n2)
-			print(l.bucket1.size, l.bucket1.otherSize, l.bucket2.size, l.bucket2.otherSize)
 			n = self.mergeNodes(n1, n2)
 
 			loop.pop(1)
@@ -299,3 +289,6 @@ class TreeNetwork(Network):
 
 		if n.tensor.rank > 3:
 			self.splitNode(n)
+
+
+

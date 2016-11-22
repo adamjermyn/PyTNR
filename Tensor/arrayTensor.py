@@ -1,5 +1,6 @@
 import numpy as np
 from tensor import Tensor
+from utils import permuteIndices
 
 class ArrayTensor(Tensor):
 
@@ -47,7 +48,6 @@ class ArrayTensor(Tensor):
 
 		Returns a Tensor containing the contraction of this Tensor with the other.
 		'''
-		print(self.shape,other.shape,ind,otherInd)
 		arr = np.tensordot(self.array,other.array,axes=((ind,otherInd)))
 		return ArrayTensor(arr)
 
@@ -87,6 +87,12 @@ class ArrayTensor(Tensor):
 				ind0[j] -= d0
 				ind1[j] -= d1
 
+		return ArrayTensor(arr)
+
+	def flatten(self, inds):
+		arr = np.copy(self._array)
+		arr = permuteIndices(arr, inds, front=False)
+		arr = np.reshape(arr, arr.shape[:-len(inds)]+[-1])
 		return ArrayTensor(arr)
 
 	def __deepcopy__(self, memo):

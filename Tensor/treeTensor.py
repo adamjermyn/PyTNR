@@ -1,10 +1,12 @@
 from tensor import Tensor
+from arrayTensor import ArrayTensor
 from treeNetwork import TreeNetwork
 from node import Node
 from link import Link
 from bucket import Bucket
 from operator import mul
 from copy import deepcopy
+import numpy as np
 
 class TreeTensor(Tensor):
 
@@ -97,6 +99,7 @@ class TreeTensor(Tensor):
 				assert l.bucket1 in t1.network.buckets or l.bucket1 in t2.network.buckets
 				assert l.bucket2 in t1.network.buckets or l.bucket2 in t2.network.buckets
 
+			self.optimize()
 
 		t1.externalBuckets = t1.externalBuckets + t2.externalBuckets
 
@@ -112,3 +115,97 @@ class TreeTensor(Tensor):
 
 		t.externalBuckets.remove(b1)
 		t.externalBuckets.remove(b2)
+
+	def flatten(self, inds):
+		'''
+		This method merges the listed external indices using a tree tensor
+		by attaching the identity tensor to all of them and to a new
+		external bucket. It then returns the new tree tensor.
+		'''
+
+		buckets = [self.externalBuckets[i] for i in inds]
+		shape = [self.shape[i] for i in inds]
+
+		# Create identity array
+		shape.append(np.product(shape))
+		iden = np.identity(shape[-1])
+		iden = np.reshape(iden, shape)
+
+		# Create Tree Tensor holding the identity
+		tens = ArrayTensor(iden)
+		tn = TreeTensor()
+		tn.addTensor(tens)
+
+		# Contract the identity
+		ttens = self.contract(inds, tn, list(range(len(buckets))))
+
+		return ttens
+
+	def optimize(self):
+		'''
+		Random note:
+		Instead of carefully eliminating loops one at a time,
+		we could just merge everything wholesale, use networkx
+		to identify loops, and then contract them one at a time
+		starting with the smallest (this will likely produce
+		simplifications by shrinking bigger loops... at a minimum
+		it means we're dealing with a smaller network by the time
+		we perform the complicated loop elimination operations).
+
+		We'd still need to occasionally split nodes when they get
+		too large, but that's something that can be done on the basis
+		of size rather than rank. We can then do a pass through to
+		enforce the maximum rank condition at the end. 
+		'''
+		print('Optimizing links...')
+
+		s2 = 0
+		for n in self.network.nodes:
+			s2 += n.tensor.size
+
+		done = set()
+		while len(done.intersection(self.network.nodes)) < len(self.network.nodes):
+			n = next(iter(self.network.nodes.difference(done)))
+			nc = self.network.internalConnected(n)
+			if len(nc) > 0:
+				n1 = nc.pop()
+				n = self.network.mergeNodes(n, n1)
+				nodes = self.network.splitNode(n)
+				done.update(nodes)
+			else:
+				done.add(n)
+
+		print('Optimizing permutations...')
+
+		s = 0
+		for n in self.network.nodes:
+			s += n.tensor.size
+
+		done = set()
+		while len(done.intersection(self.network.nodes)) < len(self.network.nodes):
+			n = next(iter(self.network.nodes.difference(done)))
+			nc = self.network.internalConnected(n)
+			if len(nc) > 1:
+				n1 = nc.pop()
+				n2 = nc.pop()
+				n = self.network.mergeNodes(n, n1)
+				n = self.network.mergeNodes(n, n2)
+				nodes = self.network.splitNode(n)
+				done.update(nodes)
+			else:
+				done.add(n)
+
+		s1 = 0
+		for n in self.network.nodes:
+			s1 += n.tensor.size
+
+		for b in self.externalBuckets:
+			print('External Bucket:',b.size)
+		for b in self.network.internalBuckets:
+			print('Internal Bucket:',b.size)
+
+		print('Opt:',s2, s, s1, n.tensor.shape, len(self.network.nodes))
+		return s, s1
+
+
+

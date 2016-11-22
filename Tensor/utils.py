@@ -4,8 +4,6 @@ from scipy.sparse.linalg import aslinearoperator
 from scipy.sparse.linalg import LinearOperator
 from scipy.sparse.linalg import svds
 
-from arrayTensor import ArrayTensor
-
 ################################
 # Miscillaneous Helper Functions
 ################################
@@ -50,47 +48,22 @@ def kroneckerDelta(dim, length):
 def adjoint(m):
 	return np.transpose(np.conjugate(m))
 
-#######################
-# Tensor Helper Methods
-#######################
-
-def tensorToMatrix(tens, index, front=True):
-		'''
-		This method flattens the Tensor's array along all indices other than
-		index and does so in a way which preserves the ordering of the other
-		axes when unflattened.
-
-		This method also takes as input a boolean variable front. If front is True
-		then the special index is pushed to the beginning. If front is False then the
-		special index is pushed to the back.
-		'''
-		return ndArrayToMatrix(tens.array, index, front=front)
-
-def matrixToTensor(matrix, shape, index, front=True):
-		'''
-		This method takes a 2D array and reshapes it to the given shape.
-		The reshape operation only modifies one of the axes of the matrix.
-		This is either the first (front) or last (not front) depending on the
-		boolean variable front. Whichever index is not reshaped is then
-		put in the position specified by index. The result is returned as an
-		ArrayTensor.
-
-		This method is meant to be the inverse of tensorToMatrix.
-		'''
-		arr = matrixToNDArray(matrix, shape, index, front=front)
-		return ArrayTensor(arr)
-
 ###################################
 # Linear Operator and SVD Functions
 ###################################
 
-def permuteIndices(arr, indices):
+def permuteIndices(arr, indices, front=True):
 	'''
 	This method moves the indices specified in indices
 	to be the first ones in the array.
+	If front is False it instead moves them to be the last ones.
 	'''
 	shape = arr.shape
 	perm = list(range(len(shape)))
+
+	if not front: # So we instead move the complement to the beginning
+		indices = list(set(perm).difference(set(indices)))
+
 	for i in indices:
 		perm.remove(i)
 	for j,i in enumerate(indices):

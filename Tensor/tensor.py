@@ -63,3 +63,11 @@ class Tensor(ABC):
 		are either integers or lists of integers of the same shape.
 		'''
 		pass
+
+	@abstractmethod
+	def flatten(self, inds):
+		'''
+		Returns a copy of the Tensor which has been flattened along the indices
+		specified by inds. The resulting new index will be the last one listed.
+		'''
+		pass

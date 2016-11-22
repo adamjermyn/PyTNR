@@ -28,7 +28,9 @@ class Network:
 		be the last thing that is done.
 		'''
 		assert node not in self.nodes
+		assert node.network is None
 
+		node.network = self
 		self.nodes.add(node)
 		for b in node.buckets:
 			self.buckets.add(b)
@@ -50,6 +52,7 @@ class Network:
 		'''
 		assert node in self.nodes
 
+		node.network = None
 		self.nodes.remove(node)
 		for b in node.buckets:
 			self.buckets.remove(b)
