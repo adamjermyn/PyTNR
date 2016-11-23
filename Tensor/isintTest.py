@@ -6,9 +6,10 @@ from arrayTensor import ArrayTensor as AT
 from treeNetwork import TreeNetwork as TN
 from network import Network
 import numpy as np
+from compress import compressLink
 
-nX = 4
-nY = 5
+nX = 10
+nY = 10
 
 nodes = [[] for _ in range(nX)]
 
@@ -34,8 +35,15 @@ for i in range(nX):
 		n.addNode(nodes[i][j])
 
 while len(n.nodes) > 1:
-	n1 = next(iter(n.nodes))
-	n2 = next(iter(n1.connectedNodes))
+	smallest = [1e20,None,None]
+	for nn in n.nodes:
+		for nnn in nn.connectedNodes:
+			if nn.tensor.size + nnn.tensor.size < smallest[0]:
+				smallest[0] = nn.tensor.size + nnn.tensor.size
+				smallest[1] = nn
+				smallest[2] = nnn
+	n1 = smallest[1]
+	n2 = smallest[2]
 	n3 = n.mergeNodes(n1, n2)
 
 	for nn in n3.connectedNodes:
@@ -49,8 +57,8 @@ while len(n.nodes) > 1:
 			otherBuckets = buckets1 + buckets2
 			b3 = n3.mergeBuckets(buckets)
 			bn = nn.mergeBuckets(otherBuckets)
-			Link(b3, bn)
-
+			l = Link(b3, bn)
+			compressLink(l,1e-4)
 			assert b3.otherBucket is bn
 			assert bn.otherBucket is b3
 			assert b3.linked
@@ -58,11 +66,8 @@ while len(n.nodes) > 1:
 			assert bn in n.buckets
 			assert b3 in n.buckets
 
-
 	s, s1 = n3.tensor.optimize()
-	while s > s1:
-		s, s1 = n3.tensor.optimize()
-	print(len(n.nodes))
-	for nn in n.nodes:
-		print(len(nn.tensor.network.nodes)+2, len(nn.tensor.network.externalBuckets))
-		print(nn.tensor.network)
+#	while s > s1:
+#		s, s1 = n3.tensor.optimize()
+
+	print('hh',smallest[0],len(n3.connectedNodes),len(n.nodes))

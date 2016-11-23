@@ -71,3 +71,16 @@ class Tensor(ABC):
 		specified by inds. The resulting new index will be the last one listed.
 		'''
 		pass
+
+
+	@abstractmethod
+	def getIndexFactor(self, ind):
+		'''
+		Returns a factor of this Tensor which includes the specified index.
+		'''
+
+	@abstractmethod
+	def setIndexFactor(self, ind, arr):
+		'''
+		Returns a new Tensor with the specified factor set to arr.
+		'''

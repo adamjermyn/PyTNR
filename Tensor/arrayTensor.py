@@ -4,7 +4,7 @@ from utils import permuteIndices
 
 class ArrayTensor(Tensor):
 
-	def __init__(self, tens):
+	def __init__(self, tens, logScalar=0):
 		self._shape = tens.shape
 		self._rank = len(self._shape)
 
@@ -12,9 +12,13 @@ class ArrayTensor(Tensor):
 
 		# We normalize the Tensor by factoring out the log of the
 		# maximum-magnitude element.
-		m = np.max(np.abs(tens))
-		self._logScalar = np.log(m)
-		self._array = np.copy(tens/m)
+		if logScalar == 0:
+			m = np.max(np.abs(tens))
+			self._logScalar = np.log(m)
+			self._array = np.copy(tens/m)
+		else:
+			self._logScalar = logScalar
+			self._array = np.copy(tens)
 
 	def __str__(self):
 		return 'Tensor of shape '+str(self.shape)+'.'
@@ -39,6 +43,11 @@ class ArrayTensor(Tensor):
 	def array(self):
 		return self._array*np.exp(self.logScalar)
 
+	@property
+	def scaledArray(self):
+		return self._array
+
+
 	def contract(self, ind, other, otherInd):
 		'''
 		Takes as input:
@@ -48,8 +57,8 @@ class ArrayTensor(Tensor):
 
 		Returns a Tensor containing the contraction of this Tensor with the other.
 		'''
-		arr = np.tensordot(self.array,other.array,axes=((ind,otherInd)))
-		return ArrayTensor(arr)
+		arr = np.tensordot(self.scaledArray,other.scaledArray,axes=((ind,otherInd)))
+		return ArrayTensor(arr,logScalar = self.logScalar + other.logScalar)
 
 	def trace(self, ind0, ind1):
 		'''
@@ -90,9 +99,15 @@ class ArrayTensor(Tensor):
 		return ArrayTensor(arr)
 
 	def flatten(self, inds):
-		arr = np.copy(self._array)
+		arr = np.copy(self.array)
 		arr = permuteIndices(arr, inds, front=False)
 		arr = np.reshape(arr, arr.shape[:-len(inds)]+[-1])
+		return ArrayTensor(arr)
+
+	def getIndexFactor(self, ind):
+		return self.array, ind
+
+	def setIndexFactor(self, ind, arr):
 		return ArrayTensor(arr)
 
 	def __deepcopy__(self, memo):

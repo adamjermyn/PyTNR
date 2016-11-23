@@ -141,22 +141,15 @@ class TreeTensor(Tensor):
 
 		return ttens
 
-	def optimize(self):
-		'''
-		Random note:
-		Instead of carefully eliminating loops one at a time,
-		we could just merge everything wholesale, use networkx
-		to identify loops, and then contract them one at a time
-		starting with the smallest (this will likely produce
-		simplifications by shrinking bigger loops... at a minimum
-		it means we're dealing with a smaller network by the time
-		we perform the complicated loop elimination operations).
+	def getIndexFactor(self, ind):
+		return self.externalBuckets[ind].node.tensor.array, self.externalBuckets[ind].index
 
-		We'd still need to occasionally split nodes when they get
-		too large, but that's something that can be done on the basis
-		of size rather than rank. We can then do a pass through to
-		enforce the maximum rank condition at the end. 
-		'''
+	def setIndexFactor(self, ind, arr):
+		tt = deepcopy(self)
+		tt.externalBuckets[ind].node.tensor = ArrayTensor(arr)
+		return tt
+
+	def optimize(self):
 		print('Optimizing links...')
 
 		s2 = 0
@@ -164,16 +157,57 @@ class TreeTensor(Tensor):
 			s2 += n.tensor.size
 
 		done = set()
-		while len(done.intersection(self.network.nodes)) < len(self.network.nodes):
-			n = next(iter(self.network.nodes.difference(done)))
-			nc = self.network.internalConnected(n)
-			if len(nc) > 0:
-				n1 = nc.pop()
-				n = self.network.mergeNodes(n, n1)
-				nodes = self.network.splitNode(n)
-				done.update(nodes)
-			else:
-				done.add(n)
+		while len(done.intersection(self.network.internalBuckets)) < len(self.network.internalBuckets):
+			b1 = next(iter(self.network.internalBuckets))
+			b2 = b1.otherBucket
+			n1 = b1.node
+			n2 = b2.node
+
+
+			n = self.network.mergeNodes(n1, n2)
+			nodes = self.network.splitNode(n)
+			if len(nodes) > 1:
+				l = nodes[0].findLink(nodes[1])
+
+				newBuckets1 = set(nodes[0].buckets)
+				newBuckets1.discard(l.bucket1)
+				newBuckets1.discard(l.bucket2)
+
+				newBuckets2 = set(nodes[1].buckets)
+				newBuckets2.discard(l.bucket1)
+				newBuckets2.discard(l.bucket2)
+
+				oldBuckets1 = set(n1.buckets)
+				oldBuckets1.discard(b1)
+				oldBuckets1.discard(b2)
+
+				if newBuckets1 != oldBuckets1 and newBuckets2 != oldBuckets1:
+					# Means we've done something so all the other buckets on these
+					# nodes need to be reexamined.
+					for b in n1.buckets:
+						done.discard(b)
+					for b in n2.buckets:
+						done.discard(b)
+
+				done.add(l.bucket1)
+				done.add(l.bucket2)
+			# It's pretty clear that it's getting stuck in a loop of moving
+			# legs around, so that's probably something to fix...
+			print(-len(done.intersection(self.network.internalBuckets)) + len(self.network.internalBuckets))
+
+		s=0
+		s1 = 0
+		for n in self.network.nodes:
+			s1 += n.tensor.size
+
+		for b in self.network.internalBuckets:
+			print('Internal Bucket:',b.size)
+
+		print('Opt:',s2, s, s1, self.shape, len(self.network.nodes))
+		return s, s1
+
+
+'''
 
 		print('Optimizing permutations...')
 
@@ -195,17 +229,4 @@ class TreeTensor(Tensor):
 			else:
 				done.add(n)
 
-		s1 = 0
-		for n in self.network.nodes:
-			s1 += n.tensor.size
-
-		for b in self.externalBuckets:
-			print('External Bucket:',b.size)
-		for b in self.network.internalBuckets:
-			print('Internal Bucket:',b.size)
-
-		print('Opt:',s2, s, s1, n.tensor.shape, len(self.network.nodes))
-		return s, s1
-
-
-
+'''

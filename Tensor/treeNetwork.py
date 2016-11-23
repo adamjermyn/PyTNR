@@ -187,7 +187,7 @@ class TreeNetwork(Network):
 		while node.tensor.rank > 3:
 			self.removeNode(node)
 
-			array = node.tensor.array
+			array = node.tensor.scaledArray
 
 			s = []
 			pairs = list(combinations(range(len(array.shape)), 2))
@@ -205,8 +205,8 @@ class TreeNetwork(Network):
 
 			b1 = Bucket()
 			b2 = Bucket()
-			n1 = Node(ArrayTensor(u), Buckets=[node.buckets[i] for i in indices1] + [b1])
-			n2 = Node(ArrayTensor(v), Buckets=[b2] + [node.buckets[i] for i in indices2])
+			n1 = Node(ArrayTensor(u, logScalar=node.tensor.logScalar/2), Buckets=[node.buckets[i] for i in indices1] + [b1])
+			n2 = Node(ArrayTensor(v, logScalar=node.tensor.logScalar/2), Buckets=[b2] + [node.buckets[i] for i in indices2])
 			_ = Link(b1,b2) # This line has to happen before addNode to prevent b1 and b2 from becoming externalBuckets
 
 			self.addNode(n1)
