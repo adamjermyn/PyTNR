@@ -1,5 +1,5 @@
 import numpy as np
-from utils import ndArrayToMatrix, generalSVD, matrixToNDArray
+from utils import ndArrayToMatrix, generalSVD, matrixToNDArray, matrixProductLinearOperator
 
 def compressLink(l, accuracy):
 	b1 = l.bucket1
@@ -23,9 +23,12 @@ def compressLink(l, accuracy):
 	a1 = ndArrayToMatrix(a1, ind1I, front=False)
 	a2 = ndArrayToMatrix(a2, ind2I, front=True)
 
-	arr = np.dot(a1, a2)
-
-	u, lam, v, p, cp = generalSVD(arr)
+	if a1.shape[1] < a1.shape[0] and a2.shape[0] < a2.shape[1]:
+		arr = matrixProductLinearOperator(a1, a2)
+		u, lam, v, p, cp = generalSVD(arr, bondDimension=a1.shape[1])
+	else:
+		arr = np.dot(a1, a2)
+		u, lam, v, p, cp = generalSVD(arr)
 
 	ind = np.searchsorted(cp, accuracy, side='left')
 	ind = len(cp) - ind

@@ -10,13 +10,14 @@ import numpy as np
 
 class TreeTensor(Tensor):
 
-	def __init__(self):
+	def __init__(self, accuracy):
 		'''
 		If network is specified, it must be a treeNetwork and must not be connected to any other treeNetworks.
 		'''
-		self._logScalar = 0.0
-		self.network = TreeNetwork()
+		self.accuracy = accuracy
+		self.network = TreeNetwork(accuracy=accuracy)
 		self.externalBuckets = []
+		self.optimized = set()
 
 	def addTensor(self, tensor):
 		n = Node(tensor, Buckets=[Bucket() for _ in range(tensor.rank)])
@@ -129,7 +130,7 @@ class TreeTensor(Tensor):
 
 		# Create Tree Tensor holding the identity
 		tens = ArrayTensor(iden)
-		tn = TreeTensor()
+		tn = TreeTensor(self.accuracy)
 		tn.addTensor(tens)
 
 		# Contract the identity
@@ -152,14 +153,15 @@ class TreeTensor(Tensor):
 		for n in self.network.nodes:
 			s2 += n.tensor.size
 
-		done = set()
-		while len(done.intersection(self.network.internalBuckets)) < len(self.network.internalBuckets):
+		while len(self.optimized.intersection(self.network.internalBuckets)) < len(self.network.internalBuckets):
 			b1 = next(iter(self.network.internalBuckets))
 			b2 = b1.otherBucket
 			n1 = b1.node
 			n2 = b2.node
 
-
+			sh1 = n1.tensor.shape
+			sh2 = n2.tensor.shape
+			s = n1.tensor.size + n2.tensor.size
 			n = self.network.mergeNodes(n1, n2)
 			nodes = self.network.splitNode(n)
 			if len(nodes) > 1:
@@ -181,15 +183,20 @@ class TreeTensor(Tensor):
 					# Means we've done something so all the other buckets on these
 					# nodes need to be reexamined.
 					for b in n1.buckets:
-						done.discard(b)
+						self.optimized.discard(b)
 					for b in n2.buckets:
-						done.discard(b)
+						self.optimized.discard(b)
 
-				done.add(l.bucket1)
-				done.add(l.bucket2)
+				self.optimized.add(l.bucket1)
+				self.optimized.add(l.bucket2)
+
+			s1 = 0
+			for nnnn in nodes:
+				s1 += nnnn.tensor.size
+
 			# It's pretty clear that it's getting stuck in a loop of moving
 			# legs around, so that's probably something to fix...
-			print(-len(done.intersection(self.network.internalBuckets)) + len(self.network.internalBuckets))
+			print(-len(self.optimized.intersection(self.network.internalBuckets)) + len(self.network.internalBuckets),s,s1, sh1, sh2)
 
 		s=0
 		s1 = 0
