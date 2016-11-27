@@ -38,14 +38,6 @@ class Tensor(ABC):
 		Returns the number of elements of the Tensor.
 		'''
 		pass	
-
-	@property
-	@abstractmethod
-	def logScalar(self):
-		'''
-		Returns the logarithm of the largest-magnitude element in the Tensor.
-		'''
-		pass
 			
 	@abstractmethod
 	def contract(self, ind, other, otherInd):
