@@ -12,13 +12,9 @@ class ArrayTensor(Tensor):
 
 		# We normalize the Tensor by factoring out the log of the
 		# maximum-magnitude element.
-		if logScalar == 0:
-			m = np.max(np.abs(tens))
-			self._logScalar = np.log(m)
-			self._array = np.copy(tens/m)
-		else:
-			self._logScalar = logScalar
-			self._array = np.copy(tens)
+		m = np.max(np.abs(tens))
+		self._logScalar = np.log(m) + logScalar
+		self._array = np.copy(tens/m)
 
 	def __str__(self):
 		return 'Tensor of shape '+str(self.shape)+'.'
@@ -105,10 +101,10 @@ class ArrayTensor(Tensor):
 		return ArrayTensor(arr)
 
 	def getIndexFactor(self, ind):
-		return self.array, ind
+		return self._array, ind
 
 	def setIndexFactor(self, ind, arr):
-		return ArrayTensor(arr)
+		return ArrayTensor(arr, logScalar=self.logScalar)
 
 	def __deepcopy__(self, memo):
 		return self

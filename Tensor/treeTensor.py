@@ -46,10 +46,6 @@ class TreeTensor(Tensor):
 			size *= s
 		return size
 
-	@property
-	def logScalar(self):
-		return self._logScalar
-
 	def contract(self, ind, other, otherInd):
 		# We copy the two networks first
 		t1 = deepcopy(self)
@@ -142,11 +138,11 @@ class TreeTensor(Tensor):
 		return ttens
 
 	def getIndexFactor(self, ind):
-		return self.externalBuckets[ind].node.tensor.array, self.externalBuckets[ind].index
+		return self.externalBuckets[ind].node.tensor.scaledArray, self.externalBuckets[ind].index
 
 	def setIndexFactor(self, ind, arr):
 		tt = deepcopy(self)
-		tt.externalBuckets[ind].node.tensor = ArrayTensor(arr)
+		tt.externalBuckets[ind].node.tensor = ArrayTensor(arr, logScalar=tt.externalBuckets[ind].node.tensor.logScalar)
 		return tt
 
 	def optimize(self):
