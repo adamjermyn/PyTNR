@@ -42,9 +42,9 @@ class TreeTensor(Tensor):
 
 	@property
 	def size(self):
-		size = 1
-		for s in self.shape:
-			size *= s
+		size = 0
+		for n in self.network.nodes:
+			size += n.tensor.size
 		return size
 
 	def contract(self, ind, other, otherInd):
@@ -95,8 +95,6 @@ class TreeTensor(Tensor):
 			for l in links:
 				assert l.bucket1 in t1.network.buckets or l.bucket1 in t2.network.buckets
 				assert l.bucket2 in t1.network.buckets or l.bucket2 in t2.network.buckets
-
-			self.optimize()
 
 		t1.externalBuckets = t1.externalBuckets + t2.externalBuckets
 
@@ -154,7 +152,7 @@ class TreeTensor(Tensor):
 			s2 += n.tensor.size
 
 		while len(self.optimized.intersection(self.network.internalBuckets)) < len(self.network.internalBuckets):
-			b1 = next(iter(self.network.internalBuckets))
+			b1 = next(iter(self.network.internalBuckets.difference(self.optimized)))
 			b2 = b1.otherBucket
 			n1 = b1.node
 			n2 = b2.node
@@ -201,10 +199,8 @@ class TreeTensor(Tensor):
 		s=0
 		s1 = 0
 		for n in self.network.nodes:
+			print(n)
 			s1 += n.tensor.size
-
-		for b in self.network.internalBuckets:
-			print('Internal Bucket:',b.size)
 
 		print('Opt:',s2, s, s1, self.shape, len(self.network.nodes))
 		return s, s1

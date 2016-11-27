@@ -8,31 +8,37 @@ from network import Network
 import numpy as np
 from compress import compressLink
 
-nX = 10
-nY = 10
+nX = 5
+nY = 5
+nZ = 5
+accuracy = 1e-4
 
-nodes = [[] for _ in range(nX)]
+nodes = [[[] for _ in range(nY)] for _ in range(nX)]
 
 n = Network()
 
-x = np.exp(np.random.randn(3,3,3,3))
+x = np.exp(np.random.randn(2,2,2,2,2,2))
 
 
 for i in range(nX):
 	for j in range(nY):
-		t = AT(x)
-		tf = TT()
-		tf.addTensor(t)
-		nodes[i].append(Node(tf, Buckets=[Bucket() for _ in range(len(x.shape))]))
+		for k in range(nZ):
+			t = AT(x)
+			tf = TT(accuracy)
+			tf.addTensor(t)
+			nodes[i][j].append(Node(tf, Buckets=[Bucket() for _ in range(len(x.shape))]))
 
 for i in range(nX):
 	for j in range(nY):
-		l = Link(nodes[i][j].buckets[0], nodes[(i+1)%nX][j].buckets[2])
-		l = Link(nodes[i][j].buckets[1], nodes[i][(j+1)%nY].buckets[3])
+		for k in range(nZ):
+			l = Link(nodes[i][j][k].buckets[0], nodes[(i+1)%nX][j][k].buckets[3])
+			l = Link(nodes[i][j][k].buckets[1], nodes[i][(j+1)%nY][k].buckets[4])
+			l = Link(nodes[i][j][k].buckets[2], nodes[i][j][(k+1)%nZ].buckets[5])
 
 for i in range(nX):
 	for j in range(nY):
-		n.addNode(nodes[i][j])
+		for k in range(nZ):
+			n.addNode(nodes[i][j][k])
 
 while len(n.nodes) > 1:
 	smallest = [1e20,None,None]
@@ -45,29 +51,11 @@ while len(n.nodes) > 1:
 	n1 = smallest[1]
 	n2 = smallest[2]
 	n3 = n.mergeNodes(n1, n2)
+	n.mergeLinks(n3, accuracy=accuracy)
+	n3.tensor.optimize()
 
-	for nn in n3.connectedNodes:
-		links = n3.linksConnecting(nn)
-		if len(links) > 1:
-			buckets1 = [l.bucket1 for l in links if l.bucket1.node is n3]
-			buckets2 = [l.bucket2 for l in links if l.bucket2.node is n3]
-			buckets = buckets1 + buckets2
-			buckets1 = [l.bucket1 for l in links if l.bucket1.node is nn]
-			buckets2 = [l.bucket2 for l in links if l.bucket2.node is nn]
-			otherBuckets = buckets1 + buckets2
-			b3 = n3.mergeBuckets(buckets)
-			bn = nn.mergeBuckets(otherBuckets)
-			l = Link(b3, bn)
-			compressLink(l,1e-4)
-			assert b3.otherBucket is bn
-			assert bn.otherBucket is b3
-			assert b3.linked
-			assert bn.linked
-			assert bn in n.buckets
-			assert b3 in n.buckets
+	for nn in n.nodes:
+		print('hh',nn.tensor.shape, nn.tensor.size, 1.0*nn.tensor.size/np.product(nn.tensor.shape))
 
-	s, s1 = n3.tensor.optimize()
-#	while s > s1:
-#		s, s1 = n3.tensor.optimize()
 
 	print('hh',smallest[0],len(n3.connectedNodes),len(n.nodes))

@@ -218,7 +218,16 @@ def generalSVD(matrix, bondDimension=np.inf, optimizerMatrix=None, arr1=None, ar
 			# Required so sparse bond is properly represented
 			u, lam, v = bigSVD(matrix, bondDimension)
 		else:
-			u, lam, v = np.linalg.svd(matrix, full_matrices=0)
+			try:
+				u, lam, v = np.linalg.svd(matrix, full_matrices=0)
+			except:
+				print('Erm.... SVD not converged!')
+				print(matrix)
+				print(np.sum(matrix**2))
+				print(matrix.shape)
+				print(np.max(matrix), np.min(matrix))
+				np.savetxt('error',matrix)
+				exit()
 	else:
 		ue, lame, ve = np.linalg.svd(optimizerMatrix, full_matrices=0)
 
