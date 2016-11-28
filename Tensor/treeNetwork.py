@@ -244,6 +244,12 @@ class TreeNetwork(Network):
 		extra indices as memory requires. This proceeds until the loop has length 3, and then
 		one of the three links is cut via SVD (putting all of that link's entropy in the remaining
 		two links).
+
+
+		TODO:
+		Profling indicates that this method is the most expensive. This is probably
+		because we're forcing bad intermediate decisions about which indices are
+		split off.
 		'''
 		for i in range(len(loop)):
 			assert loop[i-1] in loop[i].connectedNodes
@@ -282,6 +288,12 @@ class TreeNetwork(Network):
 				n = nodes[0] # The ignored indices always end up in the first node
 
 			loop[1] = n
+
+			# Now we roll the list by one element to avoid merging in one area too much
+			if len(loop) > 3:
+				loop = [loop[-1]] + loop[:-1]
+
+			print('Removing loop. Current length:',len(loop))
 
 		if loop[1].tensor.rank > 3:
 			ind1 = n1.indexConnecting(loop[0])

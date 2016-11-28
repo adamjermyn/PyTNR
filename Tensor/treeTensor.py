@@ -146,6 +146,8 @@ class TreeTensor(Tensor):
 
 	def optimize(self):
 		print('Starting optimizer.')
+		print('Optimizing tensor with shape',self.shape)
+
 		s2 = 0
 		for n in self.network.nodes:
 			s2 += n.tensor.size
@@ -158,6 +160,8 @@ class TreeTensor(Tensor):
 				nodes = self.network.internalConnected(n)
 				if len(nodes) > 0:
 					self.network.mergeNodes(n, nodes.pop())
+				else:
+					done.add(n)
 			else:
 				done.add(n)
 
@@ -173,6 +177,7 @@ class TreeTensor(Tensor):
 			sh2 = n2.tensor.shape
 			s = n1.tensor.size + n2.tensor.size
 			n = self.network.mergeNodes(n1, n2)
+			print('Splitting node.')
 			nodes = self.network.splitNode(n)
 			if len(nodes) > 1:
 				l = nodes[0].findLink(nodes[1])
@@ -211,6 +216,7 @@ class TreeTensor(Tensor):
 			print('Optimization steps left:',-len(self.optimized.intersection(self.network.internalBuckets)) + len(self.network.internalBuckets))
 			print('Tensor changed from',s,sh1,sh2,'to',s1,*s1sh,'\n')
 
+
 		print('Optimized network:')
 		s1 = 0
 		for n in self.network.nodes:
@@ -221,7 +227,7 @@ class TreeTensor(Tensor):
 		print('Reduced size from',s2,'to',s1)
 		print('Optimization done.\n')
 
-		return s, s1
+		return s2, s1
 
 
 '''

@@ -256,6 +256,7 @@ def generalSVD(matrix, bondDimension=np.inf, optimizerMatrix=None, arr1=None, ar
 	return u, lam, v, p, cp
 
 def entropy(array, indices):
+	print(array.shape, indices)
 	arr = permuteIndices(array, indices)
 	sh = arr.shape[:len(indices)]
 	s = np.product(sh)
