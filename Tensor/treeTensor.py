@@ -145,11 +145,23 @@ class TreeTensor(Tensor):
 		return tt
 
 	def optimize(self):
-		print('Optimizing links...')
-
+		print('Starting optimizer.')
 		s2 = 0
 		for n in self.network.nodes:
 			s2 += n.tensor.size
+
+		print('Contracting Rank-2 Tensors.')
+		done = set()
+		while len(done.intersection(self.network.nodes)) < len(self.network.nodes):
+			n = next(iter(self.network.nodes.difference(done)))
+			if n.tensor.rank == 2:
+				nodes = self.network.internalConnected(n)
+				if len(nodes) > 0:
+					self.network.mergeNodes(n, nodes.pop())
+			else:
+				done.add(n)
+
+		print('Optimizing links.')
 
 		while len(self.optimized.intersection(self.network.internalBuckets)) < len(self.network.internalBuckets):
 			b1 = next(iter(self.network.internalBuckets.difference(self.optimized)))
@@ -194,15 +206,19 @@ class TreeTensor(Tensor):
 
 			# It's pretty clear that it's getting stuck in a loop of moving
 			# legs around, so that's probably something to fix...
-			print(-len(self.optimized.intersection(self.network.internalBuckets)) + len(self.network.internalBuckets),s,s1, sh1, sh2)
+			print('Optimization steps left:',-len(self.optimized.intersection(self.network.internalBuckets)) + len(self.network.internalBuckets))
+			print('Tensor changed from',s,sh1,sh2,'to',s1,'\n')
 
-		s=0
+		print('Optimized network:')
 		s1 = 0
 		for n in self.network.nodes:
 			print(n)
 			s1 += n.tensor.size
+		print('Shape: ',self.shape)
+		print('Number of internal nodes:',len(self.network.nodes))
+		print('Reduced size from',s2,'to',s1)
+		print('Optimization done.\n')
 
-		print('Opt:',s2, s, s1, self.shape, len(self.network.nodes))
 		return s, s1
 
 
