@@ -201,13 +201,15 @@ class TreeTensor(Tensor):
 				self.optimized.add(l.bucket2)
 
 			s1 = 0
+			s1sh = []
 			for nnnn in nodes:
 				s1 += nnnn.tensor.size
+				s1sh.append(nnnn.tensor.shape)
 
 			# It's pretty clear that it's getting stuck in a loop of moving
 			# legs around, so that's probably something to fix...
 			print('Optimization steps left:',-len(self.optimized.intersection(self.network.internalBuckets)) + len(self.network.internalBuckets))
-			print('Tensor changed from',s,sh1,sh2,'to',s1,'\n')
+			print('Tensor changed from',s,sh1,sh2,'to',s1,*s1sh,'\n')
 
 		print('Optimized network:')
 		s1 = 0
