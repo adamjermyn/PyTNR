@@ -7,6 +7,8 @@ from bucket import Bucket
 from operator import mul
 from copy import deepcopy
 import numpy as np
+import operator
+
 
 class TreeTensor(Tensor):
 
@@ -66,7 +68,32 @@ class TreeTensor(Tensor):
 
 		# Incrementally merge the networks
 		while len(links) > 0:
-			l = links.pop()
+			# We perform the mergers which can be done on their own first,
+			# then prioritize based on the width of the induced loop (smallest first).
+			plist = []
+			for l in links:
+				b1 = l.bucket1
+				b2 = l.bucket2
+				n1 = b1.node
+				n2 = b2.node
+				if n1 not in t1.network.nodes:
+					n1, n2 = n2, n1
+					b1, b2 = b2, b1
+				connected = []
+				for c in n2.connectedNodes:
+					if c in t1.network.nodes:
+						connected.append(c)
+				if len(connected) == 1:
+					plist.append([0,l])
+				elif len(connected) == 2:
+					plist.append([len(t1.network.pathBetween(connected[0], connected[1])), l])
+				else:
+					plist.append([100000, l])
+
+			m, l = min(plist, key=operator.itemgetter(0))
+
+			links.remove(l)
+
 			b1 = l.bucket1
 			b2 = l.bucket2
 
