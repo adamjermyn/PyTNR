@@ -266,11 +266,13 @@ class TreeNetwork(Network):
 				ind2 = n2.indexConnecting(loop[(i+3)%len(loop)])
 				b1 = n1.buckets[ind1]
 				b2 = n2.buckets[ind2]
-				if b1.size > best[0]:
-					best[0] = b1.size
+				if n1.findLink(n2).bucket1.size > best[0]:
+					best[0] = n1.findLink(n2).bucket1.size
 					best[1] = [i, n1, n2, ind1, ind2, b1, b2]
 
 			i, n1, n2, ind1, ind2, b1, b2 = best[1]
+
+			print(i)
 
 			loop = loop[i:] + loop[:i]
 
@@ -291,7 +293,7 @@ class TreeNetwork(Network):
 
 			loop.pop(1)
 
-			if n.tensor.rank > 3 and n.tensor.size > 100000:
+			if n.tensor.rank > 5:
 				assert b1 in n.buckets
 				assert b2 in n.buckets
 				assert b1.node is n
@@ -301,7 +303,7 @@ class TreeNetwork(Network):
 
 			loop[1] = n
 
-			print('Removing loop. Current length:',len(loop))
+			print('Removing loop. Current length:',len(loop),[l.tensor.shape for l in loop])
 
 		n = self.mergeNodes(loop[0], loop[1])
 		n = self.mergeNodes(n, loop[2])
