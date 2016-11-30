@@ -245,6 +245,7 @@ class TreeNetwork(Network):
 		one of the three links is cut via SVD (putting all of that link's entropy in the remaining
 		two links).
 
+		The links are contracted in descending size order.
 
 		TODO:
 		Profling indicates that this method is the most expensive. This is probably
@@ -257,18 +258,29 @@ class TreeNetwork(Network):
 		assert len(loop) >= 3
 
 		while len(loop) > 3:
-			n1 = loop[1]
-			n2 = loop[2]
-			ind1 = n1.indexConnecting(loop[0])
-			ind2 = n2.indexConnecting(loop[3])
-			b1 = n1.buckets[ind1]
-			b2 = n2.buckets[ind2]
+			best = [0,0]
+			for i in range(len(loop)):
+				n1 = loop[(i + 1)%len(loop)]
+				n2 = loop[(i + 2)%len(loop)]
+				ind1 = n1.indexConnecting(loop[i])
+				ind2 = n2.indexConnecting(loop[(i+3)%len(loop)])
+				b1 = n1.buckets[ind1]
+				b2 = n2.buckets[ind2]
+				if b1.size > best[0]:
+					best[0] = b1.size
+					best[1] = [i, n1, n2, ind1, ind2, b1, b2]
+
+			i, n1, n2, ind1, ind2, b1, b2 = best[1]
+
+			loop = loop[i:] + loop[:i]
 
 			assert loop[0] != loop[1]
 			assert loop[1] != loop[2]
 			assert loop[2] != loop[3]
 			links = n1.linksConnecting(n2)
 			for l in links:
+				assert l != b1.link
+				assert l != b2.link
 				assert l.bucket1 != b1
 				assert l.bucket2 != b1
 				assert l.bucket1 != b2
@@ -279,7 +291,7 @@ class TreeNetwork(Network):
 
 			loop.pop(1)
 
-			if n.tensor.rank > 3:
+			if n.tensor.rank > 3 and n.tensor.size > 100000:
 				assert b1 in n.buckets
 				assert b2 in n.buckets
 				assert b1.node is n
@@ -289,29 +301,10 @@ class TreeNetwork(Network):
 
 			loop[1] = n
 
-			# Now we roll the list by one element to avoid merging in one area too much
-			if len(loop) > 3:
-				loop = [loop[-1]] + loop[:-1]
-
 			print('Removing loop. Current length:',len(loop))
 
-		if loop[1].tensor.rank > 3:
-			ind1 = n1.indexConnecting(loop[0])
-			ind2 = n2.indexConnecting(loop[2])
-			b1 = n1.buckets[ind1]
-			b2 = n2.buckets[ind2]
-			nodes = self.splitNode(n, ignore=[n.bucketIndex(b1),n.bucketIndex(b2)])
-			n = nodes[0]
-			loop[1] = n
-
-		assert len(loop) == 3
-
-		n1 = loop[0]
-		n2 = loop[1]
-		n3 = loop[2]
-		n = self.mergeNodes(n1, n2)
-		n = self.mergeNodes(n, n3)
-
+		n = self.mergeNodes(loop[0], loop[1])
+		n = self.mergeNodes(n, loop[2])
 		if n.tensor.rank > 3:
 			self.splitNode(n)
 
