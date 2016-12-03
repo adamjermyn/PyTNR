@@ -53,8 +53,12 @@ class ArrayTensor(Tensor):
 
 		Returns a Tensor containing the contraction of this Tensor with the other.
 		'''
-		arr = np.tensordot(self.scaledArray,other.scaledArray,axes=((ind,otherInd)))
-		return ArrayTensor(arr,logScalar = self.logScalar + other.logScalar)
+		if hasattr(other, 'network'):
+			# If the other Tensor is a TreeTensor then it should handle the contraction.
+			return other.contract(otherInd, self, ind)
+		else:
+			arr = np.tensordot(self.scaledArray,other.scaledArray,axes=((ind,otherInd)))
+			return ArrayTensor(arr,logScalar = self.logScalar + other.logScalar)
 
 	def trace(self, ind0, ind1):
 		'''

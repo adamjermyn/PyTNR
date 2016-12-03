@@ -13,9 +13,6 @@ import operator
 class TreeTensor(Tensor):
 
 	def __init__(self, accuracy):
-		'''
-		If network is specified, it must be a treeNetwork and must not be connected to any other treeNetworks.
-		'''
 		self.accuracy = accuracy
 		self.network = TreeNetwork(accuracy=accuracy)
 		self.externalBuckets = []
@@ -27,6 +24,7 @@ class TreeTensor(Tensor):
 		self.externalBuckets.extend(n.buckets)
 		if tensor.rank > 3:
 			self.network.splitNode(n)
+		return n
 
 	def __str__(self):
 		s = ''
@@ -50,9 +48,13 @@ class TreeTensor(Tensor):
 		return size
 
 	def contract(self, ind, other, otherInd):
-		# We copy the two networks first
+		# We copy the two networks first. If the other is an ArrayTensor we cast it to a TreeTensor first.
 		t1 = deepcopy(self)
-		t2 = deepcopy(other)
+		if hasattr(other, 'network'):
+			t2 = deepcopy(other)
+		else:
+			t2 = TreeTensor(self.accuracy)
+			t2.addTensor(other)
 
 		# Link the networks
 		links = []
