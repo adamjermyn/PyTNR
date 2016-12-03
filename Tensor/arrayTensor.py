@@ -101,7 +101,7 @@ class ArrayTensor(Tensor):
 	def flatten(self, inds):
 		arr = np.copy(self.array)
 		arr = permuteIndices(arr, inds, front=False)
-		arr = np.reshape(arr, arr.shape[:-len(inds)]+[-1])
+		arr = np.reshape(arr, list(arr.shape[:-len(inds)])+[-1])
 		return ArrayTensor(arr)
 
 	def getIndexFactor(self, ind):
