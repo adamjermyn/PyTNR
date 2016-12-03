@@ -42,10 +42,15 @@ class TreeTensor(Tensor):
 
 	@property
 	def size(self):
+		return np.product(self.shape)
+
+	@property
+	def compressedSize(self):
 		size = 0
 		for n in self.network.nodes:
 			size += n.tensor.size
 		return size
+
 
 	def contract(self, ind, other, otherInd):
 		# We copy the two networks first. If the other is an ArrayTensor we cast it to a TreeTensor first.
