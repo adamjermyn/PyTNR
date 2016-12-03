@@ -35,12 +35,17 @@ def mergeContractor(n, accuracy, optimize=True, merge=True, verbose=0):
 	while len(n.nodes) > 1:
 		n1, n2 = entropyHeuristic(n)
 		n3 = n.mergeNodes(n1, n2)
-		n.mergeLinks(n3, accuracy=accuracy)
-		n3.tensor.optimize()
+		if merge:
+			n.mergeLinks(n3, accuracy=accuracy)
+		if optimize:
+			n3.tensor.optimize()
 
 		if verbose >= 2:
 			for nn in n.nodes:
-				print(nn.tensor.shape, nn.tensor.compressedSize, 1.0*nn.tensor.compressedSize/nn.tensor.size)
+				if hasattr(nn.tensor,'compressedSize'):
+					print(nn.tensor.shape, nn.tensor.compressedSize, 1.0*nn.tensor.compressedSize/nn.tensor.size)
+				else:
+					print(nn.tensor.shape, nn.tensor.size)
 
 		if verbose >= 1:
 			print('-------',len(n3.connectedNodes),len(n.nodes),'-------')
