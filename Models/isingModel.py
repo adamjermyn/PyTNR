@@ -7,6 +7,7 @@ from node import Node
 from arrayTensor import ArrayTensor
 from network import Network
 import numpy as np
+from scipy.integrate import quad  
 
 def IsingModel2D(nX, nY, h, J): 
 	network = Network()
@@ -60,6 +61,14 @@ def IsingModel2D(nX, nY, h, J):
  
 	return network
 
+def exactIsing2D(J): 
+	k = 1/np.sinh(2*J)**2 
+	def f(x): 
+		return np.log(np.cosh(2*J)**2 + (1/k)*np.sqrt(1+k**2-2*k*np.cos(2*x))) 
+	inte = quad(f,0,np.pi)[0] 
+ 
+	return np.log(2)/2 + (1/(2*np.pi))*inte
+
 ''' 
 def RandomIsingModel2D(nX, nY): 
 	network = NetworkTree() 
@@ -108,13 +117,7 @@ def RandomIsingModel2D(nX, nY):
 	return network, lattice 
  
 
-def exactIsing2D(J): 
-	k = 1/np.sinh(2*J)**2 
-	def f(x): 
-		return np.log(np.cosh(2*J)**2 + (1/k)*np.sqrt(1+k**2-2*k*np.cos(2*x))) 
-	inte = quad(f,0,np.pi)[0] 
- 
-	return np.log(2)/2 + (1/(2*np.pi))*inte 
+
 
 def IsingModel3D(nX, nY, nZ, h, J):
 	network = NetworkTree()
