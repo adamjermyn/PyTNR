@@ -1,13 +1,15 @@
 import sys 
-sys.path.append('../TensorNetwork/') 
-from networkTree import NetworkTree
-from latticeNode import latticeNode 
-import numpy as np 
-from scipy.integrate import quad 
-import cProfile 
- 
+sys.path.append('../Tensor/') 
+from network import Network
+from identityTensor import IdentityTensor
+from link import Link
+from node import Node
+from arrayTensor import ArrayTensor
+from network import Network
+import numpy as np
+
 def IsingModel2D(nX, nY, h, J): 
-	network = NetworkTree() 
+	network = Network()
  
 	# Place to store the tensors 
 	lattice = [[] for i in range(nX)] 
@@ -18,16 +20,15 @@ def IsingModel2D(nX, nY, h, J):
 	# Each lattice site has seven indices of width five, and returns zero if they are unequal and one otherwise. 
 	for i in range(nX): 
 		for j in range(nY): 
-			lattice[i].append(latticeNode(2,network)) 
- 
+			lattice[i].append(Node(IdentityTensor(2, 5)))
+
 	# Each on-site term has one index of width two, and returns exp(-h) or exp(h) for 0 or 1 respectively. 
 	for i in range(nX): 
 		for j in range(nY): 
 			arr = np.zeros((2)) 
 			arr[0] = np.exp(-h) 
-			arr[1] = np.exp(h) 
-			onSite[i].append(network.addNodeFromArray(arr)) 
-			lattice[i][j].addLink(onSite[i][j],0) 
+			arr[1] = np.exp(h)
+			onSite[i].append(Node(ArrayTensor(arr)))
  
 	# Each bond term has two indices of width two and returns exp(-J*(1+delta(index0,index1))/2). 
 	for i in range(nX): 
@@ -37,19 +38,29 @@ def IsingModel2D(nX, nY, h, J):
 			arr[1][1] = np.exp(-J) 
 			arr[0][1] = np.exp(J) 
 			arr[1][0] = np.exp(J) 
-			bondV[i].append(network.addNodeFromArray(np.copy(arr))) 
-			bondH[i].append(network.addNodeFromArray(np.copy(arr))) 
+			bondV[i].append(Node(ArrayTensor(arr)))
+			bondH[i].append(Node(ArrayTensor(arr)))
  
-	# Attach bond terms 
+	# Attach links
 	for i in range(nX): 
 		for j in range(nY): 
-			lattice[i][j].addLink(bondV[i][j],0) 
-			lattice[i][j].addLink(bondV[i][(j+1)%nY],1) 
-			lattice[i][j].addLink(bondH[i][j],0) 
-			lattice[i][j].addLink(bondH[(i+1)%nX][j],1) 
+			Link(lattice[i][j].buckets[0], onSite[i][j].buckets[0])
+			Link(lattice[i][j].buckets[1], bondV[i][j].buckets[0])
+			Link(lattice[i][j].buckets[2], bondV[i][(j+1)%nY].buckets[1])
+			Link(lattice[i][j].buckets[3], bondH[i][j].buckets[0])
+			Link(lattice[i][j].buckets[4], bondH[(i+1)%nX][j].buckets[1])
+
+	# Add to Network
+	for i in range(nX):
+		for j in range(nY):
+			network.addNode(lattice[i][j])
+			network.addNode(onSite[i][j])
+			network.addNode(bondV[i][j])
+			network.addNode(bondH[i][j])
  
-	return network, lattice 
- 
+	return network
+
+''' 
 def RandomIsingModel2D(nX, nY): 
 	network = NetworkTree() 
  
@@ -159,4 +170,4 @@ def IsingModel3D(nX, nY, nZ, h, J):
 				lattice[i][j][k].addLink(bondZ[i][j][(k+1)%nZ],6,1)
 
 	return network, lattice
-
+'''
