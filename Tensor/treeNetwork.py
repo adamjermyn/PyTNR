@@ -272,8 +272,6 @@ class TreeNetwork(Network):
 
 			i, n1, n2, ind1, ind2, b1, b2 = best[1]
 
-			print(i)
-
 			loop = loop[i:] + loop[:i]
 
 			assert loop[0] != loop[1]
@@ -302,8 +300,6 @@ class TreeNetwork(Network):
 				n = nodes[0] # The ignored indices always end up in the first node
 
 			loop[1] = n
-
-			print('Removing loop. Current length:',len(loop),[l.tensor.shape for l in loop])
 
 		n = self.mergeNodes(loop[0], loop[1])
 		n = self.mergeNodes(n, loop[2])

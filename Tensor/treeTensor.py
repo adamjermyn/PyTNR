@@ -173,15 +173,22 @@ class TreeTensor(Tensor):
 		tt.externalBuckets[ind].node.tensor = ArrayTensor(arr, logScalar=tt.externalBuckets[ind].node.tensor.logScalar)
 		return tt
 
-	def optimize(self):
-		print('Starting optimizer.')
-		print('Optimizing tensor with shape',self.shape)
+	def optimize(self, verbose=0):
+		'''
+		Optimizes the tensor network to minimize memory usage.
+		The parameter verbose controls how much output to print:
+			0 - None
+			1 - Running status
+		'''
+		if verbose >= 1:
+			print('Starting optimizer.')
+			print('Optimizing tensor with shape',self.shape)
+			s2 = 0
+			for n in self.network.nodes:
+				s2 += n.tensor.size
 
-		s2 = 0
-		for n in self.network.nodes:
-			s2 += n.tensor.size
-
-		print('Contracting Rank-2 Tensors.')
+		if verbose >= 1:
+			print('Contracting Rank-2 Tensors.')
 		done = set()
 		while len(done.intersection(self.network.nodes)) < len(self.network.nodes):
 			n = next(iter(self.network.nodes.difference(done)))
@@ -194,7 +201,8 @@ class TreeTensor(Tensor):
 			else:
 				done.add(n)
 
-		print('Optimizing links.')
+		if verbose >= 1:
+			print('Optimizing links.')
 
 		while len(self.optimized.intersection(self.network.internalBuckets)) < len(self.network.internalBuckets):
 			b1 = next(iter(self.network.internalBuckets.difference(self.optimized)))
@@ -206,7 +214,6 @@ class TreeTensor(Tensor):
 			sh2 = n2.tensor.shape
 			s = n1.tensor.size + n2.tensor.size
 			n = self.network.mergeNodes(n1, n2)
-			print('Splitting node.')
 			nodes = self.network.splitNode(n)
 			if len(nodes) > 1:
 				l = nodes[0].findLink(nodes[1])
@@ -240,23 +247,21 @@ class TreeTensor(Tensor):
 				s1 += nnnn.tensor.size
 				s1sh.append(nnnn.tensor.shape)
 
-			# It's pretty clear that it's getting stuck in a loop of moving
-			# legs around, so that's probably something to fix...
-			print('Optimization steps left:',-len(self.optimized.intersection(self.network.internalBuckets)) + len(self.network.internalBuckets))
-			print('Tensor changed from',s,sh1,sh2,'to',s1,*s1sh,'\n')
+			if verbose >= 1:
+				print('Optimization steps left:',-len(self.optimized.intersection(self.network.internalBuckets)) + len(self.network.internalBuckets))
+				print('Tensor changed from',s,sh1,sh2,'to',s1,*s1sh,'\n')
 
 
-		print('Optimized network:')
-		s1 = 0
-		for n in self.network.nodes:
-			print(n)
-			s1 += n.tensor.size
-		print('Shape: ',self.shape)
-		print('Number of internal nodes:',len(self.network.nodes))
-		print('Reduced size from',s2,'to',s1)
-		print('Optimization done.\n')
-
-		return s2, s1
+		if verbose >= 1:
+			print('Optimized network:')
+			s1 = 0
+			for n in self.network.nodes:
+				print(n)
+				s1 += n.tensor.size
+			print('Shape: ',self.shape)
+			print('Number of internal nodes:',len(self.network.nodes))
+			print('Reduced size from',s2,'to',s1)
+			print('Optimization done.\n')
 
 
 '''
