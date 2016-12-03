@@ -202,15 +202,12 @@ def generalSVD(matrix, bondDimension=np.inf, optimizerMatrix=None, arr1=None, ar
 	'''
 	if arr1 is not None and arr2 is not None:
 		u1, s1, v1 = np.linalg.svd(arr1, full_matrices=0)
-		print('SVD 1 Done!')
 		u2, s2, v2 = np.linalg.svd(arr2, full_matrices=0)
-		print('SVD 2 Done!')
 
 		arr3 = np.dot(v1, u2)
 		arr3 = np.einsum('i,ij,j->ij',s1,arr3,s2)
 
 		up, lam, vp = np.linalg.svd(arr3, full_matrices=0)
-		print('SVD 3 Done!')
 		u = np.dot(u1, up)
 		v = np.dot(vp, v2)
 	elif optimizerMatrix is None:
@@ -256,12 +253,12 @@ def generalSVD(matrix, bondDimension=np.inf, optimizerMatrix=None, arr1=None, ar
 	return u, lam, v, p, cp
 
 def entropy(array, indices):
-	print(array.shape, indices)
 	arr = permuteIndices(array, indices)
 	sh = arr.shape[:len(indices)]
 	s = np.product(sh)
 	arr = np.reshape(arr, (s,-1))
-	u, lam, v, p, cp = generalSVD(arr)
+	# We assume that most of the entropy is captured by the first sqrt(N) singular values.
+	u, lam, v, p, cp = generalSVD(arr,bondDimension=int(np.sqrt(min(arr.shape))))
 	s = -np.sum(p*np.log(p))
 	return s
 
