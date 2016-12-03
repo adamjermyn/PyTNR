@@ -10,7 +10,7 @@ class Node:
 		self.network = None
 
 		if Buckets is None:
-			Buckets = []
+			Buckets = [Bucket() for _ in range(self.tensor.rank)]
 
 		self.buckets = Buckets
 
