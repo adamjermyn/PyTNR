@@ -14,6 +14,7 @@ J = 0.45
 
 n = IsingModel2D(nX, nY, h, J)
 
-mergeContractor(n, accuracy, verbose=1)
+n = mergeContractor(n, accuracy, optimize=True, merge=True, verbose=1)
+
 
 
