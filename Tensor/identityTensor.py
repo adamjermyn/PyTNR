@@ -21,8 +21,13 @@ class IdentityTensor(TreeTensor):
 		numTensors = rank - 2
 		buckets = []
 
+		# Create identity array
+		iden = np.zeros((dimension,dimension,dimension))
+		for i in range(dimension):
+			iden[i,i,i] = 1.0
+
 		for i in range(numTensors):
-			n = super().addTensor(ArrayTensor(np.ones((dimension,dimension,dimension))))
+			n = super().addTensor(ArrayTensor(iden))
 			buckets = buckets + n.buckets
 
 
