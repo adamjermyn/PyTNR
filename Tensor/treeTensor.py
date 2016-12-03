@@ -33,6 +33,21 @@ class TreeTensor(Tensor):
 		return s
 
 	@property
+	def array(self):
+		arr, bdict = self.network.array
+
+		perm = []
+		blist = [b.id for b in self.externalBuckets]
+
+		for i in range(self.rank):
+			perm.append(bdict[self.externalBuckets[i].id])
+
+		arr = np.transpose(arr, axes=perm)
+
+		assert arr.shape == tuple(self.shape)
+		return arr
+
+	@property
 	def shape(self):
 		return [b.node.tensor.shape[b.index] for b in self.externalBuckets]
 
@@ -51,6 +66,9 @@ class TreeTensor(Tensor):
 			size += n.tensor.size
 		return size
 
+	@property
+	def logScalar(self):
+		return sum(n.tensor.logScalar for n in self.network.nodes)
 
 	def contract(self, ind, other, otherInd):
 		# We copy the two networks first. If the other is an ArrayTensor we cast it to a TreeTensor first.
@@ -132,6 +150,14 @@ class TreeTensor(Tensor):
 
 		t1.externalBuckets = t1.externalBuckets + t2.externalBuckets
 
+		### TESTING ###
+
+		arr1 = self.array
+		arr2 = other.array
+		tt1 = ArrayTensor(arr1)
+		tt2 = ArrayTensor(arr2)
+		tt = tt1.contract(ind, tt2, otherInd)
+		print(arr1.shape, arr2.shape, np.sum((tt.array - t1.array)**2)/np.sum((tt.array)**2))
 		return t1
 
 	def trace(self, ind0, ind1):

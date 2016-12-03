@@ -70,7 +70,6 @@ class Network:
 		'''
 		Merges the specified Nodes.
 		'''
-
 		links = n1.linksConnecting(n2)
 		indices = [[],[]]
 		for l in links:

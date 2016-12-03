@@ -33,6 +33,7 @@ class TreeNetwork(Network):
 
 		self.accuracy = accuracy
 
+	@property
 	def array(self):
 		'''
 		Contracts the tree down to an array object.
@@ -48,7 +49,12 @@ class TreeNetwork(Network):
 
 		n = net.nodes.pop()
 		arr = n.tensor.array
-		return arr
+
+		bdict = {}
+		for i in range(len(n.buckets)):
+			bdict[n.buckets[i].id] = i
+
+		return arr, bdict
 
 	def pathBetween(self, node1, node2, calledFrom=None):
 		'''
@@ -184,6 +190,8 @@ class TreeNetwork(Network):
 		This is enforced by having the pair be the first one factored.
 		'''
 		nodes = []
+
+		oldArr = self.array
 
 		while node.tensor.rank > 3:
 			self.removeNode(node)
