@@ -8,14 +8,14 @@ import numpy as np
 
 x = np.random.randn(4,4,4,4,4)
 t = AT(x)
-tf = TT()
+tf = TT(1e-5)
 tf.addTensor(t)
 
 print(tf)
 
 xx = np.random.randn(4,4,4,4,4)
 t = AT(xx)
-tf2 = TT()
+tf2 = TT(1e-5)
 tf2.addTensor(t)
 
 print(tf2)
