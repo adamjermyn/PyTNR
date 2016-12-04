@@ -74,8 +74,10 @@ class Network:
 		indices = [[],[]]
 		for l in links:
 			b1, b2 = l.bucket1, l.bucket2
-			if b1 in n2.buckets:
+			if b1.node == n2:
 				b1, b2 = b2, b1
+			assert b1.node == n1
+			assert b2.node == n2
 			indices[0].append(b1.index)
 			indices[1].append(b2.index)
 
