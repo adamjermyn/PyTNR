@@ -91,6 +91,8 @@ class TreeTensor(Tensor):
 			t1.externalBuckets.remove(l.bucket1)
 			t2.externalBuckets.remove(l.bucket2)
 
+		extB = t1.externalBuckets + t2.externalBuckets
+
 		# Incrementally merge the networks
 		while len(links) > 0:
 			# We perform the mergers which can be done on their own first,
@@ -148,7 +150,7 @@ class TreeTensor(Tensor):
 				assert l.bucket1 in t1.network.buckets or l.bucket1 in t2.network.buckets
 				assert l.bucket2 in t1.network.buckets or l.bucket2 in t2.network.buckets
 
-		t1.externalBuckets = t1.externalBuckets + t2.externalBuckets
+		t1.externalBuckets = extB
 
 		### TESTING ###
 
