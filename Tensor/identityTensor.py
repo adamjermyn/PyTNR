@@ -18,7 +18,13 @@ class IdentityTensor(TreeTensor):
 
 		numLayers = layer(dimension)
 
+		assert rank >= 2
+
+		if rank == 2:
+			return ArrayTensor(np.identity(dimension))
+
 		numTensors = rank - 2
+
 		buckets = []
 
 		# Create identity array
