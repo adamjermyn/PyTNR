@@ -28,7 +28,7 @@ class TreeTensor(Tensor):
 
 	def __str__(self):
 		s = ''
-		s = s + 'Tree Tensor with Network:\n'
+		s = s + 'Tree Tensor with Shape:' + str(self.shape)+' and Network:\n'
 		s = s + str(self.network)
 		return s
 
