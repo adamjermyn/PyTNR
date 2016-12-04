@@ -159,7 +159,14 @@ class TreeTensor(Tensor):
 		tt1 = ArrayTensor(arr1)
 		tt2 = ArrayTensor(arr2)
 		tt = tt1.contract(ind, tt2, otherInd)
-		print(arr1.shape, arr2.shape, np.sum((tt.array - t1.array)**2)/np.sum((tt.array)**2))
+		print('h',arr1.shape, arr2.shape, np.sum((tt.array - t1.array)**2)/np.sum((tt.array)**2))
+		print(t1.shape)
+		print(arr1)
+		print(ind)
+		print(arr2)
+		print(otherInd)
+		print(t1.array)
+
 		return t1
 
 	def trace(self, ind0, ind1):
