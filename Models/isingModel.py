@@ -9,6 +9,48 @@ from network import Network
 import numpy as np
 from scipy.integrate import quad  
 
+def IsingModel1D(nX, h, J): 
+	network = Network()
+ 
+	# Place to store the tensors 
+	lattice = [] 
+	onSite = []
+	bond = []
+ 
+	# Each lattice site has seven indices of width five, and returns zero if they are unequal and one otherwise. 
+	for i in range(nX): 
+		lattice.append(Node(IdentityTensor(2, 3)))
+
+	# Each on-site term has one index of width two, and returns exp(-h) or exp(h) for 0 or 1 respectively. 
+	for i in range(nX): 
+		arr = np.zeros((2)) 
+		arr[0] = np.exp(-h) 
+		arr[1] = np.exp(h)
+		onSite.append(Node(ArrayTensor(arr)))
+ 
+	# Each bond term has two indices of width two and returns exp(-J*(1+delta(index0,index1))/2). 
+	for i in range(nX): 
+		arr = np.zeros((2,2)) 
+		arr[0][0] = np.exp(-J) 
+		arr[1][1] = np.exp(-J) 
+		arr[0][1] = np.exp(J) 
+		arr[1][0] = np.exp(J) 
+		bond.append(Node(ArrayTensor(arr)))
+ 
+	# Attach links
+	for i in range(nX): 
+		Link(lattice[i].buckets[0], onSite[i].buckets[0])
+		Link(lattice[i].buckets[1], bond[i].buckets[0])
+		Link(lattice[i].buckets[2], bond[(i+1)%nX].buckets[1])
+
+	# Add to Network
+	for i in range(nX):
+		network.addNode(lattice[i])
+		network.addNode(onSite[i])
+		network.addNode(bond[i])
+ 
+	return network
+
 def IsingModel2D(nX, nY, h, J): 
 	network = Network()
  
