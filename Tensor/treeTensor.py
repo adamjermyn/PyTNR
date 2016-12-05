@@ -39,8 +39,8 @@ class TreeTensor(Tensor):
 		perm = []
 		blist = [b.id for b in self.externalBuckets]
 
-		for i in range(self.rank):
-			perm.append(bdict[self.externalBuckets[i].id])
+		for b in blist:
+			perm.append(bdict[b])
 
 		arr = np.transpose(arr, axes=perm)
 
