@@ -1,6 +1,7 @@
 from node import Node
 from link import Link
 from compress import compressLink
+from copy import deepcopy
 
 class Network:
 	'''
@@ -21,6 +22,29 @@ class Network:
 		for n in self.nodes:
 			s = s + str(n) + '\n'
 		return s
+
+	@property
+	def array(self):
+		'''
+		Contracts the tree down to an array object.
+		Indices are ordered according to the external buckets listed in buckets.
+		'''
+		net = deepcopy(self)
+		while len(net.nodes) > 1:
+			n = net.nodes.pop()
+			net.nodes.add(n)
+			c = net.internalConnected(n)
+			c = c.pop()
+			net.mergeNodes(n,c)
+
+		n = net.nodes.pop()
+		arr = n.tensor.array
+
+		bdict = {}
+		for i in range(len(n.buckets)):
+			bdict[n.buckets[i].id] = i
+
+		return arr, bdict
 
 	def addNode(self, node):
 		'''

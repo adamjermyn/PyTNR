@@ -33,29 +33,6 @@ class TreeNetwork(Network):
 
 		self.accuracy = accuracy
 
-	@property
-	def array(self):
-		'''
-		Contracts the tree down to an array object.
-		Indices are ordered according to the external buckets listed in buckets.
-		'''
-		net = deepcopy(self)
-		while len(net.nodes) > 1:
-			n = net.nodes.pop()
-			net.nodes.add(n)
-			c = net.internalConnected(n)
-			c = c.pop()
-			net.mergeNodes(n,c)
-
-		n = net.nodes.pop()
-		arr = n.tensor.array
-
-		bdict = {}
-		for i in range(len(n.buckets)):
-			bdict[n.buckets[i].id] = i
-
-		return arr, bdict
-
 	def pathBetween(self, node1, node2, calledFrom=None):
 		'''
 		Returns the unique path between node1 and node2.
@@ -294,7 +271,6 @@ class TreeNetwork(Network):
 				assert l.bucket1 != b2
 				assert l.bucket2 != b2
 
-			l = n1.findLink(n2)
 			n = self.mergeNodes(n1, n2)
 
 			loop.pop(1)
