@@ -168,8 +168,6 @@ class TreeNetwork(Network):
 		'''
 		nodes = []
 
-		oldArr = self.array
-
 		while node.tensor.rank > 3:
 			self.removeNode(node)
 
