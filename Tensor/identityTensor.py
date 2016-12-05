@@ -13,8 +13,8 @@ class IdentityTensor(TreeTensor):
 	'''
 
 
-	def __init__(self, dimension, rank):
-		super().__init__(0.0)
+	def __init__(self, dimension, rank, accuracy=0.0):
+		super().__init__(accuracy)
 
 		numLayers = layer(dimension)
 

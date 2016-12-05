@@ -9,7 +9,7 @@ from network import Network
 import numpy as np
 from scipy.integrate import quad  
 
-def IsingModel1D(nX, h, J): 
+def IsingModel1D(nX, h, J, accuracy): 
 	network = Network()
  
 	# Place to store the tensors 
@@ -19,7 +19,7 @@ def IsingModel1D(nX, h, J):
  
 	# Each lattice site has seven indices of width five, and returns zero if they are unequal and one otherwise. 
 	for i in range(nX): 
-		lattice.append(Node(IdentityTensor(2, 3)))
+		lattice.append(Node(IdentityTensor(2, 3, accuracy=accuracy)))
 
 	# Each on-site term has one index of width two, and returns exp(-h) or exp(h) for 0 or 1 respectively. 
 	for i in range(nX): 
@@ -51,7 +51,7 @@ def IsingModel1D(nX, h, J):
  
 	return network
 
-def IsingModel2D(nX, nY, h, J): 
+def IsingModel2D(nX, nY, h, J, accuracy): 
 	network = Network()
  
 	# Place to store the tensors 
@@ -63,7 +63,7 @@ def IsingModel2D(nX, nY, h, J):
 	# Each lattice site has seven indices of width five, and returns zero if they are unequal and one otherwise. 
 	for i in range(nX): 
 		for j in range(nY): 
-			lattice[i].append(Node(IdentityTensor(2, 5)))
+			lattice[i].append(Node(IdentityTensor(2, 5, accuracy=accuracy)))
 
 	# Each on-site term has one index of width two, and returns exp(-h) or exp(h) for 0 or 1 respectively. 
 	for i in range(nX): 
