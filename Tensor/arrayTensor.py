@@ -55,7 +55,9 @@ class ArrayTensor(Tensor):
 		'''
 		if hasattr(other, 'network'):
 			# If the other Tensor is a TreeTensor then it should handle the contraction.
-			return other.contract(otherInd, self, ind)
+			# The argument front tells the TreeTensor contract method to flip the
+			# order of the contraction so the indices are in the order we expect.
+			return other.contract(otherInd, self, ind, front=False)
 		else:
 			arr = np.tensordot(self.scaledArray,other.scaledArray,axes=((ind,otherInd)))
 			return ArrayTensor(arr,logScalar = self.logScalar + other.logScalar)

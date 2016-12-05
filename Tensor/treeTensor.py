@@ -70,7 +70,7 @@ class TreeTensor(Tensor):
 	def logScalar(self):
 		return sum(n.tensor.logScalar for n in self.network.nodes)
 
-	def contract(self, ind, other, otherInd):
+	def contract(self, ind, other, otherInd, front=True):
 		# We copy the two networks first. If the other is an ArrayTensor we cast it to a TreeTensor first.
 		t1 = deepcopy(self)
 		if hasattr(other, 'network'):
@@ -78,6 +78,12 @@ class TreeTensor(Tensor):
 		else:
 			t2 = TreeTensor(self.accuracy)
 			t2.addTensor(other)
+
+		# If front == True then we contract t2 into t1, otherwise we contract t1 into t2.
+		# This is so we get the index order correct. Thus
+		if not front:
+			t1, t2 = t2, t1
+			otherInd, ind = ind, otherInd
 
 		# Link the networks
 		links = []
@@ -137,7 +143,7 @@ class TreeTensor(Tensor):
 				if b.otherNode in t1.network.nodes and b.link != l:
 					links.remove(b.link)
 
-			# Add the links to t2.network to the todo list
+			# Add the links from n2 to t2.network to the todo list
 			for b in n2.linkedBuckets:
 				if b.otherNode in t2.network.nodes:
 					links.append(b.link)
@@ -151,21 +157,7 @@ class TreeTensor(Tensor):
 				assert l.bucket2 in t1.network.buckets or l.bucket2 in t2.network.buckets
 
 		t1.externalBuckets = extB
-
-		### TESTING ###
-
-		arr1 = self.array
-		arr2 = other.array
-		tt1 = ArrayTensor(arr1)
-		tt2 = ArrayTensor(arr2)
-		tt = tt1.contract(ind, tt2, otherInd)
-		print('h',arr1.shape, arr2.shape, np.sum((tt.array - t1.array)**2)/np.sum((tt.array)**2))
-		print(t1.shape)
-		print(arr1)
-		print(ind)
-		print(arr2)
-		print(otherInd)
-		print(t1.array)
+		assert t1.network.externalBuckets == set(t1.externalBuckets)
 
 		return t1
 
