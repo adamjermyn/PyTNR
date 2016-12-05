@@ -70,6 +70,11 @@ class TreeTensor(Tensor):
 	def logScalar(self):
 		return sum(n.tensor.logScalar for n in self.network.nodes)
 
+	def distBetween(self, ind1, ind2):
+		n1 = self.externalBuckets[ind1].node
+		n2 = self.externalBuckets[ind2].node
+		return len(self.network.pathBetween(n1, n2))
+
 	def contract(self, ind, other, otherInd, front=True):
 		# We copy the two networks first. If the other is an ArrayTensor we cast it to a TreeTensor first.
 		t1 = deepcopy(self)
@@ -156,8 +161,12 @@ class TreeTensor(Tensor):
 				assert l.bucket1 in t1.network.buckets or l.bucket1 in t2.network.buckets
 				assert l.bucket2 in t1.network.buckets or l.bucket2 in t2.network.buckets
 
+
 		t1.externalBuckets = extB
 		assert t1.network.externalBuckets == set(t1.externalBuckets)
+
+		for n in t1.network.nodes:
+			assert n.tensor.rank <= 3
 
 		return t1
 
