@@ -102,6 +102,8 @@ class Network:
 				b1, b2 = b2, b1
 			assert b1.node == n1
 			assert b2.node == n2
+			assert b1.otherBucket == b2
+			assert b2.otherBucket == b1
 			indices[0].append(b1.index)
 			indices[1].append(b2.index)
 
