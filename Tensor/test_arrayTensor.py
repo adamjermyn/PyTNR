@@ -1,0 +1,54 @@
+import numpy as np
+from arrayTensor import ArrayTensor
+
+epsilon = 1e-10
+
+def test_init():
+	for i in range(5):
+		x = np.random.randn(3,3,4)
+		xt = ArrayTensor(x, logScalar=0)
+
+		assert xt.shape == (3,3,4)
+		assert xt.rank == 3
+		assert xt.size == 3*3*4
+
+		assert np.sum((xt.array - x)**2) < epsilon
+		assert xt.logScalar == np.log(np.max(np.abs(x)))
+		assert np.sum((xt.scaledArray - x/np.exp(xt.logScalar))**2) < epsilon
+
+		xt2 = ArrayTensor(x, logScalar=1.44)
+		assert xt2.logScalar == xt.logScalar + 1.44
+
+def test_contract():
+	for i in range(5):
+		x = np.random.randn(3,4,3)
+		y = np.random.randn(3,4,3)
+
+		xt = ArrayTensor(x)
+		yt = ArrayTensor(y)
+
+		zt = xt.contract(0,yt,0)
+		assert np.sum((zt.array - np.einsum('ijk,ilm->jklm',x,y))**2) < epsilon
+
+		zt = xt.contract(1,yt,1)
+		assert np.sum((zt.array - np.einsum('jik,lim->jklm',x,y))**2) < epsilon
+
+		zt = xt.contract(0,yt,2)
+		assert np.sum((zt.array - np.einsum('ijk,lmi->jklm',x,y))**2) < epsilon
+
+def test_trace():
+	for i in range(5):
+		x = np.random.randn(3,3,5)
+		xt = ArrayTensor(x)
+		assert np.sum((xt.trace([0],[1]).array - np.einsum('iij->j',x))**2) < epsilon
+
+	for i in range(5):
+		x = np.random.randn(3,3,5,4,4)
+		xt = ArrayTensor(x)
+		assert np.sum((xt.trace([0,3],[1,4]).array - np.einsum('iijkk->j',x))**2) < epsilon
+
+def test_flatten():
+	for i in range(5):
+		x = np.random.randn(3,3,5)
+		xt = ArrayTensor(x)
+		assert np.sum((xt.flatten([0,1]).array - np.reshape(x, (-1,5)).T)**2) < epsilon
