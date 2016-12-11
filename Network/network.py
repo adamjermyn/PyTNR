@@ -142,7 +142,7 @@ class Network:
 
 		return n
 
-	def mergeLinks(self, n, accuracy=1e-4):
+	def mergeLinks(self, n, compress=False, accuracy=1e-4):
 		for n1 in n.connectedNodes:
 			links = n1.linksConnecting(n)
 			buckets1 = [l.bucket1 for l in links if l.bucket1.node is n]
@@ -154,7 +154,8 @@ class Network:
 			b = n.mergeBuckets(buckets)
 			b1 = n1.mergeBuckets(otherBuckets)
 			l = Link(b, b1)
-#			compressLink(l, accuracy)
+			if compress:
+				compressLink(l, accuracy)
 
 	def internalConnected(self, node):
 		return self.nodes.intersection(set(node.connectedNodes))
