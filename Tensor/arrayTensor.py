@@ -1,5 +1,7 @@
 import numpy as np
 from tensor import Tensor
+import sys
+sys.path.append('../Utilities/')
 from utils import permuteIndices
 
 class ArrayTensor(Tensor):
