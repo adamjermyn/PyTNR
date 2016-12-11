@@ -1,14 +1,19 @@
-from tensor import Tensor
-from arrayTensor import ArrayTensor
-from treeNetwork import TreeNetwork
-from node import Node
-from link import Link
-from bucket import Bucket
 from operator import mul
 from copy import deepcopy
 import numpy as np
 import operator
 
+import sys
+
+sys.path.append('../Tensor')
+from tensor import Tensor
+from arrayTensor import ArrayTensor
+
+sys.path.append('../Network')
+from treeNetwork import TreeNetwork
+from node import Node
+from link import Link
+from bucket import Bucket
 
 class TreeTensor(Tensor):
 
