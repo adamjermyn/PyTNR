@@ -78,6 +78,7 @@ class ArrayTensor(Tensor):
 		Returns a Tensor containing the trace over all of the pairs of indices.
 		'''
 		arr = self.array
+
 		ind0 = list(ind0)
 		ind1 = list(ind1)
 
@@ -103,10 +104,10 @@ class ArrayTensor(Tensor):
 		return ArrayTensor(arr)
 
 	def flatten(self, inds):
-		arr = np.copy(self.array)
+		arr = np.copy(self.scaledArray)
 		arr = permuteIndices(arr, inds, front=False)
 		arr = np.reshape(arr, list(arr.shape[:-len(inds)])+[-1])
-		return ArrayTensor(arr)
+		return ArrayTensor(arr, logScalar=self.logScalar)
 
 	def getIndexFactor(self, ind):
 		return self._array, ind
