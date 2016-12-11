@@ -106,3 +106,25 @@ def test_IndexFactor():
 		zt2 = xt.contract([0],yt,[0])
 
 		assert np.sum((zt.array - zt2.array)**2) < epsilon
+
+def test_optimize():
+	for i in range(5):
+		x = np.random.randn(2,2,2,2)
+		xt = TreeTensor(accuracy = epsilon)
+		xt.addTensor(ArrayTensor(x))
+
+		y = np.random.randn(2,2,2,2)
+		yt = TreeTensor(accuracy = epsilon)
+		yt.addTensor(ArrayTensor(y))
+
+		zt = xt.contract([0],yt,[0])
+
+		arr1 = zt.array
+
+		zt.optimize()
+
+		arr2 = zt.array
+
+		assert np.sum((arr1 - arr2)**2) < epsilon
+
+
