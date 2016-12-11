@@ -1,6 +1,6 @@
-from node import Node
-from link import Link
-from compress import compressLink
+from TNRG.Network.node import Node
+from TNRG.Network.link import Link
+#from TNRG.Network.compress import compressLink
 from copy import deepcopy
 
 class Network:
@@ -140,7 +140,7 @@ class Network:
 			b = n.mergeBuckets(buckets)
 			b1 = n1.mergeBuckets(otherBuckets)
 			l = Link(b, b1)
-			compressLink(l, accuracy)
+#			compressLink(l, accuracy)
 
 	def internalConnected(self, node):
 		return self.nodes.intersection(set(node.connectedNodes))

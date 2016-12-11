@@ -3,17 +3,12 @@ from copy import deepcopy
 import numpy as np
 import operator
 
-import sys
-
-sys.path.append('../Tensor')
-from tensor import Tensor
-from arrayTensor import ArrayTensor
-
-sys.path.append('../Network')
-from treeNetwork import TreeNetwork
-from node import Node
-from link import Link
-from bucket import Bucket
+from TNRG.Tensor.tensor import Tensor
+from TNRG.Tensor.arrayTensor import ArrayTensor
+from TNRG.Network.treeNetwork import TreeNetwork
+from TNRG.Network.node import Node
+from TNRG.Network.link import Link
+from TNRG.Network.bucket import Bucket
 
 class TreeTensor(Tensor):
 

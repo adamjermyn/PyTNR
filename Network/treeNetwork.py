@@ -1,13 +1,14 @@
-from network import Network
-from node import Node
-from bucket import Bucket
-from link import Link
-from arrayTensor import ArrayTensor
-from utils import entropy, splitArray
 from itertools import combinations
 from copy import deepcopy
 import numpy as np
 import operator
+
+from TNRG.Network.network import Network
+from TNRG.Network.node import Node
+from TNRG.Network.bucket import Bucket
+from TNRG.Network.link import Link
+from TNRG.Tensor.arrayTensor import ArrayTensor
+from TNRG.Utilities.utils import entropy, splitArray
 
 class TreeNetwork(Network):
 	'''
@@ -89,11 +90,13 @@ class TreeNetwork(Network):
 			else:
 				# Means there's a loop
 				loop = self.pathBetween(n1, n2)
+				print('N=2,Loop,',len(loop))
 				if len(loop) > 0:
 					self.addNode(n)
 					self.eliminateLoop(loop + [n])
 				else:
 					self.addNode(n)
+				print('N=2,Loop,Done')
 		elif len(connected) == 3:
 			'''
 			This case is somewhat complicated to handle, so we're going to do it
@@ -130,6 +133,9 @@ class TreeNetwork(Network):
 		n1 = b1.node
 		n2 = b2.node
 
+		print(n1)
+		print(n2)
+
 		if n1 == n2:
 			# So we're just tracing an arrayTensor.
 			n1.tensor = n1.tensor.trace([b1.index], [b2.index])
@@ -150,9 +156,7 @@ class TreeNetwork(Network):
 					self.splitNode(n)
 				else:
 					_ = Link(b1, b2)
-					self.eliminateLoop(loop + [n1])
-					self.externalBuckets.remove(b1)
-					self.externalBuckets.remove(b2)
+					self.eliminateLoop(loop)
 
 	def splitNode(self, node, ignore=None):
 		'''

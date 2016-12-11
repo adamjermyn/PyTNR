@@ -1,5 +1,5 @@
 import itertools
-from bucket import Bucket
+from TNRG.Network.bucket import Bucket
 
 class Node:
 	newid = itertools.count().__next__
@@ -60,6 +60,18 @@ class Node:
 				return b.index
 		return None
 
+	def indicesConnecting(self, other):
+		indices = [[],[]]
+		links = self.linksConnecting(other)
+		for l in links:
+			b1 = l.bucket1
+			b2 = l.bucket2
+			if b1.node == other:
+				b1, b2 = b2, b1
+			indices[0].append(b1.index)
+			indices[1].append(b2.index)
+		return indices
+
 	def bucketIndex(self, b):
 		return self.buckets.index(b)
 
@@ -68,12 +80,21 @@ class Node:
 		This method merges the listed buckets.
 		In the case of an ArrayTensor this just flattens the tensor along the corresponding axes.
 		In the case of a TreeTensor this merges the external legs.
-
-		If the optional network argument is provided, the merged buckets are deregistered
-		from it and the new bucket is added to it.
 		'''
 		inds = [b.index for b in buckets]
+		arr = self.tensor.array
 		self.tensor = self.tensor.flatten(inds)
+		from arrayTensor import ArrayTensor
+		import numpy as np
+		arr2 = self.tensor.array 
+		d = np.sum((arr2 - ArrayTensor(arr).flatten(inds).array)**2)/np.sum(arr2**2)
+		print('hh',d)
+		if d > 0.1:
+			print(arr)
+			print(arr2)
+			# The order of indices is clearly changing somewhere.
+			# Maybe worth trying to use the identity contraction trick on array tensors
+			# to see what that gives
 		self.buckets = [b for i,b in enumerate(self.buckets) if i not in inds]
 		self.buckets.append(Bucket())
 		self.buckets[-1].node = self
