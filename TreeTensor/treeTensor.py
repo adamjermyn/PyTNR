@@ -54,7 +54,7 @@ class TreeTensor(Tensor):
 
 	@property
 	def shape(self):
-		return [b.node.tensor.shape[b.index] for b in self.externalBuckets]
+		return tuple([b.node.tensor.shape[b.index] for b in self.externalBuckets])
 
 	@property
 	def rank(self):
@@ -111,6 +111,7 @@ class TreeTensor(Tensor):
 
 		# Incrementally merge the networks
 		while len(links) > 0:
+			print(len(links))
 			# We perform the mergers which can be done on their own first,
 			# then prioritize based on the width of the induced loop (smallest first).
 			plist = []
@@ -176,15 +177,52 @@ class TreeTensor(Tensor):
 		return t1
 
 	def trace(self, ind0, ind1):
+		'''
+		Takes as input:
+			ind0	-	A list of indices on one side of their Links.
+			ind1	-	A list of indices on the other side of their Links.
+
+		Elements of ind0 and ind1 must correspond, such that the same Link is
+		represented by indices at the same location in each list.
+
+		Elements of ind0 should not appear in ind1, and vice-versa.
+
+		Returns a Tensor containing the trace over all of the pairs of indices.
+		'''
+		arr = self.array
+
+		ind0 = list(ind0)
+		ind1 = list(ind1)
+
 		t = deepcopy(self)
 
-		b1 = t.externalBuckets[ind0]
-		b2 = t.externalBuckets[ind1]
+		for i in range(len(ind0)):
+			b1 = t.externalBuckets[ind0[i]]
+			b2 = t.externalBuckets[ind1[i]]
 
-		t.network.trace(b1, b2)
+			t.network.trace(b1, b2)
 
-		t.externalBuckets.remove(b1)
-		t.externalBuckets.remove(b2)
+			t.externalBuckets.remove(b1)
+			t.externalBuckets.remove(b2)
+
+			for j in range(len(ind0)):
+				d0 = 0
+				d1 = 0
+
+				if ind0[j] > ind0[i]:
+					d0 += 1
+				if ind0[j] > ind1[i]:
+					d0 += 1
+	
+				if ind1[j] > ind0[i]:
+					d1 += 1
+				if ind1[j] > ind1[i]:
+					d1 += 1
+
+				ind0[j] -= d0
+				ind1[j] -= d1
+
+		return t
 
 	def flatten(self, inds):
 		'''
@@ -208,6 +246,11 @@ class TreeTensor(Tensor):
 
 		# Contract the identity
 		ttens = self.contract(inds, tn, list(range(len(buckets))))
+
+		shape2 = [self.shape[i] for i in range(self.rank) if i not in inds]
+		shape2.append(shape[-1])
+		for i in range(len(shape2)):
+			assert ttens.shape[i] == shape2[i]
 
 		return ttens
 
