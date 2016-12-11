@@ -30,7 +30,7 @@ class Node:
 
 	@property
 	def connectedNodes(self):
-		return [b.otherBucket.node for b in self.linkedBuckets]
+		return set([b.otherBucket.node for b in self.linkedBuckets])
 
 	def findLinks(self, other):
 		links = []
@@ -84,17 +84,6 @@ class Node:
 		inds = [b.index for b in buckets]
 		arr = self.tensor.array
 		self.tensor = self.tensor.flatten(inds)
-		from arrayTensor import ArrayTensor
-		import numpy as np
-		arr2 = self.tensor.array 
-		d = np.sum((arr2 - ArrayTensor(arr).flatten(inds).array)**2)/np.sum(arr2**2)
-		print('hh',d)
-		if d > 0.1:
-			print(arr)
-			print(arr2)
-			# The order of indices is clearly changing somewhere.
-			# Maybe worth trying to use the identity contraction trick on array tensors
-			# to see what that gives
 		self.buckets = [b for i,b in enumerate(self.buckets) if i not in inds]
 		self.buckets.append(Bucket())
 		self.buckets[-1].node = self
