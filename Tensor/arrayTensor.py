@@ -110,7 +110,7 @@ class ArrayTensor(Tensor):
 		return ArrayTensor(arr, logScalar=self.logScalar)
 
 	def getIndexFactor(self, ind):
-		return self._array, ind
+		return self.scaledArray, ind
 
 	def setIndexFactor(self, ind, arr):
 		return ArrayTensor(arr, logScalar=self.logScalar)
