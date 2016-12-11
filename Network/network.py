@@ -1,6 +1,6 @@
 from TNRG.Network.node import Node
 from TNRG.Network.link import Link
-#from TNRG.Network.compress import compressLink
+from TNRG.Network.compress import compressLink
 from copy import deepcopy
 import numpy as np
 
