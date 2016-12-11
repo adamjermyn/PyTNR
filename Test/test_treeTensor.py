@@ -63,13 +63,20 @@ def test_trace():
 		assert np.sum((xt.trace([0],[1]).array - np.einsum('iijklm->jklm',x))**2) < epsilon
 		assert np.sum((xt.trace([0,2],[5,4]).array - np.einsum('ijklki->jl',x))**2) < epsilon
 
-'''
 def test_flatten():
 	for i in range(5):
 		x = np.random.randn(3,3,5)
-		xt = ArrayTensor(x)
+		xt = TreeTensor(accuracy = epsilon)
+		xt.addTensor(ArrayTensor(x))
 		assert np.sum((xt.flatten([0,1]).array - np.reshape(x, (-1,5)).T)**2) < epsilon
 
+	for i in range(5):
+		x = np.random.randn(2,2,2,2,2,2)
+		xt = TreeTensor(accuracy = epsilon)
+		xt.addTensor(ArrayTensor(x))
+		assert np.sum((xt.flatten([1,2]).array - np.transpose(np.reshape(x, (2,4,2,2,2)),axes=[0,2,3,4,1]))**2) < epsilon
+
+'''
 def test_getIndexFactor():
 	for i in range(5):
 		x = np.random.randn(3,3,3)
