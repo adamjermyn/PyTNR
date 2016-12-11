@@ -69,31 +69,40 @@ def test_setIndexFactor():
 		y = np.random.randn(3,3,3)
 		assert np.sum((xT.setIndexFactor(0, y).array - y*np.exp(xT.logScalar))**2) < epsilon
 
-
 def test_IndexFactor():
 	for i in range(5):
-		x = np.random.randn(2,2,2,2)
+		x = np.random.randn(3,4,5,6)
 		xt = ArrayTensor(x)
 
-		y = np.random.randn(2,2,2,2)
+		y = np.random.randn(3,4,5,6)
 		yt = ArrayTensor(y)
 
 		# Compute inner product
 		zt = xt.contract([0],yt,[0])
 
 		# Generate a random unitary matrix
-		r = np.random.randn(2,2)
+		r = np.random.randn(3,3)
 		r += r.T
 		u = expm(1j*r)
 
+		assert np.sum((np.identity(3) - np.dot(u,np.conjugate(u.T)))**2) < epsilon
+
 		# Apply to factors on both x and y
-		us = np.sqrt(u)
 		factX, indX = xt.getIndexFactor(0)
 		factY, indY = yt.getIndexFactor(0)
-		factX = np.tensordot(factX, us, axes=([indX],[0]))
-		factY = np.tensordot(factY, us, axes=([indY],[1]))
-		xt.setIndexFactor(0, factX)
-		yt.setIndexFactor(0, factY)
+
+		factX = np.tensordot(factX, u, axes=([indX],[0]))
+		factY = np.tensordot(factY, np.conjugate(u.T), axes=([indY],[0]))
+
+		factX = np.transpose(factX,axes=[3,0,1,2])
+		factY = np.transpose(factY,axes=[3,0,1,2])
+
+		xt = xt.setIndexFactor(0, factX)
+		yt = yt.setIndexFactor(0, factY)
+
+		assert xt.shape == (3,4,5,6)
+		assert yt.shape == (3,4,5,6)
+
 		zt2 = xt.contract([0],yt,[0])
 
 		assert np.sum((zt.array - zt2.array)**2) < epsilon

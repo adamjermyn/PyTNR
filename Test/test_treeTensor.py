@@ -79,11 +79,11 @@ def test_flatten():
 
 def test_IndexFactor():
 	for i in range(5):
-		x = np.random.randn(2,2,2,2)
+		x = np.random.randn(2,3,4,5)
 		xt = TreeTensor(accuracy = epsilon)
 		xt.addTensor(ArrayTensor(x))
 
-		y = np.random.randn(2,2,2,2)
+		y = np.random.randn(2,3,4,5)
 		yt = TreeTensor(accuracy = epsilon)
 		yt.addTensor(ArrayTensor(y))
 
@@ -96,13 +96,26 @@ def test_IndexFactor():
 		u = expm(1j*r)
 
 		# Apply to factors on both x and y
-		us = np.sqrt(u)
 		factX, indX = xt.getIndexFactor(0)
 		factY, indY = yt.getIndexFactor(0)
-		factX = np.tensordot(factX, us, axes=([indX],[0]))
-		factY = np.tensordot(factY, us, axes=([indY],[1]))
-		xt.setIndexFactor(0, factX)
-		yt.setIndexFactor(0, factY)
+
+		factX = np.tensordot(factX, u, axes=([indX],[0]))
+		factY = np.tensordot(factY, np.conjugate(u.T), axes=([indY],[0]))
+
+		permX = list(range(len(factX.shape) - 1))
+		permY = list(range(len(factY.shape) - 1))
+		permX.insert(indX, len(factX.shape) - 1)
+		permY.insert(indY, len(factY.shape) - 1)
+
+		factX = np.transpose(factX,axes=permX)
+		factY = np.transpose(factY,axes=permY)
+
+		xt = xt.setIndexFactor(0, factX)
+		yt = yt.setIndexFactor(0, factY)
+
+		assert xt.shape == (2,3,4,5)
+		assert yt.shape == (2,3,4,5)
+
 		zt2 = xt.contract([0],yt,[0])
 
 		assert np.sum((zt.array - zt2.array)**2) < epsilon
