@@ -2,6 +2,7 @@ from TNRG.Network.node import Node
 from TNRG.Network.link import Link
 #from TNRG.Network.compress import compressLink
 from copy import deepcopy
+import numpy as np
 
 class Network:
 	'''
@@ -26,7 +27,7 @@ class Network:
 	def array(self):
 		'''
 		Contracts the tree down to an array object.
-		Indices are ordered according to the external buckets listed in buckets.
+		Indices are ordered by ascending bucket ID.
 		'''
 		net = deepcopy(self)
 		while len(net.nodes) > 1:
@@ -39,9 +40,22 @@ class Network:
 		n = net.nodes.pop()
 		arr = n.tensor.array
 
+		bids = [b.id for b in n.buckets]
+		bids = sorted(bids)
+
 		bdict = {}
 		for i in range(len(n.buckets)):
 			bdict[n.buckets[i].id] = i
+
+		perm = []
+		for b in bids:
+			perm.append(bdict[b])
+
+		arr = np.transpose(arr, axes=perm)
+
+		bdict = {}
+		for i in range(len(n.buckets)):
+			bdict[bids[i]] = i
 
 		return arr, bdict
 

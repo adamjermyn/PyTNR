@@ -6,6 +6,8 @@ from TNRG.Network.link import Link
 from TNRG.Tensor.arrayTensor import ArrayTensor
 from TNRG.TreeTensor.treeTensor import TreeTensor
 
+epsilon = 1e-10
+
 def test_init():
 	net = Network()
 
@@ -68,3 +70,15 @@ def test_mergeNode():
 	assert len(net.internalBuckets) == 0
 	assert len(net.externalBuckets) == 4
 	assert len(net.optimizedLinks) == 0
+
+	arr, bdict = net.array
+	assert arr.shape == (3,3,3,3)
+	for b in net.buckets:
+		assert b.id in bdict
+	for b1 in net.buckets:
+		for b2 in net.buckets:
+			if b1.id < b2.id:
+				assert bdict[b1.id] < bdict[b2.id]
+
+	assert np.sum((arr - np.einsum('ijk,ilm->jklm',x,x))**2) < epsilon
+
