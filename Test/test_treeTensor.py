@@ -1,9 +1,6 @@
 import numpy as np
-from treeTensor import TreeTensor
-
-import sys
-sys.path.append('../Tensor')
-from arrayTensor import ArrayTensor
+from TNRG.TreeTensor.treeTensor import TreeTensor
+from TNRG.Tensor.arrayTensor import ArrayTensor
 
 epsilon = 1e-10
 

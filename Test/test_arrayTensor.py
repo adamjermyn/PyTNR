@@ -1,5 +1,5 @@
 import numpy as np
-from arrayTensor import ArrayTensor
+from TNRG.Tensor.arrayTensor import ArrayTensor
 
 epsilon = 1e-10
 
