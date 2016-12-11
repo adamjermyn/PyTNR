@@ -15,7 +15,6 @@ class Network:
 		self.internalBuckets = set()
 		self.externalBuckets = set()
 		self.optimizedLinks = set()
-		self.size = 0
 
 	def __str__(self):
 		s = 'Network\n'
@@ -86,6 +85,7 @@ class Network:
 			if b in self.internalBuckets:
 				self.internalBuckets.remove(b)
 				if b.otherBucket in self.internalBuckets:
+					self.internalBuckets.remove(b.otherBucket)
 					self.externalBuckets.add(b.otherBucket)
 			if b in self.externalBuckets:
 				self.externalBuckets.remove(b)
