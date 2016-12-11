@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.linalg import expm
 from TNRG.Tensor.arrayTensor import ArrayTensor
 
 epsilon = 1e-10
@@ -67,3 +68,32 @@ def test_setIndexFactor():
 		xT = ArrayTensor(x)
 		y = np.random.randn(3,3,3)
 		assert np.sum((xT.setIndexFactor(0, y).array - y*np.exp(xT.logScalar))**2) < epsilon
+
+
+def test_IndexFactor():
+	for i in range(5):
+		x = np.random.randn(2,2,2,2)
+		xt = ArrayTensor(x)
+
+		y = np.random.randn(2,2,2,2)
+		yt = ArrayTensor(y)
+
+		# Compute inner product
+		zt = xt.contract([0],yt,[0])
+
+		# Generate a random unitary matrix
+		r = np.random.randn(2,2)
+		r += r.T
+		u = expm(1j*r)
+
+		# Apply to factors on both x and y
+		us = np.sqrt(u)
+		factX, indX = xt.getIndexFactor(0)
+		factY, indY = yt.getIndexFactor(0)
+		factX = np.tensordot(factX, us, axes=([indX],[0]))
+		factY = np.tensordot(factY, us, axes=([indY],[1]))
+		xt.setIndexFactor(0, factX)
+		yt.setIndexFactor(0, factY)
+		zt2 = xt.contract([0],yt,[0])
+
+		assert np.sum((zt.array - zt2.array)**2) < epsilon
