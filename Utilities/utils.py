@@ -52,6 +52,17 @@ def adjoint(m):
 # Linear Operator and SVD Functions
 ###################################
 
+def insertIndex(arr, ind, newInd):
+	'''
+	This method removes the specified index (ind) and inserts
+	it in the new location (newInd).
+	'''
+	perm = list(range(len(arr.shape)))
+	perm.remove(ind)
+	perm.insert(newInd, ind)
+	arr = np.transpose(arr, axes=perm)
+	return arr
+
 def permuteIndices(arr, indices, front=True):
 	'''
 	This method moves the indices specified in indices
@@ -80,26 +91,11 @@ def ndArrayToMatrix(arr, index, front=True):
 		then the special index is pushed to the beginning. If front is False then the
 		special index is pushed to the back.
 		'''
-		shape = arr.shape
+		arr = insertIndex(arr, index, 0)
+		arr = np.reshape(arr, (arr.shape[0],-1))
 
-		perm = list(range(len(shape)))
-		perm.remove(index)
-
-		shm = shape[:index] + shape[index+1:]
-		shI = shape[index]
-
-		if front:
-			indices = [index]
-		else:
-			indices = list(range(len(shape)))
-			indices.remove(index)
-
-		sh = [arr.shape[i] for i in indices]
-		s = np.product(sh)
-		sm = arr.size / s
-
-		arr = permuteIndices(arr, [index])
-		arr = np.reshape(arr, [s, sm])
+		if not front:
+			arr = np.transpose(arr)
 
 		return arr
 
