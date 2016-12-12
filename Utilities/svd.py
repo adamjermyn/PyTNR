@@ -4,125 +4,12 @@ from scipy.sparse.linalg import aslinearoperator
 from scipy.sparse.linalg import LinearOperator
 from scipy.sparse.linalg import svds
 
-################################
-# Miscillaneous Helper Functions
-################################
-
-def tupleReplace(tpl, i, j):
-	'''
-	Returns a tuple with element i of tpl replaced with the quantity j.
-	If j is None, just removes element i.
-	'''
-	assert i >= 0
-	assert i < len(tpl)
-
-	tpl = list(tpl)
-	if j is not None:
-		tpl = tpl[:i] + [j] + tpl[i+1:]
-	else:
-		tpl = tpl[:i] + tpl[i+1:]
-	return tuple(tpl)
-
-
-##################################
-# General Linear Algebra Functions
-##################################
-
-def kroneckerDelta(dim, length):
-	'''
-	Returns the Kronecker delta of dimension dim and length length.
-	Note that if dim == 0 the scalar 1. is returned. If dim == 1 a
-	vector of ones is returned. These are the closest conceptual
-	analogues of the Kronecker delta, and work in a variety of circumstances
-	where a Kronecker delta is the natural higher-dimensional generalisation.
-	'''
-	if dim == 0:
-		return 1
-	elif dim == 1:
-		return np.ones(length)
-	elif dim > 1:
-		arr = np.zeros(tuple(length for i in range(dim)))
-		np.fill_diagonal(arr,1.0)
-		return arr
-
-def adjoint(m):
-	return np.transpose(np.conjugate(m))
+from TNRG.Utilities.arrays import permuteIndices
+from TNRG.Utilities.linalg import adjoint
 
 ###################################
 # Linear Operator and SVD Functions
 ###################################
-
-def insertIndex(arr, ind, newInd):
-	'''
-	This method removes the specified index (ind) and inserts
-	it in the new location (newInd).
-	'''
-	perm = list(range(len(arr.shape)))
-	perm.remove(ind)
-	perm.insert(newInd, ind)
-	arr = np.transpose(arr, axes=perm)
-	return arr
-
-def permuteIndices(arr, indices, front=True):
-	'''
-	This method moves the indices specified in indices
-	to be the first ones in the array.
-	If front is False it instead moves them to be the last ones.
-	'''
-	shape = arr.shape
-	perm = list(range(len(shape)))
-
-	if not front: # So we instead move the complement to the beginning
-		indices = list(set(perm).difference(set(indices)))
-
-	for i in indices:
-		perm.remove(i)
-	for j,i in enumerate(indices):
-		perm.insert(j, i)
-	return np.transpose(arr, axes=perm)
-
-def ndArrayToMatrix(arr, index, front=True):
-		'''
-		This method flattens the array along all indices other than
-		index and does so in a way which preserves the ordering of the other
-		axes when unflattened.
-
-		This method also takes as input a boolean variable front. If front is True
-		then the special index is pushed to the beginning. If front is False then the
-		special index is pushed to the back.
-		'''
-		arr = insertIndex(arr, index, 0)
-		arr = np.reshape(arr, (arr.shape[0],-1))
-
-		if not front:
-			arr = np.transpose(arr)
-
-		return arr
-
-def matrixToNDArray(matrix, shape, index, front=True):
-		'''
-		This method takes a 2D array and reshapes it to the given shape.
-		The reshape operation only modifies one of the axes of the matrix.
-		This is either the first (front) or last (not front) depending on the
-		boolean variable front. Whichever index is not reshaped is then
-		put in the position specified by index.
-
-		This method is meant to be the inverse of ndArrayToMatrix.
-		'''
-		if not front:
-			matrix = np.transpose(matrix)
-
-		shm = shape[:index] + shape[index+1:]
-
-		matrix = np.reshape(matrix, [shape[index]] + list(shm))
-
-		perm = list(range(len(shape)))
-		perm = perm[1:]
-		perm.insert(index, 0)
-
-		matrix = np.transpose(matrix, axes=perm)
-
-		return matrix
 
 def matrixProductLinearOperator(matrix1, matrix2):
 	'''

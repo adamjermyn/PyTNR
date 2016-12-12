@@ -8,7 +8,7 @@ from TNRG.Network.node import Node
 from TNRG.Network.bucket import Bucket
 from TNRG.Network.link import Link
 from TNRG.Tensor.arrayTensor import ArrayTensor
-from TNRG.Utilities.utils import entropy, splitArray
+from TNRG.Utilities.svd import entropy, splitArray
 
 class TreeNetwork(Network):
 	'''
