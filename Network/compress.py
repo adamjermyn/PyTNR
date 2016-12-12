@@ -1,5 +1,5 @@
 import numpy as np
-from utils import ndArrayToMatrix, generalSVD, matrixToNDArray, matrixProductLinearOperator
+from TNRG.Utilities.utils import ndArrayToMatrix, generalSVD, matrixToNDArray, matrixProductLinearOperator
 
 def compressLink(l, accuracy):
 	b1 = l.bucket1
@@ -11,17 +11,17 @@ def compressLink(l, accuracy):
 	n1 = b1.node
 	n2 = b2.node
 
-	a1, ind1I = n1.tensor.getIndexFactor(ind1)
-	a2, ind2I = n2.tensor.getIndexFactor(ind2)
+	arr1, ind1I = n1.tensor.getIndexFactor(ind1)
+	arr2, ind2I = n2.tensor.getIndexFactor(ind2)
 
-	sh1 = list(a1.shape)
-	sh2 = list(a2.shape)
+	sh1 = list(arr1.shape)
+	sh2 = list(arr2.shape)
 
 	sh1m = sh1[:ind1I] + sh1[ind1I+1:]
 	sh2m = sh2[:ind2I] + sh2[ind2I+1:]
 
-	a1 = ndArrayToMatrix(a1, ind1I, front=False)
-	a2 = ndArrayToMatrix(a2, ind2I, front=True)
+	a1 = ndArrayToMatrix(arr1, ind1I, front=False)
+	a2 = ndArrayToMatrix(arr2, ind2I, front=True)
 
 	if a1.shape[1] < a1.shape[0] and a2.shape[0] < a2.shape[1]:
 		arr = matrixProductLinearOperator(a1, a2)
@@ -40,10 +40,10 @@ def compressLink(l, accuracy):
 	u *= np.sqrt(lam)[np.newaxis,:]
 	v *= np.sqrt(lam)[:,np.newaxis]
 
-	u = matrixToNDArray(u, sh1[:ind1I] + [ind] + sh1[ind1I+1:], ind1I, front=True)
-	v = matrixToNDArray(v, sh2[:ind2I] + [ind] + sh2[ind2I+1:], ind2I, front=False)
+	uu = matrixToNDArray(u, sh1[:ind1I] + [ind] + sh1[ind1I+1:], ind1I, front=False)
+	vv = matrixToNDArray(v, sh2[:ind2I] + [ind] + sh2[ind2I+1:], ind2I, front=True)
 
-	n1.tensor = n1.tensor.setIndexFactor(ind1, u)
-	n2.tensor = n2.tensor.setIndexFactor(ind2, v)
+	n1.tensor = n1.tensor.setIndexFactor(ind1, uu)
+	n2.tensor = n2.tensor.setIndexFactor(ind2, vv)
 
 	assert n1.tensor.shape[ind1] == n2.tensor.shape[ind2]

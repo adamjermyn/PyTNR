@@ -174,7 +174,7 @@ def test_mergeLinks_ArrayTensor_Compress():
 	for i in range(5):
 		net = Network()
 
-		x = np.random.randn(2,2,3,3)
+		x = np.random.randn(2,2,2,2)
 		xt = ArrayTensor(x)
 		n1 = Node(xt)
 		xt = ArrayTensor(x)
