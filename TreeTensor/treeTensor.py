@@ -66,10 +66,6 @@ class TreeTensor(Tensor):
 			size += n.tensor.size
 		return size
 
-	@property
-	def logScalar(self):
-		return sum(n.tensor.logScalar for n in self.network.nodes)
-
 	def distBetween(self, ind1, ind2):
 		n1 = self.externalBuckets[ind1].node
 		n2 = self.externalBuckets[ind2].node
@@ -106,7 +102,6 @@ class TreeTensor(Tensor):
 
 		# Incrementally merge the networks
 		while len(links) > 0:
-			print(len(links))
 			# We perform the mergers which can be done on their own first,
 			# then prioritize based on the width of the induced loop (smallest first).
 			plist = []
