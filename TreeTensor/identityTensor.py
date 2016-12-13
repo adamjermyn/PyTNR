@@ -1,8 +1,10 @@
 import numpy as np
-from link import Link
-from treeTensor import TreeTensor
-from arrayTensor import ArrayTensor
 from collections import defaultdict
+
+from TNRG.Network.link import Link
+from TNRG.TreeTensor.treeTensor import TreeTensor
+from TNRG.Tensor.arrayTensor import ArrayTensor
+
 def layer(n):
 	return int(np.log2(n/3)) + 2
 
