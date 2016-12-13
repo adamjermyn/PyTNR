@@ -133,9 +133,6 @@ class TreeNetwork(Network):
 		n1 = b1.node
 		n2 = b2.node
 
-		print(n1)
-		print(n2)
-
 		if n1 == n2:
 			# So we're just tracing an arrayTensor.
 			n1.tensor = n1.tensor.trace([b1.index], [b2.index])
@@ -249,6 +246,8 @@ class TreeNetwork(Network):
 			for i in range(len(loop)):
 				n1 = loop[(i + 1)%len(loop)]
 				n2 = loop[(i + 2)%len(loop)]
+				assert n1 in n2.connectedNodes
+				assert n2 in loop[(i+3)%len(loop)].connectedNodes
 				ind1 = n1.indexConnecting(loop[i])
 				ind2 = n2.indexConnecting(loop[(i+3)%len(loop)])
 				b1 = n1.buckets[ind1]
