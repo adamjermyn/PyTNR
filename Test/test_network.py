@@ -144,31 +144,6 @@ def test_mergeLinks_ArrayTensor():
 		assert np.sum((arr1 - arr2)**2) < epsilon
 
 def test_mergeLinks_TreeTensor():
-	for i in range(10):
-		net = Network()
-
-		x = np.random.randn(2,2,2,2,2)
-		xt = TreeTensor(accuracy=epsilon)
-		xt.addTensor(ArrayTensor(x))
-		n1 = Node(xt)
-		x = np.random.randn(2,2,2,2,2)
-		xt = TreeTensor(accuracy=epsilon)
-		xt.addTensor(ArrayTensor(x))
-		n2 = Node(xt)
-
-		net.addNode(n1)
-		Link(n1.buckets[0], n2.buckets[0])
-		Link(n1.buckets[1], n2.buckets[1])
-		net.addNode(n2)
-
-		arr1, bdict1 = net.array
-
-		net.mergeLinks(n1)
-
-		arr2, bdict2 = net.array
-
-		assert np.sum((arr1 - arr2)**2) < epsilon
-
 	for i in range(5):
 		net = Network()
 
@@ -197,18 +172,18 @@ def test_mergeLinks_TreeTensor():
 	for i in range(5):
 		net = Network()
 
-		x = np.random.randn(2,2,2,2,3,3)
+		x = np.random.randn(2,2,2,2,2,2)
 		xt = TreeTensor(accuracy=epsilon)
 		xt.addTensor(ArrayTensor(x))
 		n1 = Node(xt)
-		x = np.random.randn(2,2,2,2,3,3)
+		x = np.random.randn(2,2,2,2,2,2)
 		xt = TreeTensor(accuracy=epsilon)
 		xt.addTensor(ArrayTensor(x))
 		n2 = Node(xt)
 
 		net.addNode(n1)
-		Link(n1.buckets[3], n2.buckets[2])
-		Link(n1.buckets[4], n2.buckets[4])
+		Link(n1.buckets[0], n2.buckets[5])
+		Link(n1.buckets[5], n2.buckets[0])
 		net.addNode(n2)
 
 		arr1, bdict1 = net.array
