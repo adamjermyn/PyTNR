@@ -77,6 +77,12 @@ def test_flatten():
 		xt.addTensor(ArrayTensor(x))
 		assert np.sum((xt.flatten([1,2]).array - np.transpose(np.reshape(x, (2,4,2,2,2)),axes=[0,2,3,4,1]))**2) < epsilon
 
+	for i in range(5):
+		x = np.random.randn(2,2,2,2,2,2)
+		xt = TreeTensor(accuracy = epsilon)
+		xt.addTensor(ArrayTensor(x))
+		assert np.sum((xt.flatten([2,1]).array - np.transpose(np.reshape(np.swapaxes(x,1,2), (2,4,2,2,2)),axes=[0,2,3,4,1]))**2) < epsilon
+
 def test_IndexFactor():
 	for i in range(5):
 		x = np.random.randn(2,3,4,5)
