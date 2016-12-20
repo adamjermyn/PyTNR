@@ -81,6 +81,10 @@ class TreeNetwork(Network):
 		# eliminate loops and such.
 		if len(connected) == 1:
 			self.addNode(n)
+			if n.tensor.rank <= 2:
+				# Means we can just directly contract this
+				n1 = connected[0]
+				n = self.mergeNodes(n, n1)
 		elif len(connected) == 2:
 			n1 = connected[0]
 			n2 = connected[1]
