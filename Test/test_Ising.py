@@ -28,7 +28,6 @@ def test_Ising1D():
 		n = mergeContractor(n, accuracy, optimize=False, merge=False, verbose=0)
 		assert len(n.nodes) == 1
 		nn = n.nodes.pop()
-		print(i,nX,J,exactIsing1DJ(nX,J),np.log(nn.tensor.array)/nX)
 		assert abs(np.log(nn.tensor.array)/nX - exactIsing1DJ(nX,J)) < 2*nX*epsilon
 
 def test_Ising1D_Opt():
