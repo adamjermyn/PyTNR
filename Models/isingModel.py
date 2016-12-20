@@ -49,6 +49,24 @@ def IsingModel1D(nX, h, J, accuracy):
  
 	return network
 
+def exactIsing1Dh(h):
+	return np.log(2*np.cosh(h))
+
+def exactIsing1DJ(n, J):
+	J = -J
+	l1 = 2*np.cosh(J)
+	l2 = 2*np.sinh(J)
+
+	q = l2/l1
+
+	f = 0
+	if abs(q)**n < 1e-10:
+		f = np.log1p(q**n)/n
+	else:
+		f = np.log1p((l2/l1)**n)/n
+
+	return np.log(l1) + f
+
 def IsingModel2D(nX, nY, h, J, accuracy): 
 	network = Network()
  
