@@ -33,8 +33,10 @@ class Network:
 		while len(net.nodes) > 1:
 			n = net.nodes.pop()
 			net.nodes.add(n)
+
 			c = net.internalConnected(n)
 			c = c.pop()
+
 			net.mergeNodes(n,c)
 
 		n = net.nodes.pop()
@@ -145,15 +147,19 @@ class Network:
 	def mergeLinks(self, n, compress=False, accuracy=1e-4):
 		for n1 in n.connectedNodes:
 			links = n1.linksConnecting(n)
-			buckets1 = [l.bucket1 for l in links if l.bucket1.node is n]
-			buckets2 = [l.bucket2 for l in links if l.bucket2.node is n]
-			buckets = buckets1 + buckets2
-			buckets1 = [l.bucket1 for l in links if l.bucket1.node is n1]
-			buckets2 = [l.bucket2 for l in links if l.bucket2.node is n1]
-			otherBuckets = buckets1 + buckets2
-			b = n.mergeBuckets(buckets)
-			b1 = n1.mergeBuckets(otherBuckets)
-			l = Link(b, b1)
+			buckets1 = []
+			buckets2 = []
+			if len(links) > 1:
+				for l in links:
+					if l.bucket1.node is n:
+						buckets1.append(l.bucket1)
+						buckets2.append(l.bucket2)
+					else:
+						buckets1.append(l.bucket2)
+						buckets2.append(l.bucket1)
+				b = n.mergeBuckets(buckets1)
+				b1 = n1.mergeBuckets(buckets2)
+				l = Link(b, b1)
 			if compress:
 				compressLink(l, accuracy)
 
