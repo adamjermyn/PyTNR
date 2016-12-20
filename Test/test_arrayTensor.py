@@ -54,6 +54,11 @@ def test_flatten():
 		xt = ArrayTensor(x)
 		assert np.sum((xt.flatten([0,1]).array - np.reshape(x, (-1,5)).T)**2) < epsilon
 
+	for i in range(5):
+		x = np.random.randn(3,3,5)
+		xt = ArrayTensor(x)
+		assert np.sum((xt.flatten([1,0]).array - np.reshape(np.swapaxes(x,0,1), (-1,5)).T)**2) < epsilon
+
 def test_getIndexFactor():
 	for i in range(5):
 		x = np.random.randn(3,3,3)

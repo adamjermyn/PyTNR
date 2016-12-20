@@ -14,19 +14,19 @@ def insertIndex(arr, ind, newInd):
 def permuteIndices(arr, indices, front=True):
 	'''
 	This method moves the indices specified in indices
-	to be the first ones in the array.
+	to be the first ones in the array in the order in which they appear in indices.
 	If front is False it instead moves them to be the last ones.
 	'''
 	shape = arr.shape
 	perm = list(range(len(shape)))
 
-	if not front: # So we instead move the complement to the beginning
-		indices = list(set(perm).difference(set(indices)))
-
 	for i in indices:
 		perm.remove(i)
 	for j,i in enumerate(indices):
-		perm.insert(j, i)
+		if front:
+			perm.insert(j, i)
+		else:
+			perm.insert(len(shape)-len(indices) + j, i)
 	return np.transpose(arr, axes=perm)
 
 def ndArrayToMatrix(arr, index, front=True):
