@@ -21,7 +21,7 @@ class Node:
 		s = 'Node with ID ' + str(self.id) + ' and tensor shape ' + str(self.tensor.shape)
 		s = s + '\n'
 		for n in self.connectedNodes:
-			s = s + str(n.id) + ' ' + str(self.indexConnecting(n)) + '\n'
+			s = s + str(n.id) + ' ' + str(self.indicesConnecting(n)) + '\n'
 		return s
 
 	@property
