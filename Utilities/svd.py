@@ -140,8 +140,7 @@ def entropy(array, indices):
 	sh = arr.shape[:len(indices)]
 	s = np.product(sh)
 	arr = np.reshape(arr, (s,-1))
-	# We assume that most of the entropy is captured by the first sqrt(N) singular values.
-	u, lam, v, p, cp = generalSVD(arr,bondDimension=int(np.sqrt(min(arr.shape))))
+	u, lam, v, p, cp = generalSVD(arr)
 	s = -np.sum(p*np.log(p))
 	return s
 
