@@ -44,6 +44,30 @@ def loopHeuristic(n):
 				biggest[2] = nnn
 	return biggest
 
+def oneLoopHeuristic(n, node):
+	'''
+	This method estimates the contraction in a network which maximizes the size of the loop which
+	is eliminated in the process.
+	'''
+	biggest = [100000, None, None]
+	for nnn in node.connectedNodes:
+		indices = node.indicesConnecting(nnn)
+		length = 10000
+		if not hasattr(node.tensor, 'network') or len(indices[0]) == 1:
+			length = -100
+		else:
+			for i in range(len(indices[0])):
+				for j in range(len(indices[0])):
+					if i > j:
+						length1 = node.tensor.distBetween(indices[0][i],indices[0][j])
+						if length1 < length:
+							length = length1
+		if length < biggest[0]:
+			biggest[0] = length
+			biggest[1] = node
+			biggest[2] = nnn
+	return biggest
+
 def mergeContractor(n, accuracy, optimize=True, merge=True, verbose=0):
 	'''
 	This method contracts the network n.
@@ -58,19 +82,24 @@ def mergeContractor(n, accuracy, optimize=True, merge=True, verbose=0):
 		1 - Summary
 		2 - Node enumeration
 	'''
+#	node = next(iter(n.nodes))
 	while len(n.nodes) > 1:
 		q, n1, n2 = entropyHeuristic(n)
+#		q, n1, n2 = oneLoopHeuristic(n, node)
+
 		n3 = n.mergeNodes(n1, n2)
 
 		if merge:
-			n.mergeLinks(n3, accuracy=accuracy)
+			n.mergeLinks(n3, accuracy=accuracy, compress=True)
 		if optimize:
 			n3.tensor.optimize(verbose=verbose)
+
+#		node = n3
 
 		if verbose >= 2:
 			for nn in n.nodes:
 				if hasattr(nn.tensor,'compressedSize'):
-					print(nn.tensor.shape, nn.tensor.compressedSize, 1.0*nn.tensor.compressedSize/nn.tensor.size)
+					print(nn.tensor.shape, nn.tensor.compressedSize, 1.0*nn.tensor.compressedSize/nn.tensor.size,len(nn.tensor.network.nodes),[qq.tensor.shape for qq in nn.tensor.network.nodes])
 				else:
 					print(nn.tensor.shape, nn.tensor.size)
 
