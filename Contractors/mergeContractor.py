@@ -61,6 +61,7 @@ def mergeContractor(n, accuracy, optimize=True, merge=True, verbose=0):
 	while len(n.nodes) > 1:
 		q, n1, n2 = entropyHeuristic(n)
 		n3 = n.mergeNodes(n1, n2)
+
 		if merge:
 			n.mergeLinks(n3, accuracy=accuracy)
 		if optimize:
@@ -79,5 +80,4 @@ def mergeContractor(n, accuracy, optimize=True, merge=True, verbose=0):
 				if hasattr(nn.tensor, 'network'):
 					counter += 1
 			print('-------',len(n3.connectedNodes),q,counter,len(n.nodes),'-------')
-
 	return n

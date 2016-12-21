@@ -105,7 +105,6 @@ def test_Ising1D_Opt_Merge():
 		nn = n.nodes.pop()
 		assert abs(np.log(nn.tensor.array)/nX - exactIsing1DJ(nX,J)) < 2*nX*epsilon
 
-'''
 def test_Ising2D():
 	nX = 6
 	nY = 6
@@ -119,4 +118,6 @@ def test_Ising2D():
 		assert len(n.nodes) == 1
 		nn = n.nodes.pop()
 		assert abs(np.log(nn.tensor.array)/(nX*nY) - exactIsing2D(J)) < 2*nX*nY*epsilon + abs(exactIsing2D(J))/max(nX,nY)
-'''
+
+
+
