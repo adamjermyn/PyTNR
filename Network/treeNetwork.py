@@ -47,11 +47,6 @@ class TreeNetwork(Network):
 		if node1 == node2: # Found it!
 			return [node1]
 
-		if calledFrom is None:
-			print(node1.id,node2.id,'None')
-		else:
-			print(node1.id,node2.id,calledFrom.id)
-
 		if len(self.internalConnected(node1)) == 1 and calledFrom is not None:	# Nothing left to search
 			return []
 
@@ -261,7 +256,9 @@ class TreeNetwork(Network):
 
 		assert len(loop) >= 3
 
+		print('Loop:',len(loop))
 		while len(loop) > 3:
+			print('Loop:',len(loop))
 			best = [0,0]
 			for i in range(len(loop)):
 				n1 = loop[(i + 1)%len(loop)]
@@ -292,25 +289,21 @@ class TreeNetwork(Network):
 				assert l.bucket1 != b2
 				assert l.bucket2 != b2
 
+			print('Loop: Merging',n1.tensor.shape,n2.tensor.shape,ind1,ind2,n1.findLink(n2).bucket1.size)
 			n = self.mergeNodes(n1, n2)
 
 			loop.pop(1)
 
-			if n.tensor.rank > 3:
+			if n.tensor.rank > 4:
 				assert b1 in n.buckets
 				assert b2 in n.buckets
 				assert b1.node is n
 				assert b2.node is n
+				print('Loop: Splitting',n.tensor.shape)
 				nodes = self.splitNode(n, ignore=[n.bucketIndex(b1),n.bucketIndex(b2)])
 				n = nodes[0] # The ignored indices always end up in the first node
 
 			loop[1] = n
-
-		for nq in self.nodes:
-			for c in nq.connectedNodes:
-				if c in self.nodes:
-					assert len(nq.linksConnecting(c)) == 1
-
 
 		n = self.mergeNodes(loop[0], loop[1])
 		n = self.mergeNodes(n, loop[2])

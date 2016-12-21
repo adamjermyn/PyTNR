@@ -47,4 +47,6 @@ def compressLink(l, accuracy):
 	n1.tensor = n1.tensor.setIndexFactor(ind1, uu)
 	n2.tensor = n2.tensor.setIndexFactor(ind2, vv)
 
+	print('Compress:',l.bucket1.size,ind,cp)
+
 	assert n1.tensor.shape[ind1] == n2.tensor.shape[ind2]

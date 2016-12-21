@@ -102,6 +102,7 @@ class TreeTensor(Tensor):
 
 		# Incrementally merge the networks
 		while len(links) > 0:
+			print(len(links))
 			# We perform the mergers which can be done on their own first,
 			# then prioritize based on the width of the induced loop (smallest first).
 			plist = []
@@ -293,6 +294,7 @@ class TreeTensor(Tensor):
 			sh2 = n2.tensor.shape
 			s = n1.tensor.size + n2.tensor.size
 			n = self.network.mergeNodes(n1, n2)
+			print('Optimizing:',n1.tensor.shape,n2.tensor.shape)
 			nodes = self.network.splitNode(n)
 			if len(nodes) > 1:
 				l = nodes[0].findLink(nodes[1])
