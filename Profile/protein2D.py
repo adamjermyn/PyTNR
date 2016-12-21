@@ -10,8 +10,9 @@ accuracy = 1e-5
 
 h = 0.1
 J = 0.5
+q = 0.1
 
-n = PA2D(nX, nY, h, J, accuracy)
+n = PA2D(nX, nY, h, J, q, accuracy)
 n = mergeContractor(n, accuracy, optimize=True, merge=True, verbose=2)
 
 print(len(n.nodes))

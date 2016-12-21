@@ -7,15 +7,6 @@ from TNRG.Network.network import Network
 from TNRG.TreeTensor.identityTensor import IdentityTensor
 from TNRG.Tensor.arrayTensor import ArrayTensor
 
-import numpy as np
-from scipy.integrate import quad  
-
-from TNRG.Network.link import Link
-from TNRG.Network.node import Node
-from TNRG.Network.network import Network
-from TNRG.TreeTensor.identityTensor import IdentityTensor
-from TNRG.Tensor.arrayTensor import ArrayTensor
-
 def PA2D(nX, nY, h, J, q, accuracy): 
 	network = Network()
  
@@ -26,8 +17,7 @@ def PA2D(nX, nY, h, J, q, accuracy):
 	# Each lattice site has seven indices of width five, and returns zero if they are unequal and one otherwise. 
 	for i in range(nX): 
 		for j in range(nY): 
-			for k in range(nZ):
-				lattice[i][j].append(Node(IdentityTensor(2, 5, accuracy=accuracy)))
+			lattice[i].append(Node(IdentityTensor(2, 5, accuracy=accuracy)))
 
 	arr = np.zeros((2,2))
 
