@@ -294,7 +294,7 @@ class TreeNetwork(Network):
 
 			loop.pop(1)
 
-			if n.tensor.rank > 4:
+			if n.tensor.rank > 4 or (len(loop) == 3 and n.tensor.rank > 3):
 				assert b1 in n.buckets
 				assert b2 in n.buckets
 				assert b1.node is n
