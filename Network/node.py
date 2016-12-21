@@ -82,7 +82,6 @@ class Node:
 		In the case of a TreeTensor this merges the external legs.
 		'''
 		inds = [b.index for b in buckets]
-		arr = self.tensor.array
 		self.tensor = self.tensor.flatten(inds)
 		self.buckets = [b for i,b in enumerate(self.buckets) if i not in inds]
 		self.buckets.append(Bucket())
