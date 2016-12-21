@@ -44,9 +44,9 @@ def compressLink(l, accuracy):
 	uu = matrixToNDArray(u, sh1[:ind1I] + [ind] + sh1[ind1I+1:], ind1I, front=False)
 	vv = matrixToNDArray(v, sh2[:ind2I] + [ind] + sh2[ind2I+1:], ind2I, front=True)
 
+	print('Compress:',l.bucket1.size,accuracy,ind,cp)
+
 	n1.tensor = n1.tensor.setIndexFactor(ind1, uu)
 	n2.tensor = n2.tensor.setIndexFactor(ind2, vv)
-
-	print('Compress:',l.bucket1.size,ind,cp)
 
 	assert n1.tensor.shape[ind1] == n2.tensor.shape[ind2]
