@@ -160,8 +160,8 @@ class Network:
 				b = n.mergeBuckets(buckets1)
 				b1 = n1.mergeBuckets(buckets2)
 				l = Link(b, b1)
-			if compress:
-				compressLink(l, accuracy)
+				if compress:
+					compressLink(l, accuracy)
 
 	def internalConnected(self, node):
 		return self.nodes.intersection(set(node.connectedNodes))
