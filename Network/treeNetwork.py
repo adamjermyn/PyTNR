@@ -10,6 +10,9 @@ from TNRG.Network.link import Link
 from TNRG.Tensor.arrayTensor import ArrayTensor
 from TNRG.Utilities.svd import entropy, splitArray
 
+import sys
+sys.setrecursionlimit(10000)
+
 class TreeNetwork(Network):
 	'''
 	A treeNetwork is a special case of a Network in which the Network being represented
