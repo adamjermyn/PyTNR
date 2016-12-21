@@ -44,6 +44,11 @@ class TreeNetwork(Network):
 		if node1 == node2: # Found it!
 			return [node1]
 
+		if calledFrom is None:
+			print(node1.id,node2.id,'None')
+		else:
+			print(node1.id,node2.id,calledFrom.id)
+
 		if len(self.internalConnected(node1)) == 1 and calledFrom is not None:	# Nothing left to search
 			return []
 
@@ -53,7 +58,16 @@ class TreeNetwork(Network):
 				path = self.pathBetween(c, node2, calledFrom=node1)
 				if len(path) > 0: # Means the recursive call found it
 					path2 = [node1] + path
+
+					if len(path2) > 0:
+						assert node1 in path2
+						assert node2 in path2
+
 					return path2
+
+		if len(path) > 0:
+			assert node1 in path
+			assert node2 in path
 
 		return []
 
@@ -76,31 +90,30 @@ class TreeNetwork(Network):
 				connected.append(c)
 
 		# Because of the assertion, len(connected) <= 3
-		# If len(connected) <= 1 there's nothing tricky for us
-		# to do, but if len(connected) > 1 we have to
-		# eliminate loops and such.
-		if len(connected) == 1:
+		# If len(connected) == 1 there's nothing tricky for us
+		# to do: we just add the node and merge it if it has rank
+		# less than or equal to 2.
+		# If len(connected) == 2 then we may have nothing tricky
+		# to do (if the two connected nodes are the same), and
+		# if that's the case we just merge it right in. If it isn't
+		# the case then we have to eliminate loops.
+		# If len(connected) == 3 we handle it as described below.
+		if len(connected) == 1 or (len(connected) == 2 and connected[0] == connected[1]):
 			self.addNode(n)
-			if n.tensor.rank <= 2:
-				# Means we can just directly contract this
+			if n.tensor.rank - sum(len(c.linksConnecting(n)) for c in connected) <= 1:
+				# Means we can just directly contract this because there's a single extra leg
 				n1 = connected[0]
 				n = self.mergeNodes(n, n1)
 		elif len(connected) == 2:
+			# Means there's a loop
 			n1 = connected[0]
 			n2 = connected[1]
-			if n1 == n2:
+			loop = self.pathBetween(n1, n2)
+			if len(loop) > 0:
 				self.addNode(n)
-				n = self.mergeNodes(n, n1)
+				self.eliminateLoop(loop + [n])
 			else:
-				# Means there's a loop
-				loop = self.pathBetween(n1, n2)
-				print('N=2,Loop,',len(loop))
-				if len(loop) > 0:
-					self.addNode(n)
-					self.eliminateLoop(loop + [n])
-				else:
-					self.addNode(n)
-				print('N=2,Loop,Done')
+				self.addNode(n)
 		elif len(connected) == 3:
 			'''
 			This case is somewhat complicated to handle, so we're going to do it
@@ -125,6 +138,10 @@ class TreeNetwork(Network):
 			self.contractNode(n)
 			# Contract the identity
 			self.contractNode(identity)
+			for nq in self.nodes:
+				for c in n.connectedNodes:
+					if c in self.nodes:
+						assert len(nq.linksConnecting(c)) == 1
 
 
 	def trace(self, b1, b2):
@@ -234,14 +251,10 @@ class TreeNetwork(Network):
 		two links).
 
 		The links are contracted in descending size order.
-
-		TODO:
-		Profling indicates that this method is the most expensive. This is probably
-		because we're forcing bad intermediate decisions about which indices are
-		split off.
 		'''
 		for i in range(len(loop)):
 			assert loop[i-1] in loop[i].connectedNodes
+			assert loop[i] in self.nodes
 
 		assert len(loop) >= 3
 
@@ -280,7 +293,7 @@ class TreeNetwork(Network):
 
 			loop.pop(1)
 
-			if n.tensor.rank > 4:
+			if n.tensor.rank > 3:
 				assert b1 in n.buckets
 				assert b2 in n.buckets
 				assert b1.node is n
@@ -290,10 +303,17 @@ class TreeNetwork(Network):
 
 			loop[1] = n
 
+		for nq in self.nodes:
+			for c in nq.connectedNodes:
+				if c in self.nodes:
+					assert len(nq.linksConnecting(c)) == 1
+
+
 		n = self.mergeNodes(loop[0], loop[1])
 		n = self.mergeNodes(n, loop[2])
 		if n.tensor.rank > 3:
 			self.splitNode(n)
 
-
+		for n in self.nodes:
+			assert n.tensor.rank <= 3
 
