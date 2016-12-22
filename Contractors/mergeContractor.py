@@ -8,7 +8,7 @@ def entropyHeuristic(n):
 			length = nn.linksConnecting(nnn)[0].bucket1.size
 			metric = nn.tensor.size*nnn.tensor.size/length**2
 			commonNodes = set(nn.connectedNodes).intersection(nnn.connectedNodes)
-			metric *= 0.75**len(commonNodes)
+			metric *= 0.3**len(commonNodes)
 			metric = metric - nn.tensor.size - nnn.tensor.size
 			if metric < smallest[0]:
 				smallest[0] = metric
@@ -84,6 +84,7 @@ def mergeContractor(n, accuracy, optimize=True, merge=True, verbose=0):
 	'''
 #	node = next(iter(n.nodes))
 	while len(n.nodes) > 1:
+#		q, n1, n2 = loopHeuristic(n)
 		q, n1, n2 = entropyHeuristic(n)
 #		q, n1, n2 = oneLoopHeuristic(n, node)
 
