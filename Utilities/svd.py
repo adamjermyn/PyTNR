@@ -250,6 +250,56 @@ def generalSVDvals(matrix, bondDimension=np.inf, optimizerMatrix=None, precision
 
 	return lam, p, cp
 
+def rank4InverseSVD(arr1, arr2):
+	'''
+	This method takes two rank-3 arrays arr1 and arr2.
+	Let their indices be ijk and lmk respectively.
+	These arrays must have matching size along the last index,
+	such that arr2.shape[-1] == arr2.shape[-1].
+
+	Given such arrays, this matrix computes a pair of arrays
+	arr3 and arr4 with indices ilk and jmk, such that once more
+	they match in size along the last axis. These arrays
+	are chosen so as to give the same inner product as arr1 and arr2,
+	just reshuffled (i.e. arr1 and arr2 give ijlm while arr3 and arr4
+	give iljm).
+
+	The reason this is useful is that loop elimination often involves
+	'flipping' which bonds are together on the same tensor in a pair.
+	'''
+	shape = (arr1.shape[0]*arr2.shape[0],arr1.shape[1]*arr2.shape[1])
+
+	# There are three possible contraction orders,
+	# and we need to figure out which is most efficient.
+	s1 = arr1.shape[1]*arr1.shape[2]*arr2.shape[0] + arr2.shape[0]*arr2.shape[1]*arr2.shape[2]
+	s2 = arr1.shape[0]*arr1.shape[1]*arr1.shape[2] + arr1.shape[0]*arr2.shape[1]*arr2.shape[2]
+	s3 = arr1.shape[0]*arr1.shape[1]*arr2.shape[0]*arr2.shape[1] + arr1.shape[0]*arr2.shape[0]
+
+	if s1 < s2 and s1 < s3:
+		def matvec(v):
+			v = np.reshape(v, (arr1.shape, arr2.shape))
+			bcd = np.einsum('ijk,il->jkl',arr1,v)
+			vr = np.einsum('jkl,lmk->jm',bcd,arr2)
+			return vr
+	elif s2 < s1 and s2 < s3:
+		def matvec(v):
+			v = np.reshape(v, (arr1.shape, arr2.shape))
+			abde = np.einsum('ijk,lmk->ijlm',arr1,arr2)
+			vr = np.einsum('ijlm,il->jm',abde,v)
+			return vr
+	else:
+		def matvec(v):
+			v = np.reshape(v, (arr1.shape, arr2.shape))
+			ace = np.einsum('il,lmk->imk',v,arr2)
+			vr = np.einsum('imk,ijk->jm',ace,arr1)
+			return vr
+
+	linop = LinearOperator(shape, matvec=matvec)
+
+	u, lam, v, p, cp = generalSVD(linop)
+
+	
+
 def entropy(array, pref=None, tol=1e-3):
 	'''
 	This method determines the best pair of indices to split off.
