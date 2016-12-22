@@ -3,6 +3,7 @@ from numpy.linalg import svd
 from scipy.sparse.linalg import aslinearoperator
 from scipy.sparse.linalg import LinearOperator
 from scipy.sparse.linalg import svds
+from itertools import combinations
 
 from TNRG.Utilities.arrays import permuteIndices
 from TNRG.Utilities.linalg import adjoint
@@ -247,14 +248,111 @@ def generalSVDvals(matrix, bondDimension=np.inf, optimizerMatrix=None, precision
 
 	return lam, p, cp
 
-def entropy(array, indices):
-	arr = permuteIndices(array, indices)
-	sh = arr.shape[:len(indices)]
-	s = np.product(sh)
-	arr = np.reshape(arr, (s,-1))
-	lam, p, cp = generalSVDvals(arr, precision=1e-5)
-	s = -np.sum(p*np.log(p))
-	return s
+def entropy(array, pref=None, tol=1e-3):
+	'''
+	This method determines the best pair of indices to split off.
+	That pair is just the one with the minimum entropy to the rest of the indices.
+
+	This is determined by iteratively refining bounds of the entropy associated with
+	each possible pair and throwing away provably worse options until only one remains.
+
+	To avoid refining endlessly when options are essentially identical this method
+	takes as optional input a tolerance tol below which it does not care about
+	entropy differences. This defaults to 1e-3 and is treated as an absolute tolerance.
+	That is, the returned answer is guaranteed to be optimal within this tolerance.
+
+	This method also takes as an optional input pref, which specifies a tie-breaking
+	preference in cases where multiple options lie within tol of each other and the
+	optimum. This should be specified as a set containing a pair of indices.
+	'''
+
+	# Make sure pref is a set:
+	if pref is None:
+		pref = set()
+	else:
+		pref = set(pref)
+
+
+	# Generate list of pairs of indices
+	indexLists = list(combinations(range(len(array.shape)), 2))
+
+	# We filter out options which are complements of one another, and
+	# hence give the same answer. We do not filter out pref in this process.
+
+	indexLists = [set(q) for q in indexLists]
+
+	complements = [set(range(len(array.shape))).difference(l) for l in indexLists]
+	indexSets = [set(l) for l in indexLists]
+	while len(complements) > 0:
+		c = complements.pop()
+		if c in indexSets and c != pref:
+			indexSets.remove(c)
+			s = set(range(len(array.shape)))
+			s = s.difference(c)
+			if s in complements:
+				complements.remove(s)
+	indexLists = [tuple(l) for l in indexSets]
+
+	# Lists for storing intermediate results.
+	mins = [1e10 for _ in indexLists]			# Lower bound on entropy
+	maxs = [-1 for _ in indexLists]				# Upper bound on entropy
+	norms = [-1 for _ in indexLists]			# Frobenius norms of the array in different shapes
+	knownVals = [None for _ in indexLists]		# Temporary storage for singular values
+	liveIndices = list(range(len(indexLists)))	# Stores the indices of options which have not been ruled out.
+
+	bondDimension = 1		# We start with just two singular values (set to 1 so that it becomes 2 upon doubling)
+	lowest = [1e10,-1]		# Keeps track of the index with the lowest upper bound on the entropy
+	while len(liveIndices) > 1:
+		bondDimension *= 2	# Double the bond dimension
+
+		for i in list(liveIndices): # We copy the list so we can remove from it while looping
+			indices = indexLists[i]
+
+			# Put the array in the right shape
+			arr = permuteIndices(array, indices)
+			sh = arr.shape[:len(indices)]
+			s = np.product(sh)
+			arr = np.reshape(arr, (s,-1))
+
+			# Calculate the norm if it hasn't been done already
+			if norms[i] == -1:
+				norms[i] = np.linalg.norm(arr)
+
+			# If the bond dimension is too large, full SVD is required.
+			if bondDimension > min(arr.shape) - 1:
+				lams = np.linalg.svd(arr, full_matrices=0, compute_uv=False)
+			else:
+				lams = bigSVDvals(arr, bondDimension)
+
+			lams /= norms[i]					# Normalize
+			knownVals[i] = lams**2				# Turn into probabilities
+			p = knownVals[i]
+			p = p[p>0]							# Ensure probabilities are non-zero for floating point reasons
+			mins[i] = -np.sum(p*np.log(p))		# Compute entropy of probabilities
+			maxs[i] = mins[i]
+
+			# If there is left-over probability we get additional entropy,
+			# but we don't know how much so we just calculate bounds.
+			q = 1 - np.sum(p)
+			if q > 0 and bondDimension < min(arr.shape):
+				mins[i] -= q*np.log(q)		# Corresponds to a single singular value holding the remaining probability
+				maxs[i] -= q*np.log(q/(min(arr.shape)-bondDimension)) # Corresponds to multiple singular values holding it
+
+			# Now we check if any can be eliminated
+			if maxs[i] < lowest[0] - tol:		# Means this is better than the previous best
+				lowest[0] = maxs[i]
+				lowest[1] = i
+			elif mins[i] > lowest[0] + tol:		# Means that this is strictly worse than the current best
+				liveIndices.remove(i)
+			else:								# Means this is tied within tolerance to the current best
+				if pref == set():				# If we have no preference we remove this unless it is the current best
+					if i != lowest[1]:
+						liveIndices.remove(i)
+				elif pref != set(indexLists[i]) and pref in [indexSets[j] for j in liveIndices]:
+												# Otherwise we remove this so long as the preferred option is still live
+												# and this is not it.
+					liveIndices.remove(i)
+	return list(indexLists[liveIndices[0]])
 
 def splitArray(array, indices, accuracy=1e-4):
 	perm = []

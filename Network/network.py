@@ -106,9 +106,10 @@ class Network:
 			if b in self.externalBuckets:
 				self.externalBuckets.remove(b)
 
-	def mergeNodes(self, n1, n2):
+	def dummyMergeNodes(self, n1, n2):
 		'''
-		Merges the specified Nodes.
+		Calculates the tensor and bucket array which would arise
+		were the nodes n1 and n2 to be merged.
 		'''
 		links = n1.linksConnecting(n2)
 		indices = [[],[]]
@@ -132,6 +133,15 @@ class Network:
 		for b in n2.buckets:
 			if not b.linked or b.otherBucket not in n1.buckets:
 				buckets.append(b)
+
+		return t, buckets
+
+
+	def mergeNodes(self, n1, n2):
+		'''
+		Merges the specified Nodes.
+		'''
+		t, buckets = self.dummyMergeNodes(n1, n2)
 
 		n = Node(t, Buckets=buckets)
 

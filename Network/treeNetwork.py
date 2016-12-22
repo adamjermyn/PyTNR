@@ -1,4 +1,3 @@
-from itertools import combinations
 from copy import deepcopy
 import numpy as np
 import operator
@@ -194,28 +193,12 @@ class TreeNetwork(Network):
 			array = node.tensor.scaledArray
 
 			s = []
-			pairs = list(combinations(range(len(array.shape)), 2))
 
 			if ignore is not None:
 				p = ignore
 				ignore = None
 			else:
-				for p in pairs:
-					bids = [node.buckets[p[0]].id,node.buckets[p[1]].id]
-					bid1 = min(bids)
-					bid2 = max(bids)
-					s.append([round(entropy(array, p),2), bid1, bid2, p])
-				# In many cases multiple pairs have the same entropy.
-				# To avoid infinite loops in the optimization stage we have
-				# to make sure that splitNode is deterministic, in the sense
-				# that when there are multiple equally good options, it always
-				# picks the same Bucket pairings.
-				# We do this by breaking the degeneracy with the Bucket ID's.
-				# Thus we sort by min bucket id and max bucket id after sorting by entropy.
-				# The entropy is rounded to avoid floating point error from causing
-				# instabilities.
-				choice = min(s, key = operator.itemgetter(0,1,2))
-				p = choice[-1]
+				p = entropy(array)
 
 			u, v, indices1, indices2 = splitArray(array, p, accuracy=self.accuracy)
 

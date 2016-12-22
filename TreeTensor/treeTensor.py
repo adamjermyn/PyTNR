@@ -9,6 +9,7 @@ from TNRG.Network.treeNetwork import TreeNetwork
 from TNRG.Network.node import Node
 from TNRG.Network.link import Link
 from TNRG.Network.bucket import Bucket
+from TNRG.Utilities.svd import entropy
 
 class TreeTensor(Tensor):
 
@@ -293,45 +294,39 @@ class TreeTensor(Tensor):
 			sh1 = n1.tensor.shape
 			sh2 = n2.tensor.shape
 			s = n1.tensor.size + n2.tensor.size
-			n = self.network.mergeNodes(n1, n2)
-			print('Optimizing:',n1.tensor.shape,n2.tensor.shape)
-			nodes = self.network.splitNode(n)
-			if len(nodes) > 1:
+
+			print('Optimizing:',n1.id,n2.id,n1.tensor.shape,n2.tensor.shape)
+
+			t, buckets = self.network.dummyMergeNodes(n1, n2)
+			arr = t.array
+			if n1.tensor.rank == 3:
+				ss = set([0,1])
+			elif n2.tensor.rank == 3:
+				ss = set([2,3])
+				ss.remove(b2.index + n1.tensor.rank - 1)
+			else:
+				ss = None
+
+			best = entropy(arr, pref=ss)
+
+			if set(best) != ss and set(best) != set(range(n1.tensor.rank+n2.tensor.rank-2)).difference(ss):
+				n = self.network.mergeNodes(n1, n2)
+				nodes = self.network.splitNode(n, ignore=best)
+				assert len(nodes) == 2
+				for b in nodes[0].buckets:
+					self.optimized.discard(b)
+				for b in nodes[1].buckets:
+					self.optimized.discard(b)
+
 				l = nodes[0].findLink(nodes[1])
-
-				newBuckets1 = set(nodes[0].buckets)
-				newBuckets1.discard(l.bucket1)
-				newBuckets1.discard(l.bucket2)
-
-				newBuckets2 = set(nodes[1].buckets)
-				newBuckets2.discard(l.bucket1)
-				newBuckets2.discard(l.bucket2)
-
-				oldBuckets1 = set(n1.buckets)
-				oldBuckets1.discard(b1)
-				oldBuckets1.discard(b2)
-
-				if newBuckets1 != oldBuckets1 and newBuckets2 != oldBuckets1:
-					# Means we've done something so all the other buckets on these
-					# nodes need to be reexamined.
-					for b in n1.buckets:
-						self.optimized.discard(b)
-					for b in n2.buckets:
-						self.optimized.discard(b)
-
 				self.optimized.add(l.bucket1)
 				self.optimized.add(l.bucket2)
-
-			s1 = 0
-			s1sh = []
-			for nnnn in nodes:
-				s1 += nnnn.tensor.size
-				s1sh.append(nnnn.tensor.shape)
+			else:
+				self.optimized.add(b1)
+				self.optimized.add(b2)
 
 			if verbose >= 1:
 				print('Optimization steps left:',-len(self.optimized.intersection(self.network.internalBuckets)) + len(self.network.internalBuckets))
-				print('Tensor changed from',s,sh1,sh2,'to',s1,*s1sh,'\n')
-
 
 		if verbose >= 1:
 			print('Optimized network:')
