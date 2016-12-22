@@ -65,8 +65,10 @@ def bigSVDvals(matrix, bondDimension):
 	s = s[inds]
 	return s
 
-
-
+# A note on precision:
+# the precision option here allows you to truncate the svd when the desired accuracy
+# is achieved. This is done by comparing the sum of the valued obtained so far to the
+# frobenius norm ofthe matrix.
 
 def generalSVD(matrix, bondDimension=np.inf, optimizerMatrix=None, arr1=None, arr2=None, precision=1e-5):
 	'''
