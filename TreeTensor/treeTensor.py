@@ -321,6 +321,7 @@ class TreeTensor(Tensor):
 				l = nodes[0].findLink(nodes[1])
 				self.optimized.add(l.bucket1)
 				self.optimized.add(l.bucket2)
+				print('Optimizer improved to shapes:',nodes[0].tensor.shape,nodes[1].tensor.shape)
 			else:
 				self.optimized.add(b1)
 				self.optimized.add(b2)
@@ -340,26 +341,3 @@ class TreeTensor(Tensor):
 			print('Optimization done.\n')
 
 
-'''
-
-		print('Optimizing permutations...')
-
-		s = 0
-		for n in self.network.nodes:
-			s += n.tensor.size
-
-		done = set()
-		while len(done.intersection(self.network.nodes)) < len(self.network.nodes):
-			n = next(iter(self.network.nodes.difference(done)))
-			nc = self.network.internalConnected(n)
-			if len(nc) > 1:
-				n1 = nc.pop()
-				n2 = nc.pop()
-				n = self.network.mergeNodes(n, n1)
-				n = self.network.mergeNodes(n, n2)
-				nodes = self.network.splitNode(n)
-				done.update(nodes)
-			else:
-				done.add(n)
-
-'''
