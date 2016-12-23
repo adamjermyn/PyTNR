@@ -240,6 +240,9 @@ class TreeNetwork(Network):
 		assert len(loop) >= 3
 
 		print('Loop:',len(loop))
+		for l in loop:
+			print(l.id,l.tensor.shape,l.tensor.size)
+
 		while len(loop) > 3:
 			print('Loop:',len(loop))
 			best = [0,0]
@@ -277,16 +280,32 @@ class TreeNetwork(Network):
 
 			loop.pop(1)
 
-			if n.tensor.rank > 4 or (len(loop) == 3 and n.tensor.rank > 3):
+			if n.tensor.rank > 4 or (n.tensor.size > 1e5 and n.tensor.rank > 3):
 				assert b1 in n.buckets
 				assert b2 in n.buckets
 				assert b1.node is n
 				assert b2.node is n
 				print('Loop: Splitting',n.tensor.shape)
 				nodes = self.splitNode(n, ignore=[n.bucketIndex(b1),n.bucketIndex(b2)])
+				print('Loop split. Size ratio:',1.0*sum(q.tensor.size for q in nodes)/(n.tensor.size))
+				for p in nodes:
+					print(p.tensor.shape)
 				n = nodes[0] # The ignored indices always end up in the first node
 
 			loop[1] = n
+
+		# This is necessary because we've been rotating the loop around and so have
+		# no guarantee that the rank conditions have been preserved.
+		for i in range(3):
+			if loop[i].tensor.rank > 3:
+				ind1 = loop[i].indexConnecting(loop[i-1])
+				ind2 = loop[i].indexConnecting(loop[(i+1)%3])
+				nodes = self.splitNode(loop[i], ignore=[ind1, ind2])
+				loop[i] = nodes[0]
+
+		assert loop[0].tensor.rank <= 3
+		assert loop[1].tensor.rank <= 3
+		assert loop[2].tensor.rank <= 3
 
 		n = self.mergeNodes(loop[0], loop[1])
 		n = self.mergeNodes(n, loop[2])
