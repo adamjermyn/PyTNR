@@ -294,11 +294,13 @@ def rank4InverseSVD(arr1, arr2):
 			vr = np.einsum('imk,ijk->jm',ace,arr1)
 			return vr
 
+	# TODO: Implement adjoint (rmatvec) and matrix-matrix product (matmat)
+
 	linop = LinearOperator(shape, matvec=matvec)
 
 	u, lam, v, p, cp = generalSVD(linop)
 
-	
+
 
 def entropy(array, pref=None, tol=1e-3):
 	'''
