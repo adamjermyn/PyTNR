@@ -159,6 +159,7 @@ class TreeTensor(Tensor):
 				assert l.bucket1 in t1.network.buckets or l.bucket1 in t2.network.buckets
 				assert l.bucket2 in t1.network.buckets or l.bucket2 in t2.network.buckets
 
+			t1.optimize()
 
 		t1.externalBuckets = extB
 		assert t1.network.externalBuckets == set(t1.externalBuckets)
