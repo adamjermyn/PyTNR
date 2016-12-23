@@ -303,7 +303,6 @@ class TreeTensor(Tensor):
 				ss = set([0,1])
 			elif n2.tensor.rank == 3:
 				ss = set([2,3])
-				ss.remove(b2.index + n1.tensor.rank - 1)
 			else:
 				ss = None
 
