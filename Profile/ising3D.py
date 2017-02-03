@@ -3,9 +3,9 @@ import numpy as np
 from TNRG.Models.isingModel import IsingModel3D
 from TNRG.Contractors.mergeContractor import mergeContractor
 
-nX = 7
-nY = 7
-nZ = 7
+nX = 5
+nY = 5
+nZ = 5
 
 accuracy = 1e-5
 

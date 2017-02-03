@@ -91,7 +91,9 @@ def mergeContractor(n, accuracy, optimize=True, merge=True, verbose=0):
 		n3 = n.mergeNodes(n1, n2)
 
 		if merge:
+			print('MERGE')
 			n.mergeLinks(n3, accuracy=accuracy, compress=True)
+			print('MERGEDONE')
 		if optimize:
 			n3.tensor.optimize(verbose=verbose)
 
