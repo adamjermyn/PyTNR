@@ -90,7 +90,7 @@ class cycleBasis:
 				inter = []
 				for c1 in cn:
 					for c2 in cm:
-						if c11 == c22 and c11 != ccc:
+						if c1 == c2 and c1 != cycle:
 							inter.append(c1)
 				if len(inter) > 0:
 					dist = nodes.index(n) - nodes.index(m)
