@@ -3,6 +3,7 @@ from TNRG.Network.link import Link
 from TNRG.Network.compress import compressLink
 from copy import deepcopy
 import numpy as np
+import networkx
 
 class Network:
 	'''
@@ -175,5 +176,13 @@ class Network:
 
 	def internalConnected(self, node):
 		return self.nodes.intersection(set(node.connectedNodes))
+
+	def toGraph(self):
+		g = networkx.Graph()
+		g.add_nodes_from(self.nodes)
+		for n in self.nodes:
+			for m in self.internalConnected(n):
+				g.add_edge(n,m,weight=np.log(n.tensor.size*m.tensor.size))
+		return g
 
 

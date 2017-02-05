@@ -1,7 +1,11 @@
 from operator import mul
 from copy import deepcopy
+from collections import defaultdict
+
+import itertools as it
 import numpy as np
 import operator
+import networkx
 
 from TNRG.Tensor.tensor import Tensor
 from TNRG.Tensor.arrayTensor import ArrayTensor
@@ -9,6 +13,7 @@ from TNRG.Network.treeNetwork import TreeNetwork
 from TNRG.Network.node import Node
 from TNRG.Network.link import Link
 from TNRG.Network.bucket import Bucket
+from TNRG.Network.cycleBasis import cycleBasis
 from TNRG.Utilities.svd import entropy
 
 class TreeTensor(Tensor):
@@ -73,6 +78,8 @@ class TreeTensor(Tensor):
 		return len(self.network.pathBetween(n1, n2))
 
 	def contract(self, ind, other, otherInd, front=True):
+		# This method could be vastly simplified by defining a cycle basis class
+
 		# We copy the two networks first. If the other is an ArrayTensor we cast it to a TreeTensor first.
 		t1 = deepcopy(self)
 		if hasattr(other, 'network'):
@@ -95,71 +102,102 @@ class TreeTensor(Tensor):
 			assert b2 in t2.network.buckets and b2 not in t1.network.buckets
 			links.append(Link(b1, b2))
 
+		# Determine new external buckets list
 		for l in links:
 			t1.externalBuckets.remove(l.bucket1)
 			t2.externalBuckets.remove(l.bucket2)
 
 		extB = t1.externalBuckets + t2.externalBuckets
 
-		# Incrementally merge the networks
-		while len(links) > 0:
-			print(len(links))
-			# We perform the mergers which can be done on their own first,
-			# then prioritize based on the width of the induced loop (smallest first).
-			plist = []
-			for l in links:
-				b1 = l.bucket1
-				b2 = l.bucket2
-				n1 = b1.node
-				n2 = b2.node
-				if n1 not in t1.network.nodes:
-					n1, n2 = n2, n1
-					b1, b2 = b2, b1
-				connected = []
-				for c in n2.connectedNodes:
-					if c in t1.network.nodes:
-						connected.append(c)
-				if len(connected) == 1:
-					plist.append([0,l])
-				elif len(connected) == 2:
-					plist.append([len(t1.network.pathBetween(connected[0], connected[1])), l])
+		# Merge the networks
+		toRemove = set(t2.network.nodes)
+
+		for n in toRemove:
+			t2.network.removeNode(n)
+
+		for n in toRemove:
+			t1.network.addNode(n)
+
+		# Merge any rank-1 or rank-2 objects
+		done = set()
+		while len(done.intersection(t1.network.nodes)) < len(t1.network.nodes):
+			n = next(iter(t1.network.nodes.difference(done)))
+			if n.tensor.rank <= 2:
+				nodes = t1.network.internalConnected(n)
+				if len(nodes) > 0:
+					t1.network.mergeNodes(n, nodes.pop())
 				else:
-					plist.append([100000, l])
+					done.add(n)
+			else:
+				done.add(n)
 
-			m, l = min(plist, key=operator.itemgetter(0))
+		cb = cycleBasis(t1.network)
 
-			links.remove(l)
+		while len(cb.cycles) > 0:
+			print(len(cb.cycles),cb.smallest()[0])
+			# Merge triangles and smaller preferentially because these can be done at no complexity cost
+			smallest = cb.smallest()
+			if len(smallest) <= 3:
+				cb.mergeSmall(smallest)
+			else:
+				# If there are no triangles or lines we perform a pinch operation
+				# on the largest cycle. We prioritize index pairs which are not part
+				# of another cycle and we prioritize among these by distance. Among
+				# those which are shared with another cycle we prioritize them by distance.
+				# Finally if there are no pairs of indices which are in the same cycle or no
+				# cycle then we just merge an arbitrarily chosen adjacent pair.
 
-			b1 = l.bucket1
-			b2 = l.bucket2
+				cycle = cb.hardest()
+				# Make sure there are no double links in the cycle
+				nodes = cycle.nodes
+				i = 0
+				skip = False
+				while i < len(nodes):
+					n = nodes[i]
+					i += 1
+					if len(n.linkedBuckets) > len(n.connectedNodes):
+						cn = list(n.connectedNodes)
+						if len(n.linksConnecting(cn[0])) == 2 and cn[0] in nodes:
+							cb.mergeEdge(n.findLink(cn[0]))
+						elif len(n.linksConnecting(cn[1])) == 2 and cn[1] in nodes:
+							cb.mergeEdge(n.findLink(cn[1]))
+						nodes = cycle.nodes
+						i = 0
+						skip = True
+					elif len(n.buckets) == 2:
+						cn = list(n.connectedNodes)
+						cb.mergeEdge(n.findLink(cn[0])) # Can be improved to make it pick the smaller option						
+						nodes = cycle.nodes
+						i = 0
+						skip = True
 
-			n1 = b1.node
-			n2 = b2.node
+				# If we found double links then we are not necessarily working on the right cycle
+				if not skip:
+					# Look for free indices
+					freeNodes = cb.freeNodes(cycle)
+					if len(freeNodes) > 1:
+						pairs = []
+						nodes = cycle.nodes
 
-			if n1 in t2.network.nodes:
-				# Ensure that b1 is in t1 and b2 is in t2, and ditto for n1 and n2
-				n2, n1 = n1, n2
-				b2, b1 = b1, b2
+						for n in freeNodes:
+							for m in freeNodes:
+								if n != m:
+									dist = nodes.index(n) - nodes.index(m)
+									dist = abs(dist)
+									dist = min(dist, len(nodes) - dist)
+									pairs.append((n,m,dist))
+					else:
+						pairs = cb.commonNodes(cycle)
 
-			# Remove any other links that this node pair handles
-			for b in n2.linkedBuckets:
-				if b.otherNode in t1.network.nodes and b.link != l:
-					links.remove(b.link)
+					print(len(freeNodes),len(pairs),len(cycle))
+					bestPair = min(pairs, key=operator.itemgetter(2))
 
-			# Add the links from n2 to t2.network to the todo list
-			for b in n2.linkedBuckets:
-				if b.otherNode in t2.network.nodes:
-					links.append(b.link)
+					print(bestPair)
 
-			# Move the node over
-			t2.network.removeNode(n2)
-			t1.network.contractNode(n2)
-
-			for l in links:
-				assert l.bucket1 in t1.network.buckets or l.bucket1 in t2.network.buckets
-				assert l.bucket2 in t1.network.buckets or l.bucket2 in t2.network.buckets
-
-			t1.optimize()
+					edge = cb.makeAdjacent(cycle, bestPair[0], bestPair[1])
+					n1 = edge.bucket1.node
+					n2 = edge.bucket2.node
+					cb.pinch(cycle, n1, n2)
 
 		t1.externalBuckets = extB
 		assert t1.network.externalBuckets == set(t1.externalBuckets)
