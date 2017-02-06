@@ -91,10 +91,7 @@ class cycleBasis:
 					for n in inter:
 						for m in inter:
 							if n != m:
-								ind1 = nodes.index(n)
-								ind2 = nodes.index(m)
-								dist = abs(ind2 - ind1)
-								dist = min(dist, len(cycle) - dist)
+								dist = cycle.dist(n, m)
 								pairs.append((n,m,dist))
 
 		return pairs
