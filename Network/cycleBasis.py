@@ -55,7 +55,7 @@ class cycleBasis:
 
 		for n in nodes:
 			for b in n.buckets:
-				if not b.linked or len(self.edgeDict[b.link]) == 0:
+				if not b.linked or b not in self.edgeDict:
 					freeNodes.add(n)
 
 		return freeNodes
@@ -113,11 +113,16 @@ class cycleBasis:
 
 		self.network.mergeNodes(n1, n2)
 
+		cycles = []
 		for e in links:
+			cycles.extend(self.edgeDict[e])
 			for c in self.edgeDict[e]:
 				c.remove(e)
-				assert c.valid == False
 			del self.edgeDict[e]
+
+		cycles = set(cycles)
+		for c in cycles:
+			c.validate()
 
 
 	def mergeSmall(self, cycle):
@@ -127,7 +132,6 @@ class cycleBasis:
 
 		while len(cycle) > 0:
 			self.mergeEdge(cycle.edges[0])
-			cycle.validate()
 
 
 	def swap(self, edge, b1, b2):
