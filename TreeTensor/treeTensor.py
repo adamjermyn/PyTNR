@@ -170,7 +170,7 @@ class TreeTensor(Tensor):
 				while i < len(nodes):
 					n = nodes[i]
 					i += 1
-					if len(n.linkedBuckets) > len(n.connectedNodes):
+					if len(n.linkedBuckets) > len(n.connectedNodes) and len(n.connectedNodes) > 1:
 						cn = list(n.connectedNodes)
 						if len(n.linksConnecting(cn[0])) == 2 and cn[0] in nodes:
 							cb.mergeEdge(n.findLink(cn[0]))
