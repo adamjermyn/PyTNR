@@ -21,7 +21,7 @@ class cycleBasis:
 
 		# Internally we store cycles as lists of edges
 		self._cycles = [[c[i].findLink(c[i-1]) for i in range(len(c))] for c in cyclesNodes]
-		self._cycles = [cycle(c) for c in self._cycles]
+		self._cycles = [cycle(c, self) for c in self._cycles]
 
 		self.edgeDict = defaultdict(list)
 
@@ -31,12 +31,16 @@ class cycleBasis:
 
 	@property
 	def cycles(self):
-		return list(filter(lambda x: len(x) > 0, self._cycles))
+		return self._cycles
 
 	def smallest(self):
+		if len(self.cycles) == 0:
+			return None
 		return min(self.cycles, key=lambda x: len(x))
 
 	def hardest(self):
+		if len(self.cycles) == 0:
+			return None
 		return max(self.cycles, key=lambda x: np.sum(np.log([n.tensor.size for n in x.nodes])))
 
 	def freeNodes(self, cycle):
@@ -67,43 +71,33 @@ class cycleBasis:
 		'''
 		nodes = cycle.nodes
 
-		for n in nodes:
-			print(n)
-
 		pairs = []
 
-		outEdges = []
-		for n in nodes:
-			outLinks = list(filter(lambda x: x.otherNode not in cycle, n.linkedBuckets))
-			if len(outLinks) > 0:
-				outLink = outLinks.pop().link
-				outEdges.append((n, outLink))
+		for e in cycle:
+			ed = self.edgeDict[e]
+			for c in ed:
+				if c != cycle:
+					# Now we have a cycle that intersects
+					inter = []
+					for en in c:
+						if en in cycle:
+							n1 = en.bucket1.node
+							n2 = en.bucket2.node
+							if cycle.outBucket(n1).linked and cycle.outBucket(n1).link in c:
+								inter.append(n1)
+							if cycle.outBucket(n2).linked and cycle.outBucket(n2).link in c:
+								inter.append(n2)
 
-		for n,e in outEdges:
-			print(e)
-			print(e.bucket1.node)
-			print(e.bucket2.node)
-			print(self.edgeDict[e])
+					for n in inter:
+						for m in inter:
+							if n != m:
+								ind1 = nodes.index(n)
+								ind2 = nodes.index(m)
+								dist = abs(ind2 - ind1)
+								dist = min(dist, len(cycle) - dist)
+								pairs.append((n,m,dist))
 
-		common = []
-		for i in range(len(outEdges)):
-			for j in range(i):
-				n, en = outEdges[i]
-				m, em = outEdges[j]
-				cn = self.edgeDict[en]
-				cm = self.edgeDict[em]
-				inter = []
-				for c1 in cn:
-					for c2 in cm:
-						if c1 == c2 and c1 != cycle:
-							inter.append(c1)
-				if len(inter) > 0:
-					dist = nodes.index(n) - nodes.index(m)
-					dist = abs(dist)
-					dist = min(dist, len(nodes) - dist)
-					common.append((n,m,dist,inter))
-
-		return common
+		return pairs
 
 	def mergeEdge(self, edge):
 		'''
@@ -122,6 +116,7 @@ class cycleBasis:
 		for e in links:
 			for c in self.edgeDict[e]:
 				c.remove(e)
+				assert c.valid == False
 			del self.edgeDict[e]
 
 
@@ -132,6 +127,8 @@ class cycleBasis:
 
 		while len(cycle) > 0:
 			self.mergeEdge(cycle.edges[0])
+			cycle.validate()
+
 
 	def swap(self, edge, b1, b2):
 		'''
@@ -140,7 +137,7 @@ class cycleBasis:
 		these nodes) are on the same node.
 		'''
 
-#		print('Swapping... on edge',edge)
+		self.consistencyCheck()
 		n1 = edge.bucket1.node
 		n2 = edge.bucket2.node
 
@@ -175,6 +172,7 @@ class cycleBasis:
 			bLink1 = b1.link
 		else:
 			bLink1 = None
+
 		if b2.linked:
 			bLink2 = b2.link
 		else:
@@ -191,32 +189,45 @@ class cycleBasis:
 		assert b1 != edge.bucket1 and b1 != edge.bucket2
 		assert b2 != edge.bucket1 and b2 != edge.bucket2
 
+		for c in affectedCycles:
+			if len(c) > 0:
+				c.fixOrder()
+
+		for c in affectedCycles:
+			print("HADIASIHDKASJDAKSD")
+			for e in c:
+				print(e)
+				print(e.bucket1.node)
+				print(e.bucket2.node)
+
 		# Perform swap
 		n = self.network.mergeNodes(n1, n2)
 		nodes = self.network.splitNode(n, ignore=[n.bucketIndex(b1),n.bucketIndex(b2)])
 		edgeNew = nodes[0].findLink(nodes[1])
 
 		# Update cycle references
-		self.edgeDict[edgeNew] = list(self.edgeDict[edge])
-		del self.edgeDict[edge]
-
 		for c in affectedCycles:
 			if (outLink1 in c) != (bLink2 in c):
+				print('Antisym',flush=True)
 				if edge in c:
+					print('with edge',flush=True)
 					c.remove(edge)
-					self.edgeDict[edgeNew].remove(c)
 				else:
-					self.edgeDict[edgeNew].append(c)
-
-					# Look for the place where the swap broke the cycle
-					ind = c.checkConsistency()
-					assert ind is not None
-					c.insert(ind, edgeNew)
+					print('without edge',flush=True)
+					c.add(edgeNew)
 			elif edge in c:
+				print('Sym with edge',flush=True)
 				ind = c.index(edge)
-				c.insert(ind, edgeNew)
+				c.add(edgeNew)
 				c.remove(edge)
+			else:
+				print('Sym without edge so nothing to do... right?',flush=True)
+			c.validate()
 
+		assert len(self.edgeDict[edge]) == 0
+		del self.edgeDict[edge]
+
+		self.consistencyCheck()
 
 	def swapCycle(self, cycle, edge):
 		'''
@@ -244,6 +255,33 @@ class cycleBasis:
 
 		self.swap(edge, b1, b2)
 
+	def walk(self, cycle, n1, n2):
+		'''
+		This method uses a swap operation to move the out-of-cycle bucket on one
+		of n1 or n2 towards the out-of-cycle bucket on the other.
+		'''
+		nodes = cycle.nodes
+
+		assert n1 in nodes
+		assert n2 in nodes
+
+		b1 = cycle.outBucket(n1)
+		b2 = cycle.outBucket(n2)
+
+		edge = cycle.nearEdge(n1, n2)
+		self.swapCycle(cycle, edge)
+
+		nodes = cycle.nodes
+		n1 = None
+		n2 = None
+		for i,n in enumerate(nodes):
+			if cycle.outBucket(n) == b1:
+				n1 = n
+			elif cycle.outBucket(n) == b2:
+				n2 = n
+
+		return n1, n2
+
 	def makeAdjacent(self, cycle, n1, n2):
 		'''
 		This method takes a cycle containing nodes n1 and n2 and performs
@@ -255,53 +293,13 @@ class cycleBasis:
 		assert n1 in nodes
 		assert n2 in nodes
 
-		outBucket1 = cycle.outBucket(n1)
-		outBucket2 = cycle.outBucket(n2)
+		dist = cycle.dist(n1, n2)
 
-		ind1 = nodes.index(n1)
-		ind2 = nodes.index(n2)
+		while dist > 1:
+			n1, n2 = self.walk(cycle, n1, n2)
+			dist = cycle.dist(n1, n2)
 
-		# Make sure ind1 < ind2
-		if ind2 < ind1:
-			cycle.reverse()
-			nodes = cycle.nodes
-			ind1 = nodes.index(n1)
-			ind2 = nodes.index(n2)
-
-		# Check to see if the best route goes through the zero position
-		# and if so rotate the cycle to avoid this.
-		dist = ind2 - ind1
-		if dist > len(cycle) - dist:
-			cycle.rotate(ind2) # This makes ind2 == 0
-			nodes = cycle.nodes
-			dist = len(cycle) - dist
-			ind1 = nodes.index(n1)
-			ind2 = nodes.index(n2)
-
-			# The rotation leaves ind2 < ind1 so we relabel n1 and n2
-			n1, n2 = n2, n1
-			ind1, ind2 = ind2, ind1
-			outBucket1, outBucket2 = outBucket2, outBucket1
-
-		# Now we perform swaps to move outBucket2 towards outBucket1
-		assert n1 == nodes[ind1]
-		assert n2 == nodes[ind2]
-
-		edge = cycle[ind2 - 1]
-		assert n2 == edge.bucket1.node or n2 == edge.bucket2.node
-
-		self.consistencyCheck()
-
-		while ind2 > ind1 + 1:
-			self.swapCycle(cycle, edge)
-			self.consistencyCheck()
-			ind2 -= 1
-			edge = cycle[ind2 - 1]
-
-			n1 = edge.bucket1.node
-			n2 = edge.bucket2.node
-
-			assert outBucket2 in n1.buckets or outBucket2 in n2.buckets
+		edge = n1.findLink(n2)
 
 		return edge
 
@@ -318,9 +316,7 @@ class cycleBasis:
 
 		assert n1 in nodes
 		assert n2 in nodes
-		dist = abs(nodes.index(n1) - nodes.index(n2))
-		dist = min(dist, len(nodes) - dist)
-		assert dist == 1
+		assert cycle.dist(n1, n2) == 1
 
 		cycleBucket1 = cycle.cycleBucket(n1, avoid=edge)
 		cycleBucket2 = cycle.cycleBucket(n2, avoid=edge)
@@ -328,27 +324,28 @@ class cycleBasis:
 		b1 = cycleBucket1
 		b2 = cycleBucket2
 
+		print('pinch',len(cycle))
 		self.swap(edge, b1, b2)
 
 
 	def consistencyCheck(self):
 		print('Consistency check...')
 		for cycle in self.cycles:
-#			print('ho')
 			for i in range(len(cycle)):
 				e1 = cycle[i]
-
-#				print(e1)
-#				print(e1.bucket1.node)
-#				print(e1.bucket2.node)
-
 				e2 = cycle[i-1]
 				assert e1.bucket1.node in self.network.nodes
 				assert e1.bucket2.node in self.network.nodes
 				assert len(set([e1.bucket1.node,e1.bucket2.node]).intersection(set([e2.bucket1.node,e2.bucket2.node]))) > 0
 			assert len(set(cycle.nodes)) == len(cycle)
-		print('Consistent!')
 
+		for cycle in self.cycles:
+			for e in cycle:
+				cd = self.edgeDict[e]
+				assert cycle in cd
+				assert len(cd) == len(set(cd))
+
+		print('Consistent!')
 
 
 

@@ -133,6 +133,9 @@ class TreeTensor(Tensor):
 
 		cb = cycleBasis(t1.network)
 
+		prevDone = set()
+		elim = None
+
 		while len(cb.cycles) > 0:
 			print('LOGGING:::::::::::::::',len(cb.cycles),len(cb.smallest()),len(cb.hardest()),cb.hardest().id)
 			# Merge triangles and smaller preferentially because these can be done at no complexity cost
@@ -147,7 +150,19 @@ class TreeTensor(Tensor):
 				# Finally if there are no pairs of indices which are in the same cycle or no
 				# cycle then we just merge an arbitrarily chosen adjacent pair.
 
-				cycle = cb.hardest()
+				# In doing this one the hardest cycle at a time we can end with oscillatory behaviour wherein
+				# the hardest cycle pinches off and the second hardest cycle increases in size, which is then
+				# reversed in the next step. The way we deal with this is to detect when the harest cycle is
+				# oscillating without shrinking the network and then eliminate that cycle in its entirety.
+				if elim in cb.cycles:
+					cycle = elim
+				else:
+					cycle = cb.hardest()
+					elim = None
+
+				if (len(cycle), cycle) in prevDone:
+					elim = cycle
+
 				# Make sure there are no double links in the cycle
 				nodes = cycle.nodes
 				i = 0
@@ -170,14 +185,10 @@ class TreeTensor(Tensor):
 						nodes = cycle.nodes
 						i = 0
 						skip = True
-				print('LOGGING:::::::::::::',skip)
 
 				# If we found double links then we are not necessarily working on the right cycle
 				if not skip:
-					# This logic can end with oscillatory behaviour wherein the hardest cycle pinches
-					# off and the second hardest cycle increases in size, which is then reversed in the next
-					# step. The easiest way to deal with this might be to detect when the harest cycle
-					# is oscillating without shrinking the network and then eliminate that cycle in its entirety.
+					prevDone.add((len(cycle), cycle))
 
 					# Look for free indices
 					freeNodes = cb.freeNodes(cycle)
@@ -188,17 +199,12 @@ class TreeTensor(Tensor):
 						for n in freeNodes:
 							for m in freeNodes:
 								if n != m:
-									dist = nodes.index(n) - nodes.index(m)
-									dist = abs(dist)
-									dist = min(dist, len(nodes) - dist)
+									dist = cycle.dist(n,m)
 									pairs.append((n,m,dist))
 					else:
 						pairs = cb.commonNodes(cycle)
 
-					print(len(freeNodes),len(pairs),len(cycle))
 					bestPair = min(pairs, key=operator.itemgetter(2))
-
-					print(bestPair)
 
 					edge = cb.makeAdjacent(cycle, bestPair[0], bestPair[1])
 					n1 = edge.bucket1.node
@@ -210,7 +216,6 @@ class TreeTensor(Tensor):
 
 		for n in t1.network.nodes:
 			assert n.tensor.rank <= 3
-		print('LOGGING::::::::::: DONE!',)
 
 		return t1
 
