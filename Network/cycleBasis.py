@@ -61,6 +61,9 @@ class cycleBasis:
 		Each node in a cycle has two indices connecting to edges in the cycle and a third index
 		which leads out of the cycle. This method identifies the node pairs such that the third
 		index of each node in the pair is involved in another cycle.
+
+		# There is something wrong either with this method or with the edgeDict which prevents us
+		# from getting pairs even when there mathematically must be pairs.
 		'''
 		nodes = cycle.nodes
 
@@ -78,6 +81,8 @@ class cycleBasis:
 
 		for n,e in outEdges:
 			print(e)
+			print(e.bucket1.node)
+			print(e.bucket2.node)
 			print(self.edgeDict[e])
 
 		common = []
@@ -229,11 +234,6 @@ class cycleBasis:
 
 		nodes = cycle.nodes
 		cycleBucket1 = cycle.cycleBucket(n1, avoid=edge)
-		for b in n2.buckets:
-			print(not b.linked)
-			if b.linked:
-				print('    ',b.otherNode not in nodes)
-
 		outBucket2 = cycle.outBucket(n2)
 
 		# This choice of buckets to ignore ensures that the first node in the returned nodes
@@ -254,23 +254,6 @@ class cycleBasis:
 
 		assert n1 in nodes
 		assert n2 in nodes
-
-		for b in n1.buckets:
-			print(not b.linked)
-			if b.linked:
-				print('   ',b.otherNode not in nodes)
-
-		for b in n2.buckets:
-			print(not b.linked)
-			if b.linked:
-				print('   ',b.otherNode not in nodes)
-
-		for n in nodes:
-			print(n)
-
-		print('asdkj',n1)
-		print('akdha',n2)
-		print(len(self.smallest()))
 
 		outBucket1 = cycle.outBucket(n1)
 		outBucket2 = cycle.outBucket(n2)
