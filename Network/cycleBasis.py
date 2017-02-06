@@ -124,6 +124,7 @@ class cycleBasis:
 			for c in cycles:
 				c.validate()
 			for c in cycles:
+				print(c.id)
 				assert c.valid or c not in self.cycles
 
 	def mergeSmall(self, cycle):

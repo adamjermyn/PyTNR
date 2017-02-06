@@ -176,13 +176,19 @@ class TreeTensor(Tensor):
 							cb.mergeEdge(n.findLink(cn[0]))
 						elif len(n.linksConnecting(cn[1])) == 2 and cn[1] in nodes:
 							cb.mergeEdge(n.findLink(cn[1]))
-						nodes = cycle.nodes
+						if len(cycle) > 0:
+							nodes = cycle.nodes
+						else:
+							nodes = []
 						i = 0
 						skip = True
 					elif len(n.buckets) == 2:
 						cn = list(n.connectedNodes)
 						cb.mergeEdge(n.findLink(cn[0])) # Can be improved to make it pick the smaller option						
-						nodes = cycle.nodes
+						if len(cycle) > 0:
+							nodes = cycle.nodes
+						else:
+							nodes = []							
 						i = 0
 						skip = True
 
