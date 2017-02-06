@@ -53,6 +53,8 @@ class cycle:
 			e2 = self.edges[i]
 			nodes.extend(set([e1.bucket1.node,e1.bucket2.node]).intersection(set([e2.bucket1.node,e2.bucket2.node])))
 
+#		print(nodes)
+		print(len(nodes),len(self.edges))
 		assert len(set(nodes)) == len(self.edges) # No duplicates allowed!
 
 		return nodes
