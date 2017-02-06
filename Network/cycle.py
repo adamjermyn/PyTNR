@@ -75,14 +75,16 @@ class cycle:
 			else:
 				e = b2.link
 
+		print(len(self.edges),len(set(edges)))
 		assert len(self.edges) == len(set(edges))
 		self.edges = edges
 
 	def validate(self):
 		if len(self) == 0:
 			self.basis.cycles.remove(self)
-		self.fixOrder() # The process of fixing the order validates the cycle
-		self.valid = True
+		else:
+			self.fixOrder() # The process of fixing the order validates the cycle
+			self.valid = True
 
 	def index(self, value):
 		assert self.valid
@@ -91,6 +93,7 @@ class cycle:
 	def remove(self, edge):
 		self.basis.edgeDict[edge].remove(self)
 		self.edges.remove(edge)
+		assert edge not in self
 		self.valid = False
 
 	def add(self, edge):

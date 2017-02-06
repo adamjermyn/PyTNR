@@ -96,7 +96,7 @@ class cycleBasis:
 
 		return pairs
 
-	def mergeEdge(self, edge):
+	def mergeEdge(self, edge, validate=True):
 		'''
 		This method merges the nodes on either side of an edge and handles updating the cycles accordingly.
 		'''
@@ -111,25 +111,38 @@ class cycleBasis:
 		self.network.mergeNodes(n1, n2)
 
 		cycles = []
+		assert edge in links
 		for e in links:
 			cycles.extend(self.edgeDict[e])
-			for c in self.edgeDict[e]:
+			while len(self.edgeDict[e]) > 0:
+				c = self.edgeDict[e][0]
 				c.remove(e)
 			del self.edgeDict[e]
 
 		cycles = set(cycles)
-		for c in cycles:
-			c.validate()
-
+		if validate:
+			for c in cycles:
+				print(c.id)
+				print('aaa',len(c))
+				c.validate()
 
 	def mergeSmall(self, cycle):
 		# This method merges a cycle of size <= 3 and handles updating the cycle accordingly.
 
 		assert len(cycle) <= 3
 
-		while len(cycle) > 0:
+		if len(cycle) <= 2:
+			assert len(cycle) <= 2
 			self.mergeEdge(cycle.edges[0])
-
+		else:
+			edge = cycle.edges[0]
+			assert cycle in self.edgeDict[edge]
+			print('a',len(cycle),cycle.edges)
+			self.mergeEdge(edge,validate=False)
+			print('a',len(cycle),cycle.edges)
+			assert len(cycle) <= 2
+			assert edge not in cycle
+			self.mergeSmall(cycle)
 
 	def swap(self, edge, b1, b2):
 		'''
