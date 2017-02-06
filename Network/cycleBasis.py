@@ -240,6 +240,7 @@ class cycleBasis:
 				c.remove(edge)
 			else:
 				print('Sym without edge so nothing to do... right?',flush=True)
+				# There's still an issue with this case. It only comes up in the larger tests though.
 			c.validate()
 
 		assert len(self.edgeDict[edge]) == 0
