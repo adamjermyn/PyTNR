@@ -56,8 +56,6 @@ class cycle:
 
 	def fixOrder(self):
 		# Ensures that the cycle is ordered
-		if len(self) == 0:
-			return
 		e = self.edges[0]
 		edges = []
 		while e not in edges:
@@ -75,12 +73,12 @@ class cycle:
 			else:
 				e = b2.link
 
-		print(len(self.edges),len(set(edges)))
 		assert len(self.edges) == len(set(edges))
 		self.edges = edges
 
 	def validate(self):
 		if len(self) == 0:
+			print('Removing self with id',self.id)
 			self.basis.cycles.remove(self)
 		else:
 			self.fixOrder() # The process of fixing the order validates the cycle

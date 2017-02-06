@@ -122,9 +122,9 @@ class cycleBasis:
 		cycles = set(cycles)
 		if validate:
 			for c in cycles:
-				print(c.id)
-				print('aaa',len(c))
 				c.validate()
+			for c in cycles:
+				assert c.valid or c not in self.cycles
 
 	def mergeSmall(self, cycle):
 		# This method merges a cycle of size <= 3 and handles updating the cycle accordingly.
@@ -143,6 +143,9 @@ class cycleBasis:
 			assert len(cycle) <= 2
 			assert edge not in cycle
 			self.mergeSmall(cycle)
+
+		for c in self.cycles:
+			c.validate()
 
 	def swap(self, edge, b1, b2):
 		'''
@@ -345,6 +348,7 @@ class cycleBasis:
 	def consistencyCheck(self):
 		print('Consistency check...')
 		for cycle in self.cycles:
+			cycle.validate()
 			for i in range(len(cycle)):
 				e1 = cycle[i]
 				e2 = cycle[i-1]
