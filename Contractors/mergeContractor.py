@@ -142,8 +142,8 @@ def mergeContractor(n, accuracy, optimize=True, merge=True, verbose=0):
 	'''
 #	node = next(iter(n.nodes))
 	while len(n.nodes) > 1:
-		q, n1, n2 = smallLoopHeuristic(n)
-#		q, n1, n2 = entropyHeuristic(n)
+#		q, n1, n2 = smallLoopHeuristic(n)
+		q, n1, n2 = entropyHeuristic(n)
 #		q, n1, n2 = oneLoopHeuristic(n, node)
 #		q, n1, n2 = mergeHeuristic(n)
 
@@ -171,4 +171,6 @@ def mergeContractor(n, accuracy, optimize=True, merge=True, verbose=0):
 				if hasattr(nn.tensor, 'network'):
 					counter += 1
 			print('-------',len(n3.connectedNodes),q,counter,len(n.nodes),'-------')
+	no = next(iter(n.nodes))
+	no.tensor.eliminateLoops()
 	return n
