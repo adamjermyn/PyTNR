@@ -44,6 +44,113 @@ class cycleBasis:
 			return None
 		return max(self.cycles, key=lambda x: np.sum(np.log([n.tensor.size for n in x.nodes])))
 
+	def swapBenefit(self, edge, b1, b2):
+		'''
+		This method identifies how beneficial a given swap is.
+		'''
+		n1 = edge.bucket1.node
+		n2 = edge.bucket2.node
+
+		if b1 not in n1.buckets:
+			n1, n2 = n2, n1
+
+		# Catalog chanages
+		outBucket1 = set(n1.buckets)
+		outBucket1.discard(b1)
+		outBucket1.discard(edge.bucket1)
+		outBucket1.discard(edge.bucket2)
+		outBucket1 = outBucket1.pop()
+		outBucket2 = set(n2.buckets)
+		outBucket2.discard(b2)
+		outBucket2.discard(edge.bucket1)
+		outBucket2.discard(edge.bucket2)
+		outBucket2 = outBucket2.pop()
+
+		affectedCycles = list(self.edgeDict[edge])
+		if outBucket1.linked:
+			outLink1 = outBucket1.link
+			affectedCycles = affectedCycles + self.edgeDict[outBucket1.link]
+		else:
+			outLink1 = None
+		if outBucket2.linked:
+			outLink2 = outBucket2.link
+			affectedCycles = affectedCycles + self.edgeDict[outBucket2.link]
+		else:
+			outLink2 = None
+
+		if b1.linked:
+			bLink1 = b1.link
+		else:
+			bLink1 = None
+
+		if b2.linked:
+			bLink2 = b2.link
+		else:
+			bLink2 = None
+
+		new = []
+		for x in affectedCycles:
+			if x not in new:
+				new.append(x)
+		affectedCycles = new
+
+		benefit = 0
+
+		for c in affectedCycles:
+			if (outLink1 in c) != (bLink2 in c):
+				if edge in c:
+					benefit += 1
+					if len(c) == 4:
+						benefit += 3
+				else:
+					benefit -= 1
+
+		return benefit
+
+	def bestEdgeSwap(self, edge):
+		'''
+		This method returns the buckets involved in the best swap around an edge.
+		'''
+		b1 = edge.bucket1
+		b2 = edge.bucket2
+
+		n1 = b1.node
+		n2 = b2.node
+
+		buckets1 = set(n1.buckets)
+		buckets1.remove(b1)
+
+		buckets2 = set(n2.buckets)
+		buckets2.remove(b2)
+
+		best = [-1,[]]
+		for b1 in buckets1:
+			for b2 in buckets2:
+				benefit = self.swapBenefit(edge, b1, b2)
+				if benefit > best[0]:
+					best = [benefit, b1, b2]
+
+		return best
+
+	def bestSwap(self):
+		'''
+		This method returns the best swap in the cycle basis.
+		'''
+		best = [-1,[]]
+		edges = list(self.edgeDict.keys())
+		for e in edges:
+			s = self.bestEdgeSwap(e)
+			if s[0] > best[0]:
+				best = [s[0], e, s[1], s[2]]
+
+		return best
+
+	def __str__(self):
+		s = ''
+		for c in self.cycles:
+			s = s + str(len(c)) + ',' + str(np.sum(np.log([n.tensor.size for n in c.nodes]))) + '\n'
+		return s
+
 	def intersects(self, cycle):
 		'''
 		Returns the set of cycles which share an edge with the specified one.
@@ -227,7 +334,6 @@ class cycleBasis:
 					if edge in cy or outLink1 in cy or outLink2 in cy:
 						options.append((cy, len(set(c.edges).intersection(cy))/(len(cy) + len(c))))
 				best = max(options, key=operator.itemgetter(1))
-				print(best)
 				c.symmetricDifference(best[0])
 				self.consistencyCheck()
 				assert c.valid
