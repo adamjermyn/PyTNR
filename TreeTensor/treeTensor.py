@@ -137,86 +137,39 @@ class TreeTensor(Tensor):
 		elim = None
 
 		while len(cb.cycles) > 0:
-			print('LOGGING:::::::::::::::',len(cb.cycles),len(cb.smallest()),len(cb.hardest()),cb.hardest().id)
+			print('LOGGING:::::::::::::::',len(cb.cycles),len(cb.smallest()),len(cb.hardest()))
+			print(cb)
 			# Merge triangles and smaller preferentially because these can be done at no complexity cost
 			smallest = cb.smallest()
 			if len(smallest) <= 3:
 				cb.mergeSmall(smallest)
 			else:
-				# If there are no triangles or lines we perform a pinch operation
-				# on the largest cycle. We prioritize index pairs which are not part
-				# of another cycle and we prioritize among these by distance. Among
-				# those which are shared with another cycle we prioritize them by distance.
-				# Finally if there are no pairs of indices which are in the same cycle or no
-				# cycle then we just merge an arbitrarily chosen adjacent pair.
-
-				# In doing this one the hardest cycle at a time we can end with oscillatory behaviour wherein
-				# the hardest cycle pinches off and the second hardest cycle increases in size, which is then
-				# reversed in the next step. The way we deal with this is to detect when the harest cycle is
-				# oscillating without shrinking the network and then eliminate that cycle in its entirety.
-				if elim in cb.cycles:
-					cycle = elim
-				else:
-					cycle = cb.smallest()
-#					cycle = cb.hardest()
-					elim = None
-
-				if (len(cycle), cycle) in prevDone:
-					elim = cycle
-
-				# Make sure there are no double links in the cycle
-				nodes = cycle.nodes
+				# Make sure there are no double edges in the cycle basis
 				i = 0
 				skip = False
-				while i < len(nodes):
-					n = nodes[i]
-					i += 1
+				done = set()
+				while len(done.intersection(t1.network.nodes)) < len(t1.network.nodes):
+					n = next(iter(t1.network.nodes.difference(done)))
 					if len(n.linkedBuckets) > len(n.connectedNodes) and len(n.connectedNodes) > 1:
 						cn = list(n.connectedNodes)
-						if len(n.linksConnecting(cn[0])) == 2 and cn[0] in nodes:
+						if len(n.linksConnecting(cn[0])) == 2:
 							cb.mergeEdge(n.findLink(cn[0]))
-						elif len(n.linksConnecting(cn[1])) == 2 and cn[1] in nodes:
+						elif len(n.linksConnecting(cn[1])) == 2:
 							cb.mergeEdge(n.findLink(cn[1]))
-						if len(cycle) > 0:
-							nodes = cycle.nodes
-						else:
-							nodes = []
-						i = 0
 						skip = True
 					elif len(n.buckets) == 2:
 						cn = list(n.connectedNodes)
 						cb.mergeEdge(n.findLink(cn[0])) # Can be improved to make it pick the smaller option						
-						if len(cycle) > 0:
-							nodes = cycle.nodes
-						else:
-							nodes = []							
 						i = 0
 						skip = True
-
-				# If we found double links then we are not necessarily working on the right cycle
-				if not skip:
-					prevDone.add((len(cycle), cycle))
-
-					# Look for free indices
-					freeNodes = cb.freeNodes(cycle)
-					if len(freeNodes) > 1:
-						pairs = []
-						nodes = cycle.nodes
-
-						for n in freeNodes:
-							for m in freeNodes:
-								if n != m:
-									dist = cycle.dist(n,m)
-									pairs.append((n,m,dist))
 					else:
-						pairs = cb.commonNodes(cycle)
+						done.add(n)
 
-					bestPair = min(pairs, key=operator.itemgetter(2))
+				if not skip:
+					best = cb.bestSwap()
+					print('LOGGING::::::',best)
+					cb.swap(best[1], best[2], best[3])
 
-					edge = cb.makeAdjacent(cycle, bestPair[0], bestPair[1])
-					n1 = edge.bucket1.node
-					n2 = edge.bucket2.node
-					cb.pinch(cycle, n1, n2)
 
 		t1.externalBuckets = extB
 		assert t1.network.externalBuckets == set(t1.externalBuckets)
