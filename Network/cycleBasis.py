@@ -136,7 +136,6 @@ class cycleBasis:
 			for c in cycles:
 				c.validate()
 			for c in cycles:
-				print(c.id)
 				assert c.valid or c not in self.cycles
 
 	def mergeSmall(self, cycle):
@@ -150,9 +149,7 @@ class cycleBasis:
 		else:
 			edge = cycle.edges[0]
 			assert cycle in self.edgeDict[edge]
-			print('a',len(cycle),cycle.edges)
 			self.mergeEdge(edge,validate=False)
-			print('a',len(cycle),cycle.edges)
 			assert len(cycle) <= 2
 			assert edge not in cycle
 			self.mergeSmall(cycle)
@@ -245,13 +242,6 @@ class cycleBasis:
 		assert b1 != edge.bucket1 and b1 != edge.bucket2
 		assert b2 != edge.bucket1 and b2 != edge.bucket2
 
-#		for c in affectedCycles:
-#			print("HADIASIHDKASJDAKSD")
-#			for e in c:
-#				print(e,outLink1 in c,bLink2 in c,edge == e)
-#				print(e.bucket1.node)
-#				print(e.bucket2.node)
-
 		# Perform swap
 		n = self.network.mergeNodes(n1, n2)
 		nodes = self.network.splitNode(n, ignore=[n.bucketIndex(b1),n.bucketIndex(b2)])
@@ -260,21 +250,16 @@ class cycleBasis:
 		# Update cycle references
 		for c in affectedCycles:
 			if (outLink1 in c) != (bLink2 in c):
-				print('Antisym',flush=True)
 				if edge in c:
-					print('with edge',flush=True)
 					c.remove(edge)
 				else:
-					print('without edge',flush=True)
 					c.add(edgeNew)
 			elif edge in c:
-				print('Sym with edge',flush=True)
 				ind = c.index(edge)
 				c.add(edgeNew)
 				c.remove(edge)
 			else:
 				assert outLink1 in c and bLink2 in c
-				print('Sym without edge so nothing to do... right?',flush=True)
 				# There's still an issue with this case. It only comes up in the larger tests though.
 			c.validate()
 
@@ -378,12 +363,10 @@ class cycleBasis:
 		b1 = cycleBucket1
 		b2 = cycleBucket2
 
-		print('pinch',len(cycle))
 		self.swap(edge, b1, b2)
 
 
 	def consistencyCheck(self):
-		print('Consistency check...')
 		for cycle in self.cycles:
 			cycle.validate()
 			for i in range(len(cycle)):
@@ -399,9 +382,6 @@ class cycleBasis:
 				cd = self.edgeDict[e]
 				assert cycle in cd
 				assert len(cd) == len(set(cd))
-
-		print('Consistent!')
-
 
 
 

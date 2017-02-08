@@ -74,13 +74,6 @@ class cycle:
 				e = b2.link
 			assert e in self.edges
 
-		if len(self.edges) != len(edges):
-			print(len(self.edges))
-			for e in self.edges:
-				print(e)
-				print(e.bucket1.node)
-				print(e.bucket2.node)
-
 		assert len(self.edges) == len(set(edges))
 		self.edges = edges
 
