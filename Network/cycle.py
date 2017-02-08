@@ -72,6 +72,14 @@ class cycle:
 				e = b1.link
 			else:
 				e = b2.link
+			assert e in self.edges
+
+		if len(self.edges) != len(edges):
+			print(len(self.edges))
+			for e in self.edges:
+				print(e)
+				print(e.bucket1.node)
+				print(e.bucket2.node)
 
 		assert len(self.edges) == len(set(edges))
 		self.edges = edges
@@ -91,7 +99,6 @@ class cycle:
 	def remove(self, edge):
 		self.basis.edgeDict[edge].remove(self)
 		self.edges.remove(edge)
-		assert edge not in self
 		self.valid = False
 
 	def add(self, edge):
@@ -104,6 +111,33 @@ class cycle:
 
 	def rotate(self, newZero):
 		self.edges = self.edges[newZero:] + self.edges[:newZero]
+
+	def symmetricDifference(self, other):
+		'''
+		This method sets this cycle equal to the symmetric difference of it with another cycle.
+		It also updates the cycle basis edge dictionary accordingly.
+		'''
+		assert self.valid
+		assert other.valid
+
+		edges = []
+		for e in self.edges:
+			if e not in other.edges:
+				edges.append(e)
+		for e in other.edges:
+			if e not in self.edges:
+				edges.append(e)
+
+		while len(self.edges) > 0:
+			e = self.edges[0]
+			self.remove(e)
+
+		for e in edges:
+			self.add(e)
+
+		self.edges = edges
+
+		self.validate()
 
 	@property
 	def nodes(self):

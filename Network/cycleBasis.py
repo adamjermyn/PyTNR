@@ -1,6 +1,7 @@
 from collections import defaultdict
 import networkx
 import numpy as np
+import operator
 
 from TNRG.Network.cycle import cycle
 
@@ -42,6 +43,17 @@ class cycleBasis:
 		if len(self.cycles) == 0:
 			return None
 		return max(self.cycles, key=lambda x: np.sum(np.log([n.tensor.size for n in x.nodes])))
+
+	def intersects(self, cycle):
+		'''
+		Returns the set of cycles which share an edge with the specified one.
+		'''
+		cycles = set()
+		for e in cycle.edges:
+			cd = self.edgeDict[e]
+			cycles.update(cd)
+		cycles.remove(cycle)
+		return cycles
 
 	def freeNodes(self, cycle):
 		'''
@@ -202,21 +214,43 @@ class cycleBasis:
 				new.append(x)
 		affectedCycles = new
 
+		remove = []
+		for c in affectedCycles:
+			if outLink1 in c and bLink2 in c and edge not in c:
+				# Symmetric case without the swap edge
+				# In this case it is possible that we accidentally sever the cycle,
+				# so we need to find another cycle which shares the swap edge and replace
+				# this cycle with the symmetric difference of itself and that cycle.
+				# This ensures that the edge of interest does lie in the the cycle.
+				# We'd like to stay near-minimal as far as cycles go, so we pick the cycle
+				# which has the strongest fractional overlap with the one of interest.
+				shared = self.intersects(c)
+				options = []
+				for cy in shared:
+					if edge in cy or outLink1 in cy or outLink2 in cy:
+						options.append((cy, len(set(c.edges).intersection(cy))/(len(cy) + len(c))))
+				best = max(options, key=operator.itemgetter(1))
+				print(best)
+				c.symmetricDifference(best[0])
+				self.consistencyCheck()
+				assert c.valid
+				if outLink1 not in c and outLink2 not in c and edge not in c and bLink1 not in c and bLink2 not in c:
+					remove.append(c)
+		for c in remove:
+			affectedCycles.remove(c)
+
+
 		assert b1 in n1.buckets
 		assert b2 in n2.buckets
 		assert b1 != edge.bucket1 and b1 != edge.bucket2
 		assert b2 != edge.bucket1 and b2 != edge.bucket2
 
-		for c in affectedCycles:
-			if len(c) > 0:
-				c.fixOrder()
-
-		for c in affectedCycles:
-			print("HADIASIHDKASJDAKSD")
-			for e in c:
-				print(e)
-				print(e.bucket1.node)
-				print(e.bucket2.node)
+#		for c in affectedCycles:
+#			print("HADIASIHDKASJDAKSD")
+#			for e in c:
+#				print(e,outLink1 in c,bLink2 in c,edge == e)
+#				print(e.bucket1.node)
+#				print(e.bucket2.node)
 
 		# Perform swap
 		n = self.network.mergeNodes(n1, n2)
@@ -239,6 +273,7 @@ class cycleBasis:
 				c.add(edgeNew)
 				c.remove(edge)
 			else:
+				assert outLink1 in c and bLink2 in c
 				print('Sym without edge so nothing to do... right?',flush=True)
 				# There's still an issue with this case. It only comes up in the larger tests though.
 			c.validate()
