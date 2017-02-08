@@ -157,7 +157,8 @@ class TreeTensor(Tensor):
 				if elim in cb.cycles:
 					cycle = elim
 				else:
-					cycle = cb.hardest()
+					cycle = cb.smallest()
+#					cycle = cb.hardest()
 					elim = None
 
 				if (len(cycle), cycle) in prevDone:
