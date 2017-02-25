@@ -149,6 +149,8 @@ def mergeContractor(n, accuracy, optimize=True, merge=True, verbose=0):
 
 		n3 = n.mergeNodes(n1, n2)
 
+		n3.tensor.eliminateLoops()
+
 		if merge:
 			print('MERGE')
 			n.mergeLinks(n3, accuracy=accuracy, compress=True)
@@ -172,5 +174,5 @@ def mergeContractor(n, accuracy, optimize=True, merge=True, verbose=0):
 					counter += 1
 			print('-------',len(n3.connectedNodes),q,counter,len(n.nodes),'-------')
 	no = next(iter(n.nodes))
-	no.tensor.eliminateLoops()
+#	no.tensor.eliminateLoops()
 	return n

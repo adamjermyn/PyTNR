@@ -241,4 +241,5 @@ class TreeNetwork(Network):
  
 		for n in self.nodes: 
 			assert n.tensor.rank <= 3 
+			
  
