@@ -70,7 +70,7 @@ def bigSVDvals(matrix, bondDimension):
 # is achieved. This is done by comparing the sum of the valued obtained so far to the
 # frobenius norm ofthe matrix.
 
-def generalSVD(matrix, bondDimension=np.inf, optimizerMatrix=None, arr1=None, arr2=None, precision=1e-5):
+def generalSVD(matrix, bondDimension=np.inf, optimizerMatrix=None, arr1=None, arr2=None, precision=1e-5, searchFactor=1.3):
 	'''
 	This is a helper method for SVD calculations.
 
@@ -114,27 +114,42 @@ def generalSVD(matrix, bondDimension=np.inf, optimizerMatrix=None, arr1=None, ar
 		u = np.dot(u1, up)
 		v = np.dot(vp, v2)
 	elif precision is not None and bondDimension is np.inf and min(matrix.shape) > 4:
-		# Matches Frobenius norm
-		norm = np.linalg.norm(matrix)**2
-		err = norm
-
-		bondDimension = 2
-
-		while err > precision:
-			print('Matrix:',matrix.shape)
-			print('BD:',bondDimension)
-			print('Error, Precision:', err, precision)
-			bondDimension *= 2
-			if bondDimension > min(matrix.shape) - 1:
+		if max(matrix.shape) > 2*min(matrix.shape):
+			print('Significant shape mismatch: pre-computing bond dimension.')
+			lam, p, cp = generalSVDvals(matrix, precision=precision)
+			k = len(lam)
+			print('Matrix-k:',matrix.shape)
+			print('BD-k:',k)
+			if k > min(matrix.shape) - 1:
 				u, lam, v = np.linalg.svd(matrix, full_matrices=0)
-				err = 0
 			else:
-				u, lam, v = bigSVD(matrix, bondDimension)
-				err = abs(norm - np.sum(lam**2))/norm
-		if err == 0:
-			print('BD:',min(matrix.shape),min(matrix.shape))
+				u, lam, v = bigSVD(matrix, k)
 		else:
-			print('BD:',bondDimension,min(matrix.shape))
+			# Matches Frobenius norm
+			norm = np.linalg.norm(matrix)**2
+			err = 1.0
+
+			bondDimension = 2
+
+			while err > precision:
+				print('Matrix:',matrix.shape)
+				print('BD:',bondDimension)
+				print('Error, Precision:', err, precision)
+				oldBD = bondDimension
+				bondDimension *= searchFactor
+				bondDimension = int(bondDimension)
+				if bondDimension == oldBD:
+					bondDimension += 1
+				if bondDimension > min(matrix.shape) - 1:
+					u, lam, v = np.linalg.svd(matrix, full_matrices=0)
+					err = 0
+				else:
+					u, lam, v = bigSVD(matrix, bondDimension)
+					err = abs(norm - np.sum(lam**2))/norm
+			if err == 0:
+				print('BD:',min(matrix.shape),min(matrix.shape))
+			else:
+				print('BD:',bondDimension,min(matrix.shape))
 	elif optimizerMatrix is None:
 		if bondDimension > 0 and bondDimension < matrix.shape[0] and bondDimension < matrix.shape[1]:
 			# Required so sparse bond is properly represented
@@ -177,7 +192,7 @@ def generalSVD(matrix, bondDimension=np.inf, optimizerMatrix=None, arr1=None, ar
 
 	return u, lam, v, p, cp
 
-def generalSVDvals(matrix, bondDimension=np.inf, optimizerMatrix=None, precision=1e-5):
+def generalSVDvals(matrix, bondDimension=np.inf, optimizerMatrix=None, precision=1e-5, searchFactor=1.3):
 	'''
 	This is a helper method for SVD calculations.
 
@@ -208,10 +223,18 @@ def generalSVDvals(matrix, bondDimension=np.inf, optimizerMatrix=None, precision
 
 	As a result of the above definitions, p and cp are both sorted in descending order.
 	'''
+
+	# We first dot the matrix with itself along the axis that minimizes its size.
+	m = np.copy(matrix)
+	if m.shape[1] < m.shape[0]:
+		m = np.transpose(m)
+	m = np.dot(m, np.transpose(m))
+	matrix = m
+
 	if precision is not None and bondDimension is np.inf and min(matrix.shape) > 4:
 		# Matches Frobenius norm
-		norm = np.linalg.norm(matrix)**2
-		err = norm
+		norm = np.linalg.norm(matrix)
+		err = 1.0
 
 		bondDimension = 2
 
@@ -219,13 +242,17 @@ def generalSVDvals(matrix, bondDimension=np.inf, optimizerMatrix=None, precision
 			print('Matrix:',matrix.shape)
 			print('BD:',bondDimension)
 			print('Error, Precision:', err, precision)
-			bondDimension *= 2
+			oldBD = bondDimension
+			bondDimension *= searchFactor
+			bondDimension = int(bondDimension)
+			if bondDimension == oldBD:
+				bondDimension += 1
 			if bondDimension > min(matrix.shape) - 1:
 				lam = np.linalg.svd(matrix, full_matrices=0, compute_uv=False)
 				err = 0
 			else:
 				lam = bigSVDvals(matrix, bondDimension)
-				err = abs(norm - np.sum(lam**2))/norm
+				err = abs(norm - np.sum(lam))/norm
 		if err == 0:
 			print('BD:',min(matrix.shape),min(matrix.shape))
 		else:
@@ -240,12 +267,13 @@ def generalSVDvals(matrix, bondDimension=np.inf, optimizerMatrix=None, precision
 			except:
 				print('Erm.... SVD not converged!')
 				print(matrix)
-				print(np.sum(matrix**2))
+				print(np.sum(matrix))
 				print(matrix.shape)
 				print(np.max(matrix), np.min(matrix))
 				np.savetxt('error',matrix)
 				exit()
 
+	mal = np.sqrt(lam)
 	p = lam**2
 	p /= np.sum(p)
 	cp = np.cumsum(p[::-1])
