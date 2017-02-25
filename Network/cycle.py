@@ -113,22 +113,25 @@ class cycle:
 		assert self.valid
 		assert other.valid
 
-		edges = []
-		for e in self.edges:
-			if e not in other.edges:
-				edges.append(e)
-		for e in other.edges:
-			if e not in self.edges:
-				edges.append(e)
+		assert len(set(self.edges).intersection(other.edges)) > 0
+		assert len(set(self.edges).intersection(other.edges)) < len(self.edges)
+
+		edges = set(self.edges).symmetric_difference(set(other.edges))
 
 		while len(self.edges) > 0:
 			e = self.edges[0]
 			self.remove(e)
 
+		assert len(self.edges) == 0
+
 		for e in edges:
 			self.add(e)
 
-		self.edges = edges
+		# There's a bug somewhere before this line.
+		# The bug is in the assertion that any symmetric difference will do.
+		# It's possible that a symmetric difference causes the cycle to break.
+		# It's also possible that no single symmetric difference restores this.
+		# WHAT DO?
 
 		self.validate()
 

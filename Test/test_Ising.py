@@ -106,8 +106,8 @@ def test_Ising1D_Opt_Merge():
 		assert abs(np.log(nn.tensor.array)/nX - exactIsing1DJ(nX,J)) < 2*nX*epsilon
 
 def test_Ising2D():
-	nX = 6
-	nY = 6
+	nX = 4
+	nY = 4
 	accuracy = 1e-5
 	h = 0.0
 
