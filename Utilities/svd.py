@@ -123,13 +123,14 @@ def generalSVD(matrix, bondDimension=np.inf, optimizerMatrix=None, arr1=None, ar
 		while err > precision:
 			print('Matrix:',matrix.shape)
 			print('BD:',bondDimension)
+			print('Error, Precision:', err, precision)
 			bondDimension *= 2
 			if bondDimension > min(matrix.shape) - 1:
 				u, lam, v = np.linalg.svd(matrix, full_matrices=0)
 				err = 0
 			else:
 				u, lam, v = bigSVD(matrix, bondDimension)
-				err = abs(norm - np.sum(lam**2))
+				err = abs(norm - np.sum(lam**2))/norm
 		if err == 0:
 			print('BD:',min(matrix.shape),min(matrix.shape))
 		else:
@@ -217,13 +218,14 @@ def generalSVDvals(matrix, bondDimension=np.inf, optimizerMatrix=None, precision
 		while err > precision:
 			print('Matrix:',matrix.shape)
 			print('BD:',bondDimension)
+			print('Error, Precision:', err, precision)
 			bondDimension *= 2
 			if bondDimension > min(matrix.shape) - 1:
 				lam = np.linalg.svd(matrix, full_matrices=0, compute_uv=False)
 				err = 0
 			else:
 				lam = bigSVDvals(matrix, bondDimension)
-				err = abs(norm - np.sum(lam**2))
+				err = abs(norm - np.sum(lam**2))/norm
 		if err == 0:
 			print('BD:',min(matrix.shape),min(matrix.shape))
 		else:
