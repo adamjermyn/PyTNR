@@ -233,7 +233,7 @@ def generalSVDvals(matrix, bondDimension=np.inf, optimizerMatrix=None, precision
 
 	if precision is not None and bondDimension is np.inf and min(matrix.shape) > 4:
 		# Matches Frobenius norm
-		norm = np.linalg.norm(matrix)
+		norm = np.trace(matrix)
 		err = 1.0
 
 		bondDimension = 2
