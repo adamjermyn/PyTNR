@@ -5,6 +5,7 @@ import operator
 import community
 from collections import Counter
 from scipy.sparse.csgraph import shortest_path
+from scipy.sparse import csr_matrix
 
 def hortonGraph(adj, s):
 	'''
@@ -35,9 +36,9 @@ def hortonGraph(adj, s):
 
 	return adjH
 
-def shortestPaths(g, n):
-	# Returns the shortest path from j -> j+n for all j.
-	sp = networkx.to_scipy_sparse_matrix(g, format='csr', weight='weight')
+def shortestPaths(sp, n):
+	# Returns the shortest path from j -> j+n over all j.
+	# Graph must be input as an adjacency matrix.
 	dists, predecessors = shortest_path(sp, method='D', directed=False, return_predecessors=True, unweighted=False, overwrite=False)
 	bestInd = np.argmin(np.diagonal(dists, offset=n))
 
@@ -51,6 +52,8 @@ def shortestPaths(g, n):
 	return path
 
 def shortestPathsAlt(g, n):
+	# Returns the shortest path from j -> j+n over all j.
+	# Graph must be input as a NetworkX graph.
 	best = [1e100, None]
 	for j in range(n):
 		length = 1e100
@@ -73,8 +76,6 @@ def minimalCycleBasis(adj):
 	edges = np.transpose(np.array(np.where(adj > 0)))
 	edges = [(min(edges[i]), max(edges[i])) for i in range(len(edges))]
 
-#	print(n, m, k, N)
-
 	s = []
 	for i in range(N):
 		s.append(set([edges[i]]))
@@ -83,10 +84,8 @@ def minimalCycleBasis(adj):
 
 	cycles = []
 	for i in range(N):
-		gh = networkx.from_numpy_matrix(hortonGraph(adj, s[i]))
-
-#		path = shortestPaths(gh, n)
-		path = shortestPathsAlt(gh, n)
+		ghAdj = hortonGraph(adj, s[i])
+		path = shortestPaths(csr_matrix(ghAdj), n)
 
 		pathEdges = [(path[i-1] % n, path[i] % n) for i in range(len(path))]
 		pathEdges = [(min(e), max(e)) for e in pathEdges]
@@ -144,16 +143,6 @@ def pruneGraph(g):
 
 
 def util(adj):
-#	g = prune(np.copy(adj))
-#	g = g.to_directed()
-#	cycles = networkx.cycles.simple_cycles(g)
-#	u = 0
-#	for c in cycles:
-#		un = 0
-#		for i in range(len(c)):
-#			un += adj[c[i-1],c[i]]
-#		u += un**0.25
-
 	u = 0
 
 	g = prune(np.copy(adj))
