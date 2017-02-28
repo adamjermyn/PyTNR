@@ -418,12 +418,19 @@ def entropy(array, pref=None, tol=1e-3):
 			if norms[i] == -1:
 				norms[i] = np.linalg.norm(arr)
 
+			# Take advantage of rank bounds
+			mat = np.copy(arr)
+			if arr.shape[0] > arr.shape[1]:
+				mat = np.transpose(mat)
+			mat = np.dot(mat, np.transpose(mat))
+
 			# If the bond dimension is too large, full SVD is required.
 			if bondDimension > min(arr.shape) - 1:
-				lams = np.linalg.svd(arr, full_matrices=0, compute_uv=False)
+				lams = np.linalg.svd(mat, full_matrices=0, compute_uv=False)
 			else:
-				lams = bigSVDvals(arr, bondDimension)
+				lams = bigSVDvals(mat, bondDimension)
 
+			lams = np.sqrt(lams)
 			lams /= norms[i]					# Normalize
 			knownVals[i] = lams**2				# Turn into probabilities
 			p = knownVals[i]
