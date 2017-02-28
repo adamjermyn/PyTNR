@@ -1,3 +1,5 @@
+from TNRG.TreeTensor.treeTensor import TreeTensor
+
 def entropyHeuristic(n):
 	'''
 	This method estimates the contraction in a network n which minimizes the resulting network entropy.
@@ -126,7 +128,7 @@ def oneLoopHeuristic(n, node):
 			biggest[2] = nnn
 	return biggest
 
-def mergeContractor(n, accuracy, optimize=True, merge=True, verbose=0):
+def mergeContractor(n, accuracy, optimize=True, merge=True, mergeCut = 35, verbose=0):
 	'''
 	This method contracts the network n.
 
@@ -153,17 +155,23 @@ def mergeContractor(n, accuracy, optimize=True, merge=True, verbose=0):
 
 		if merge:
 			print('MERGE')
-			n.mergeLinks(n3, accuracy=accuracy, compress=True)
-			print('MERGEDONE')
-		if optimize:
-			n3.tensor.optimize(verbose=verbose)
+			if hasattr(n3.tensor, 'compressedSize') and len(n3.tensor.network.nodes) > mergeCut:
+				while len(n3.tensor.network.nodes) > mergeCut:
+					merged = n.mergeClosestLinks(n3, compress=True, accuracy=accuracy)
+					n3.tensor.eliminateLoops()
+					merged.tensor.eliminateLoops()
+					if optimize:
+						n3.tensor.optimize(verbose=verbose)
+						merged.tensor.optimize(verbose=verbose)
 
-#		node = n3
+			print('MERGEDONE')
+
 
 		if verbose >= 2:
 			for nn in n.nodes:
 				if hasattr(nn.tensor,'compressedSize'):
-					print(nn.tensor.shape, nn.tensor.compressedSize, 1.0*nn.tensor.compressedSize/nn.tensor.size,len(nn.tensor.network.nodes),[qq.tensor.shape for qq in nn.tensor.network.nodes])
+					print(nn.id, nn.tensor.shape, nn.tensor.compressedSize, 1.0*nn.tensor.compressedSize/nn.tensor.size,len(nn.tensor.network.nodes),[qq.tensor.shape for qq in nn.tensor.network.nodes])
+#					print(nn.tensor.network)
 				else:
 					print(nn.tensor.shape, nn.tensor.size)
 
@@ -173,6 +181,9 @@ def mergeContractor(n, accuracy, optimize=True, merge=True, verbose=0):
 				if hasattr(nn.tensor, 'network'):
 					counter += 1
 			print('-------',len(n3.connectedNodes),q,counter,len(n.nodes),'-------')
-	no = next(iter(n.nodes))
-#	no.tensor.eliminateLoops()
 	return n
+
+
+
+
+
