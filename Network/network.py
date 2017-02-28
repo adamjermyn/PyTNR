@@ -156,6 +156,7 @@ class Network:
 		return n
 
 	def mergeLinks(self, n, compress=False, accuracy=1e-4):
+		merged = []
 		for n1 in n.connectedNodes:
 			links = n1.linksConnecting(n)
 			buckets1 = []
@@ -173,6 +174,45 @@ class Network:
 				l = Link(b, b1)
 				if compress:
 					compressLink(l, accuracy)
+				merged.append(n1)
+		return merged
+
+	def mergeClosestLinks(self, n1, compress=False, accuracy=1e-4):
+		best = [1e100, None, None, None, None]
+
+		for n2 in n1.connectedNodes:
+			if hasattr(n2.tensor, 'compressedSize'):
+				links = n1.linksConnecting(n2)
+				buckets1 = []
+				buckets2 = []
+				if len(links) > 1:
+					for l in links:
+						if l.bucket1.node is n1:
+							buckets1.append(l.bucket1)
+							buckets2.append(l.bucket2)
+						else:
+							buckets1.append(l.bucket2)
+							buckets2.append(l.bucket1)
+					for b11 in buckets1:
+						for b12 in buckets1:
+							if b11 != b12:
+								dist = n1.tensor.distBetweenBuckets(b11, b12)
+								dist += n2.tensor.distBetweenBuckets(b11.otherBucket, b12.otherBucket)
+								if dist < best[0]:
+									best = [dist, n2, b11, b12, b11.otherBucket, b12.otherBucket]
+
+		if dist < 1e100:
+			dist, n2, b11, b12, b21, b22 = best
+
+			b = n1.mergeBuckets([b11, b12])
+			b1 = n2.mergeBuckets([b21, b22])
+			l = Link(b, b1)
+			if compress:
+				compressLink(l, accuracy)
+
+			return n2
+
+		return None
 
 	def internalConnected(self, node):
 		return self.nodes.intersection(set(node.connectedNodes))

@@ -77,6 +77,11 @@ class TreeTensor(Tensor):
 		n2 = self.externalBuckets[ind2].node
 		return len(self.network.pathBetween(n1, n2))
 
+	def distBetweenBuckets(self, b1, b2):
+		n1 = b1.node
+		n2 = b2.node
+		return len(self.network.pathBetween(n1, n2))
+
 	def contract(self, ind, other, otherInd, front=True):
 		# This method could be vastly simplified by defining a cycle basis class
 
@@ -138,13 +143,12 @@ class TreeTensor(Tensor):
 		for n in t1.network.nodes:
 			assert n.tensor.rank <= 3
 
+		assert t1.rank == self.rank + other.rank - 2*len(ind)
+
 		return t1
 
 	def eliminateLoops(self):
 		tm = traceMin(self.network)
-
-		prevDone = set()
-		elim = None
 
 		while len(networkx.cycles.cycle_basis(self.network.toGraph())) > 0:
 			print('LOGGING:::::::::::::::',tm.util, len(networkx.cycles.cycle_basis(self.network.toGraph())))
@@ -155,6 +159,14 @@ class TreeTensor(Tensor):
 				best = tm.bestSwap()
 				print(best[0])
 				tm.swap(best[1],best[2],best[3])
+
+		assert len(networkx.cycles.cycle_basis(self.network.toGraph())) == 0
+#		if self.rank > 2:
+#			expRank = sum([n.tensor.rank for n in self.network.nodes]) - 2*len(self.network.nodes) + 2
+#			print(expRank)
+#			print(self.rank)
+#			print(self.network)
+#			assert self.rank == expRank
 
 	def trace(self, ind0, ind1):
 		'''
@@ -271,6 +283,20 @@ class TreeTensor(Tensor):
 				done.add(n)
 
 		if verbose >= 1:
+			print('Contracting Double Links.')
+		done = set()
+		while len(done.intersection(self.network.nodes)) < len(self.network.nodes):
+			n = next(iter(self.network.nodes.difference(done)))
+			nodes = self.network.internalConnected(n)
+			merged = False
+			for n2 in nodes:
+				if len(n.findLinks(n2)) > 1:
+					self.network.mergeNodes(n, n2)
+					merged = True
+			if not merged:
+				done.add(n)
+
+		if verbose >= 1:
 			print('Optimizing links.')
 
 		while len(self.optimized.intersection(self.network.internalBuckets)) < len(self.network.internalBuckets):
@@ -294,11 +320,14 @@ class TreeTensor(Tensor):
 			else:
 				ss = None
 
+			print('Entropy...')
 			best = entropy(arr, pref=ss)
+			print('Done.')
 
 			if set(best) != ss and set(best) != set(range(n1.tensor.rank+n2.tensor.rank-2)).difference(ss):
 				n = self.network.mergeNodes(n1, n2)
 				nodes = self.network.splitNode(n, ignore=best)
+				print(len(nodes), n.tensor.rank)
 				assert len(nodes) == 2
 				for b in nodes[0].buckets:
 					self.optimized.discard(b)
