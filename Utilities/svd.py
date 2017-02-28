@@ -43,7 +43,15 @@ def bigSVD(matrix, bondDimension):
 	with the singular values sorted in descending order (which the iterative
 	solver does not on its own guarantee).
 	'''
-	u, s, v = svds(matrix, k=bondDimension)
+	print('MAG:',np.max(np.abs(matrix)),matrix.shape)
+	try:
+		u, s, v = svds(matrix, k=bondDimension)
+	except:
+		print('Convergence error with sparse SVD. Trying full SVD.')
+		print(matrix)
+		np.savetxt('err.txt', matrix)
+		u, s, v = np.linalg.svd(matrix, full_matrices=0, compute_uv=1)
+
 	inds = np.argsort(s)
 	inds = inds[::-1]
 	u = u[:, inds]
@@ -59,7 +67,15 @@ def bigSVDvals(matrix, bondDimension):
 	with the singular values sorted in descending order (which the iterative
 	solver does not on its own guarantee).
 	'''
-	s = svds(matrix, k=bondDimension, return_singular_vectors=False)
+	print('MAG:',np.max(np.abs(matrix)),matrix.shape)
+	try:
+		s = svds(matrix, k=bondDimension, return_singular_vectors=False)
+	except:
+		print('Convergence error with sparse SVD. Trying full SVD.')
+		print(matrix)
+		np.savetxt('err.txt', matrix)
+		s = np.linalg.svd(matrix, full_matrices=0, compute_uv=0)
+
 	inds = np.argsort(s)
 	inds = inds[::-1]
 	s = s[inds]
