@@ -247,8 +247,6 @@ class traceMin:
 
 		gNew = pruneGraph(self.g)
 
-		print(len(gNew.edges()))
-
 		best = [1, None, None, None]
 		for e in gNew.edges():
 			n1 = e[0]
@@ -264,19 +262,6 @@ class traceMin:
 					if benefit < best[0]:
 						best = [benefit, l, b1, b2]
 
-
-#		print(self.network)
-#		best = [1, None, None, None]
-#		for n1 in self.network.nodes:
-#			for n2 in n1.connectedNodes:
-#				edge = n1.findLink(n2)
-#				for b1 in n1.buckets:
-#					if not b1.linked or b1.otherNode != n2:
-#						for b2 in n2.buckets:
-#							if not b2.linked or b2.otherNode != n1:
-#								benefit = self.swapBenefit(edge, b1, b2)
-#								if benefit < best[0]:
-#									best = [benefit, edge, b1, b2]
 		print('Done.')
 		return best
 
