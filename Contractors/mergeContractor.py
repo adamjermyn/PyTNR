@@ -153,6 +153,9 @@ def mergeContractor(n, accuracy, optimize=True, merge=True, mergeCut = 35, verbo
 
 		n3.tensor.eliminateLoops()
 
+		if optimize:
+			n3.tensor.optimize(verbose=verbose)
+
 		if merge:
 			print('MERGE')
 			if hasattr(n3.tensor, 'compressedSize') and len(n3.tensor.network.nodes) > mergeCut:

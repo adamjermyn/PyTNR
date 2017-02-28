@@ -229,7 +229,7 @@ class traceMin:
 		adjNew = self.pretendSwap(edge, b1, b2)
 		utilNew = util(adjNew)
 
-		return (utilNew - self.util)/(np.log(b1.node.tensor.size*b2.node.tensor.size))**2
+		return (utilNew - self.util)/np.exp(np.log(b1.node.tensor.size*b2.node.tensor.size))
 
 	def bestSwap(self):
 		print('Evaluating...')
