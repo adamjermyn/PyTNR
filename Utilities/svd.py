@@ -379,6 +379,7 @@ def entropy(array, pref=None, tol=1e-3):
 	# We filter out options which are complements of one another, and
 	# hence give the same answer. We do not filter out pref in this process.
 
+	print('Filtering complements.')
 	indexLists = [set(q) for q in indexLists]
 
 	complements = [set(range(len(array.shape))).difference(l) for l in indexLists]
@@ -392,6 +393,8 @@ def entropy(array, pref=None, tol=1e-3):
 			if s in complements:
 				complements.remove(s)
 	indexLists = [tuple(l) for l in indexSets]
+
+	print('Examining options.')
 
 	# Lists for storing intermediate results.
 	mins = [1e10 for _ in indexLists]			# Lower bound on entropy
@@ -459,6 +462,7 @@ def entropy(array, pref=None, tol=1e-3):
 												# Otherwise we remove this so long as the preferred option is still live
 												# and this is not it.
 					liveIndices.remove(i)
+			print(mins, maxs)
 	return list(indexLists[liveIndices[0]])
 
 def splitArray(array, indices, accuracy=1e-4):
