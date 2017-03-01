@@ -178,9 +178,44 @@ class traceMin:
 
 	def refresh(self):
 		self.g = self.network.toGraph()
-		print('LEN:::',len(self.g.nodes()))
+#		print('LEN:::',len(self.g.nodes()))
 		self.adj = networkx.adjacency_matrix(self.g, weight='weight').todense()
 		self.util = util(self.adj)
+
+	def pretendSwapGraph(self, g, edge, b1, b2):
+		'''
+		This method produces the graph which would result from the proposed swap.
+		Note that it assumes that the link weights remain unchanged, the links just move.
+		'''
+		n1 = b1.node
+		n2 = b2.node
+
+		bConn1 = n1.findLink(n2).bucket1
+		bConn2 = n1.findLink(n2).bucket2
+
+		if bConn1 not in n1.buckets:
+			bConn1, bConn2 = bConn2, bConn1
+
+		ind1 = self.g.nodes().index(n1)
+		ind2 = self.g.nodes().index(n2)
+
+		b3 = [b for b in n1.buckets if b != b1 and b != bConn1][0]
+
+		# Nothing happnes to links with b1 because it stays put
+
+		if b2.linked:
+			n = b2.otherNode
+			if n in g:
+				g.add_edge(n1, n, weight=g.edge[n1][n2]['weight'])
+				g.remove_edge(n, n2)
+
+		if b3.linked:
+			n = b3.otherNode
+			if n in g:
+				g.add_edge(n2, n, weight=g.edge[n1][n2]['weight'])
+				g.remove_edge(n, n1)
+
+		return g
 
 	def pretendSwap(self, edge, b1, b2):
 		'''
@@ -203,7 +238,7 @@ class traceMin:
 
 		b3 = [b for b in n1.buckets if b != b1 and b != bConn1][0]
 
-		# Nothing happens to links with b1 because stays put
+		# Nothing happens to links with b1 because it stays put
 
 		if b2.linked:
 			ind = self.g.nodes().index(b2.otherNode)
@@ -221,20 +256,37 @@ class traceMin:
 
 		return adjNew
 
-	def swapBenefit(self, edge, b1, b2):
+	def swapBenefit(self, g, basis, edge, b1, b2):
 		'''
 		This method identifies how beneficial a given swap is.
 		'''
 
-		adjNew = self.pretendSwap(edge, b1, b2)
-		utilNew = util(adjNew)
+		# First we compute the subgraph corresponding to all cycles
+		# which include either of the nodes of interest.
+		n1 = b1.node
+		n2 = b2.node
 
-		return (utilNew - self.util)/np.exp(np.log(b1.node.tensor.size*b2.node.tensor.size))
+		nodes = set()
+		for c in basis:
+			if n1 in c or n2 in c:
+				nodes.update(c)
+
+		subG = g.subgraph(nodes)
+
+		adjCurrent = networkx.adjacency_matrix(subG, weight='weight').todense()
+		u = util(adjCurrent)
+		subG = self.pretendSwapGraph(subG, edge, b1, b2)
+		adjNew = networkx.adjacency_matrix(subG, weight='weight').todense()
+		uNew = util(adjNew)
+
+		return uNew - u
 
 	def bestSwap(self):
 		print('Evaluating...')
 
 		gNew = pruneGraph(self.g)
+
+		basis = networkx.cycle_basis(gNew)
 
 		best = [1, None, None, None]
 		for e in gNew.edges():
@@ -247,11 +299,11 @@ class traceMin:
 			b1 = buckets.pop()
 			for b2 in n2.buckets:
 				if not b2.linked or b2.otherNode != n1:
-					benefit = self.swapBenefit(l, b1, b2)
+					benefit = self.swapBenefit(self.g, basis, l, b1, b2)
+					print(benefit)
 					if benefit < best[0]:
 						best = [benefit, l, b1, b2]
-
-		print('Done.')
+		print('Done.',best,gNew,'Hi',self.g)
 		return best
 
 	def mergeEdge(self, edge):
@@ -277,15 +329,20 @@ class traceMin:
 
 		while len(self.network.nodes.intersection(done)) < len(self.network.nodes):
 			n1 = next(iter(self.network.nodes.difference(done)))
+
+			merged = False
 			for n2 in n1.connectedNodes:
 				if len(n2.buckets) < 3 or len(n1.connectedNodes.intersection(n2.connectedNodes)) > 0 or len(n1.findLinks(n2)) > 1:
 					self.network.mergeNodes(n1, n2)
 					merged = True
-					break
-			else:
+
+			if not merged:
 				done.add(n1)
 
+
 		self.refresh()
+
+		assert sum(networkx.triangles(self.g).values()) == 0
 		return merged
 
 	def swap(self, edge, b1, b2):
