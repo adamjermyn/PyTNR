@@ -102,25 +102,6 @@ def minimalCycleBasis(adj):
 
 	return cycles
 
-
-def prune(adj):
-	'''
-	This method eliminates all branches from the graph which are not involved in a cycle.
-	This is done by constructing the cycle basis and using only those nodes.
-	'''
-	g = networkx.from_numpy_matrix(adj)
-	cycles = networkx.cycles.cycle_basis(g)
-
-	adjNew = np.zeros(adj.shape)
-
-	for c in cycles:
-		for i in range(len(c)):
-			adjNew[c[i-1], c[i]] = adj[c[i-1], c[i]]
-			adjNew[c[i], c[i-1]] = adj[c[i], c[i-1]]
-
-	return networkx.from_numpy_matrix(adjNew)
-
-
 def pruneGraph(g):
 	cycles = networkx.cycles.cycle_basis(g)
 
@@ -145,7 +126,7 @@ def pruneGraph(g):
 def util(adj):
 	u = 0
 
-	g = prune(np.copy(adj))
+	g = networkx.from_numpy_matrix(adj)
 
 	components = networkx.connected_components(g)
 	components = [g.subgraph(c) for c in components]
@@ -216,45 +197,6 @@ class traceMin:
 				g.remove_edge(n, n1)
 
 		return g
-
-	def pretendSwap(self, edge, b1, b2):
-		'''
-		This method produces the adjacency matrix which would result from the proposed swap.
-		Note that it assumes that the link weights remain unchanged, the links just move.
-		'''
-		adjNew = np.copy(self.adj)
-
-		n1 = b1.node
-		n2 = b2.node
-
-		bConn1 = n1.findLink(n2).bucket1
-		bConn2 = n1.findLink(n2).bucket2
-
-		if bConn1 not in n1.buckets:
-			bConn1, bConn2 = bConn2, bConn1
-
-		ind1 = self.g.nodes().index(n1)
-		ind2 = self.g.nodes().index(n2)
-
-		b3 = [b for b in n1.buckets if b != b1 and b != bConn1][0]
-
-		# Nothing happens to links with b1 because it stays put
-
-		if b2.linked:
-			ind = self.g.nodes().index(b2.otherNode)
-			adjNew[ind1, ind] = self.adj[ind2, ind]
-			adjNew[ind, ind1] = self.adj[ind, ind2]
-			adjNew[ind2, ind] = 0
-			adjNew[ind, ind2] = 0
-
-		if b3.linked:
-			ind = self.g.nodes().index(b3.otherNode)
-			adjNew[ind2, ind] = self.adj[ind1, ind]
-			adjNew[ind, ind2] = self.adj[ind, ind1]
-			adjNew[ind1, ind] = 0
-			adjNew[ind, ind1] = 0
-
-		return adjNew
 
 	def swapBenefit(self, g, basis, edge, b1, b2):
 		'''
