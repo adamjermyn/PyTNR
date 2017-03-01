@@ -67,8 +67,6 @@ def shortestPathsAlt(g, n):
 	return path
 
 def minimalCycleBasis(adj):
-	print(adj)
-
 	n = len(adj)
 	m = int(np.sum(adj > 0) / 2)
 	k = networkx.number_connected_components(networkx.from_numpy_matrix(adj))
@@ -105,11 +103,11 @@ def minimalCycleBasis(adj):
 	return cycles
 
 def prune(adj): 
-  ''' 
-  This method eliminates all branches from the graph which are not involved in a cycle. 
-  This is done by constructing the cycle basis and using only those nodes. 
-  ''' 
-	g = networkx.from_numpy_matrix(adj) 
+	''' 
+	This method eliminates all branches from the graph which are not involved in a cycle. 
+	This is done by constructing the cycle basis and using only those nodes. 
+	''' 
+	g = networkx.from_numpy_matrix(adj)
 	cycles = networkx.cycles.cycle_basis(g) 
 
 	adjNew = np.zeros(adj.shape) 
@@ -145,11 +143,9 @@ def pruneGraph(g):
 
 def util(adj):
 
-	adj = prune(np.copy(adj))
+	g = prune(np.copy(adj))
 
 	u = 0
-
-	g = networkx.from_numpy_matrix(adj)
 
 	components = networkx.connected_components(g)
 	components = [g.subgraph(c) for c in components]
@@ -265,7 +261,6 @@ class traceMin:
 			for b2 in n2.buckets:
 				if not b2.linked or b2.otherNode != n1:
 					benefit = self.swapBenefit(self.g, basis, l, b1, b2)
-					print(benefit)
 					if benefit < best[0]:
 						best = [benefit, l, b1, b2]
 		print('Done.',best,gNew,'Hi',self.g)
