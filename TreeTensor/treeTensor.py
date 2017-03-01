@@ -16,6 +16,8 @@ from TNRG.Network.bucket import Bucket
 from TNRG.Network.traceMin import traceMin
 from TNRG.Utilities.svd import entropy
 
+counter0 = 0
+
 class TreeTensor(Tensor):
 
 	def __init__(self, accuracy):
@@ -148,9 +150,24 @@ class TreeTensor(Tensor):
 		return t1
 
 	def eliminateLoops(self):
+		global counter0
+		import matplotlib.pyplot as plt
 		tm = traceMin(self.network)
 
+		counter = 0
+
 		while len(networkx.cycles.cycle_basis(self.network.toGraph())) > 0:
+			g = self.network.toGraph()
+			labels = networkx.get_edge_attributes(g, 'weight')
+			for l in labels.keys():
+				labels[l] = round(labels[l], 0)
+			pos=networkx.fruchterman_reingold_layout(g)
+			networkx.draw(g, pos)
+			networkx.draw_networkx_edge_labels(g, pos, edge_labels=labels)
+			plt.savefig(str(counter0) + '_' + str(counter) + '.png')
+			plt.clf()
+			counter += 1
+
 			print('LOGGING:::::::::::::::',tm.util, len(networkx.cycles.cycle_basis(self.network.toGraph())))
 
 			merged = tm.mergeSmall()
@@ -160,6 +177,9 @@ class TreeTensor(Tensor):
 				print(best[0])
 				tm.swap(best[1],best[2],best[3])
 
+			print(self.network)
+
+		counter0 += 1
 		assert len(networkx.cycles.cycle_basis(self.network.toGraph())) == 0
 #		if self.rank > 2:
 #			expRank = sum([n.tensor.rank for n in self.network.nodes]) - 2*len(self.network.nodes) + 2
