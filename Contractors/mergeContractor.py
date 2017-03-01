@@ -1,4 +1,23 @@
 from TNRG.TreeTensor.treeTensor import TreeTensor
+from TNRG.Network.traceMin import traceMin
+import numpy as np
+
+def utilHeuristic(n):
+	biggest = [-1e100, None, None]
+
+	for n1 in n.nodes:
+		for n2 in n1.connectedNodes:
+			if n1.tensor.rank <= 2 or n2.tensor.rank <= 2:
+				return [1e20, n1, n2]
+			length = len(n1.linksConnecting(n2))
+			t, b = n.dummyMergeNodes(n1, n2)
+			tm = traceMin(t.network)
+			util = length**2/(n1.tensor.rank*n2.tensor.rank)
+			util /= (1 + tm.util)
+			if util > biggest[0]:
+				biggest = [util, n1, n2]
+
+	return biggest
 
 def entropyHeuristic(n):
 	'''
@@ -10,7 +29,7 @@ def entropyHeuristic(n):
 			length = nn.linksConnecting(nnn)[0].bucket1.size
 			metric = nn.tensor.size*nnn.tensor.size/length**2
 			commonNodes = set(nn.connectedNodes).intersection(nnn.connectedNodes)
-			metric *= 0.3**len(commonNodes)
+			metric *= 0.7**len(commonNodes)
 			metric = metric - nn.tensor.size - nnn.tensor.size
 			if metric < smallest[0]:
 				smallest[0] = metric
@@ -145,9 +164,11 @@ def mergeContractor(n, accuracy, optimize=True, merge=True, mergeCut = 35, verbo
 #	node = next(iter(n.nodes))
 	while len(n.nodes) > 1:
 #		q, n1, n2 = smallLoopHeuristic(n)
-		q, n1, n2 = entropyHeuristic(n)
+#		q, n1, n2 = entropyHeuristic(n)
 #		q, n1, n2 = oneLoopHeuristic(n, node)
 #		q, n1, n2 = mergeHeuristic(n)
+
+		q, n1, n2 = utilHeuristic(n)
 
 		n3 = n.mergeNodes(n1, n2)
 
@@ -158,14 +179,19 @@ def mergeContractor(n, accuracy, optimize=True, merge=True, mergeCut = 35, verbo
 
 		if merge:
 			print('MERGE')
-			if hasattr(n3.tensor, 'compressedSize') and len(n3.tensor.network.nodes) > mergeCut:
-				while len(n3.tensor.network.nodes) > mergeCut:
+			nn = n3
+			if hasattr(nn.tensor, 'compressedSize') and len(nn.tensor.network.nodes) > mergeCut:
+				done = False
+				while len(nn.tensor.network.nodes) > mergeCut and not done:
 					merged = n.mergeClosestLinks(n3, compress=True, accuracy=accuracy)
-					n3.tensor.eliminateLoops()
-					merged.tensor.eliminateLoops()
-					if optimize:
-						n3.tensor.optimize(verbose=verbose)
-						merged.tensor.optimize(verbose=verbose)
+					if merged is not None:
+						nn.tensor.eliminateLoops()
+						merged.tensor.eliminateLoops()
+						if optimize:
+							nn.tensor.optimize(verbose=verbose)
+							merged.tensor.optimize(verbose=verbose)
+					else:
+						done = True
 
 			print('MERGEDONE')
 
