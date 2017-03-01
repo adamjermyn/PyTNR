@@ -462,7 +462,10 @@ def entropy(array, pref=None, tol=1e-3):
 												# Otherwise we remove this so long as the preferred option is still live
 												# and this is not it.
 					liveIndices.remove(i)
-			print(mins, maxs)
+				else:
+					# Means the preferred option is still live and is tied for best.
+					return list(indexLists[i])
+			print(mins, maxs, lowest, i, pref, indexLists)
 	return list(indexLists[liveIndices[0]])
 
 def splitArray(array, indices, accuracy=1e-4):
@@ -475,7 +478,7 @@ def splitArray(array, indices, accuracy=1e-4):
 
 	arr = permuteIndices(array, indices)
 	arr = np.reshape(arr, (np.product(sh1), np.product(sh2)))
-	u, lam, v, p, cp = generalSVD(arr)
+	u, lam, v, p, cp = generalSVD(arr, precision=accuracy)
 
 	ind = np.searchsorted(cp, accuracy, side='left')
 	ind = len(cp) - ind
