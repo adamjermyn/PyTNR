@@ -198,10 +198,11 @@ class Network:
 							if b11 != b12:
 								dist = n1.tensor.distBetweenBuckets(b11, b12)
 								dist += n2.tensor.distBetweenBuckets(b11.otherBucket, b12.otherBucket)
+								dist *= np.log(b11.size*b12.size)
 								if dist < best[0]:
 									best = [dist, n2, b11, b12, b11.otherBucket, b12.otherBucket]
 
-		if dist < 1e100:
+		if best[0] < 1e100:
 			dist, n2, b11, b12, b21, b22 = best
 
 			b = n1.mergeBuckets([b11, b12])
