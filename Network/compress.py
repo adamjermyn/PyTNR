@@ -26,10 +26,10 @@ def compressLink(l, accuracy):
 
 	if a1.shape[1] < a1.shape[0] and a2.shape[0] < a2.shape[1]:
 		arr = matrixProductLinearOperator(a1, a2)
-		u, lam, v, p, cp = generalSVD(arr, bondDimension=a1.shape[1])
+		u, lam, v, p, cp = generalSVD(arr, bondDimension=a1.shape[1], precision=accuracy)
 	else:
 		arr = np.dot(a1, a2)
-		u, lam, v, p, cp = generalSVD(arr)
+		u, lam, v, p, cp = generalSVD(arr, precision=accuracy)
 
 	ind = np.searchsorted(cp, accuracy, side='left')
 	ind = len(cp) - ind
