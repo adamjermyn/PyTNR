@@ -67,6 +67,8 @@ def shortestPathsAlt(g, n):
 	return path
 
 def minimalCycleBasis(adj):
+	print(adj)
+
 	n = len(adj)
 	m = int(np.sum(adj > 0) / 2)
 	k = networkx.number_connected_components(networkx.from_numpy_matrix(adj))
@@ -102,6 +104,24 @@ def minimalCycleBasis(adj):
 
 	return cycles
 
+def prune(adj): 
+  ''' 
+  This method eliminates all branches from the graph which are not involved in a cycle. 
+  This is done by constructing the cycle basis and using only those nodes. 
+  ''' 
+	g = networkx.from_numpy_matrix(adj) 
+	cycles = networkx.cycles.cycle_basis(g) 
+
+	adjNew = np.zeros(adj.shape) 
+ 
+	for c in cycles: 
+		for i in range(len(c)): 
+			adjNew[c[i-1], c[i]] = adj[c[i-1], c[i]] 
+			adjNew[c[i], c[i-1]] = adj[c[i], c[i-1]] 
+
+	return networkx.from_numpy_matrix(adjNew) 
+
+
 def pruneGraph(g):
 	cycles = networkx.cycles.cycle_basis(g)
 
@@ -124,6 +144,9 @@ def pruneGraph(g):
 
 
 def util(adj):
+
+	adj = prune(np.copy(adj))
+
 	u = 0
 
 	g = networkx.from_numpy_matrix(adj)
@@ -267,7 +290,7 @@ class traceMin:
 		and does them.
 		'''
 		done = set()
-		merged = False
+		mergedAny = False
 
 		while len(self.network.nodes.intersection(done)) < len(self.network.nodes):
 			n1 = next(iter(self.network.nodes.difference(done)))
@@ -277,6 +300,7 @@ class traceMin:
 				if len(n2.buckets) < 3 or len(n1.connectedNodes.intersection(n2.connectedNodes)) > 0 or len(n1.findLinks(n2)) > 1:
 					self.network.mergeNodes(n1, n2)
 					merged = True
+					mergedAny = True
 
 			if not merged:
 				done.add(n1)
@@ -285,7 +309,7 @@ class traceMin:
 		self.refresh()
 
 		assert sum(networkx.triangles(self.g).values()) == 0
-		return merged
+		return mergedAny
 
 	def swap(self, edge, b1, b2):
 		'''
