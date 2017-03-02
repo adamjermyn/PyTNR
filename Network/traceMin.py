@@ -172,6 +172,7 @@ class traceMin:
 		effect of changes to this network.
 		'''
 		self.network = network
+		self.diffVals = {}
 
 		# Construct graph and cycle basis
 		self.refresh()
@@ -181,6 +182,7 @@ class traceMin:
 #		print('LEN:::',len(self.g.nodes()))
 		self.adj = networkx.adjacency_matrix(self.g, weight='weight').todense()
 		self.util = util(self.adj)
+
 
 	def pretendSwapGraph(self, g, edge, b1, b2):
 		'''
@@ -232,6 +234,16 @@ class traceMin:
 			if n1 in c or n2 in c:
 				nodes.update(c)
 
+		print(len(nodes), len(g.nodes()), len(self.diffVals))
+
+		cacheSet = set(nodes)
+
+		cacheSet = frozenset(cacheSet)
+		if cacheSet in self.diffVals:
+			print('Cached.')
+			return self.diffVals[cacheSet]
+
+		print('Not cached. Recomputing on',len(nodes),'nodes.')
 		subG = g.subgraph(nodes)
 
 		adjCurrent = networkx.adjacency_matrix(subG, weight='weight').todense()
@@ -240,7 +252,11 @@ class traceMin:
 		adjNew = networkx.adjacency_matrix(subG, weight='weight').todense()
 		uNew = util(adjNew)
 
-		return uNew - u
+		diff = uNew - u
+
+		self.diffVals[cacheSet] = diff
+
+		return diff
 
 	def bestSwap(self):
 		print('Evaluating...')
@@ -287,12 +303,17 @@ class traceMin:
 		done = set()
 		mergedAny = False
 
+		for n in self.network.nodes:
+			for n2 in n.connectedNodes:
+				assert n2 in n.connectedNodes
+				assert n in n2.connectedNodes
+
 		while len(self.network.nodes.intersection(done)) < len(self.network.nodes):
 			n1 = next(iter(self.network.nodes.difference(done)))
-
+	
 			merged = False
 			for n2 in n1.connectedNodes:
-				if len(n2.buckets) < 3 or len(n1.connectedNodes.intersection(n2.connectedNodes)) > 0 or len(n1.findLinks(n2)) > 1:
+				if not merged and (len(n2.buckets) < 3 or len(n1.connectedNodes.intersection(n2.connectedNodes)) > 0 or len(n1.findLinks(n2)) > 1):
 					self.network.mergeNodes(n1, n2)
 					merged = True
 					mergedAny = True
