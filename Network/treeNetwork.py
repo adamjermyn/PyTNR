@@ -129,11 +129,18 @@ class TreeNetwork(Network):
 
 			u, v, indices1, indices2 = splitArray(array, p, accuracy=self.accuracy)
 
-			b1 = Bucket()
-			b2 = Bucket()
-			n1 = Node(ArrayTensor(u, logScalar=node.tensor.logScalar/2), Buckets=[node.buckets[i] for i in indices1] + [b1])
-			n2 = Node(ArrayTensor(v, logScalar=node.tensor.logScalar/2), Buckets=[b2] + [node.buckets[i] for i in indices2])
-			_ = Link(b1,b2) # This line has to happen before addNode to prevent b1 and b2 from becoming externalBuckets
+			if u.shape[-1] > 1:
+				b1 = Bucket()
+				b2 = Bucket()
+				n1 = Node(ArrayTensor(u, logScalar=node.tensor.logScalar/2), Buckets=[node.buckets[i] for i in indices1] + [b1])
+				n2 = Node(ArrayTensor(v, logScalar=node.tensor.logScalar/2), Buckets=[b2] + [node.buckets[i] for i in indices2])
+				_ = Link(b1,b2) # This line has to happen before addNode to prevent b1 and b2 from becoming externalBuckets
+			else:
+				# Cut link
+				u = u[...,0]
+				v = v[0]
+				n1 = Node(ArrayTensor(u, logScalar=node.tensor.logScalar/2), Buckets=[node.buckets[i] for i in indices1])
+				n2 = Node(ArrayTensor(v, logScalar=node.tensor.logScalar/2), Buckets=[node.buckets[i] for i in indices2])
 
 			self.addNode(n1)
 			self.addNode(n2)
@@ -241,5 +248,5 @@ class TreeNetwork(Network):
  
 		for n in self.nodes: 
 			assert n.tensor.rank <= 3 
-			
+
  
