@@ -43,7 +43,7 @@ def bigSVD(matrix, bondDimension):
 	with the singular values sorted in descending order (which the iterative
 	solver does not on its own guarantee).
 	'''
-	print('MAG:',np.max(np.abs(matrix)),matrix.shape)
+#	print('MAG:',np.max(np.abs(matrix)),matrix.shape)
 	try:
 		u, s, v = svds(matrix, k=bondDimension)
 	except:
@@ -67,7 +67,7 @@ def bigSVDvals(matrix, bondDimension):
 	with the singular values sorted in descending order (which the iterative
 	solver does not on its own guarantee).
 	'''
-	print('MAG:',np.max(np.abs(matrix)),matrix.shape)
+#	print('MAG:',np.max(np.abs(matrix)),matrix.shape)
 	try:
 		s = svds(matrix, k=bondDimension, return_singular_vectors=False)
 	except:
@@ -379,7 +379,7 @@ def entropy(array, pref=None, tol=1e-3):
 	# We filter out options which are complements of one another, and
 	# hence give the same answer. We do not filter out pref in this process.
 
-	print('Filtering complements.')
+#	print('Filtering complements.')
 	indexLists = [set(q) for q in indexLists]
 
 	complements = [set(range(len(array.shape))).difference(l) for l in indexLists]
@@ -394,7 +394,7 @@ def entropy(array, pref=None, tol=1e-3):
 				complements.remove(s)
 	indexLists = [tuple(l) for l in indexSets]
 
-	print('Examining options.')
+#	print('Examining options.')
 
 	# Lists for storing intermediate results.
 	mins = [1e10 for _ in indexLists]			# Lower bound on entropy
@@ -465,7 +465,7 @@ def entropy(array, pref=None, tol=1e-3):
 				else:
 					# Means the preferred option is still live and is tied for best.
 					return list(indexLists[i])
-			print(mins, maxs, lowest, i, pref, indexLists)
+#			print(mins, maxs, lowest, i, pref, indexLists)
 	return list(indexLists[liveIndices[0]])
 
 def splitArray(array, indices, accuracy=1e-4):
