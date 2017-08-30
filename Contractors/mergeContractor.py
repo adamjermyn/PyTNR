@@ -133,11 +133,13 @@ def loopHeuristic(n):
 				biggest[2] = nnn
 	return biggest
 
-def oneLoopHeuristic(n, node):
+def oneLoopHeuristic(n):
 	'''
 	This method estimates the contraction in a network which maximizes the size of the loop which
 	is eliminated in the process.
 	'''
+	node=  next(iter(n.nodes))
+
 	biggest = [100000, None, None]
 	for nnn in node.connectedNodes:
 		indices = node.indicesConnecting(nnn)
@@ -157,46 +159,45 @@ def oneLoopHeuristic(n, node):
 			biggest[2] = nnn
 	return biggest
 
-def mergeContractor(n, accuracy, optimize=True, merge=True, mergeCut = 35, verbose=0):
+def mergeContractor(n, accuracy, heuristic, optimize=True, merge=True, plot=False, mergeCut = 35, verbose=0):
 	'''
-	This method contracts the network n.
+	This method contracts the network n to the specified accuracy using the specified heuristic.
 
 	Optimization and link merging are optional, set by the corresponding named arguments.
 	When set to true (default) they are done at each stage, with optimization following merging.
 
-	An entropy heuristic is used to decide the contraction order.
+	The plot option, if True, plots the entire network at each step and saves the result to a PNG
+	file in the top-level Overview folder. This defaults to False.
 
 	The named argument verbose controls how much output to print:
 		0 - None
 		1 - Summary
 		2 - Node enumeration
 	'''
-#	node = next(iter(n.nodes))
-#	pos = None
-#	counter = 0
+
+	if plot:
+		pos = None
+		counter = 0
+
 	while len(n.nodes) > 1:
-#		q, n1, n2 = smallLoopHeuristic(n)
-#		q, n1, n2 = entropyHeuristic(n)
-#		q, n1, n2 = oneLoopHeuristic(n, node)
-#		q, n1, n2 = mergeHeuristic(n)
 
-#		g = n.toGraph()
-#		reusePos = {}
-#		if pos is not None:
-#			for nn in g.nodes():
-#				if nn in pos:
-#					reusePos[nn] = pos[nn]
-#			pos=networkx.fruchterman_reingold_layout(g, pos=reusePos, fixed=reusePos.keys())
-#		else:
-#			pos=networkx.fruchterman_reingold_layout(g)
-#		plt.figure(figsize=(11,11))
-#		networkx.draw(g, pos, width=2)
-#		plt.savefig('Overview/'+str(counter) + '.png')
-#		plt.clf()
-#		counter += 1
+		if plot:
+			g = n.toGraph()
+			reusePos = {}
+			if pos is not None:
+				for nn in g.nodes():
+					if nn in pos:
+						reusePos[nn] = pos[nn]
+				pos=networkx.fruchterman_reingold_layout(g, pos=reusePos, fixed=reusePos.keys())
+			else:
+				pos=networkx.fruchterman_reingold_layout(g)
+			plt.figure(figsize=(11,11))
+			networkx.draw(g, pos, width=2)
+			plt.savefig('Overview/'+str(counter) + '.png')
+			plt.clf()
+			counter += 1
 
-
-		q, n1, n2 = utilHeuristic(n)
+		q, n1, n2 = heuristic(n)
 
 		n3 = n.mergeNodes(n1, n2)
 
@@ -228,7 +229,6 @@ def mergeContractor(n, accuracy, optimize=True, merge=True, mergeCut = 35, verbo
 			for nn in n.nodes:
 				if hasattr(nn.tensor,'compressedSize'):
 					print(nn.id, nn.tensor.shape, nn.tensor.compressedSize, 1.0*nn.tensor.compressedSize/nn.tensor.size,len(nn.tensor.network.nodes),[qq.tensor.shape for qq in nn.tensor.network.nodes])
-#					print(nn.tensor.network)
 				else:
 					print(nn.tensor.shape, nn.tensor.size)
 
@@ -240,8 +240,6 @@ def mergeContractor(n, accuracy, optimize=True, merge=True, mergeCut = 35, verbo
 			print('-------',len(n3.connectedNodes),q,counter,len(n.nodes),'-------')
 
 
-#	no = next(iter(n.nodes))
-#	no.tensor.eliminateLoops()
 	return n
 
 
