@@ -156,29 +156,29 @@ class TreeTensor(Tensor):
 		global counter0
 		tm = traceMin(self.network, otherNodes)
 
-		counter = 0
-		pos = None
+#		counter = 0
+#		pos = None
 
 		while len(networkx.cycles.cycle_basis(self.network.toGraph())) > 0:
-			g = self.network.toGraph()
-			labels = networkx.get_edge_attributes(g, 'weight')
-			for l in labels.keys():
-				labels[l] = round(labels[l], 0)
-			reusePos = {}
-			if pos is not None:
-				for n in g.nodes():
-					if n in pos:
-						reusePos[n] = pos[n]
-				pos=networkx.fruchterman_reingold_layout(g, pos=reusePos, fixed=reusePos.keys())
-			else:
-				pos=networkx.fruchterman_reingold_layout(g)
-			plt.figure(figsize=(11,11))
-			weights = [g.edge[i][j]['weight']**2/5 for (i,j) in g.edges_iter()]
-			networkx.draw(g, pos, width=weights, edge_color=[cm.jet(w/max(weights)) for w in weights])
+#			g = self.network.toGraph()
+#			labels = networkx.get_edge_attributes(g, 'weight')
+#			for l in labels.keys():
+#				labels[l] = round(labels[l], 0)
+#			reusePos = {}
+#			if pos is not None:
+#				for n in g.nodes():
+#					if n in pos:
+#						reusePos[n] = pos[n]
+#				pos=networkx.fruchterman_reingold_layout(g, pos=reusePos, fixed=reusePos.keys())
+#			else:
+#				pos=networkx.fruchterman_reingold_layout(g)
+#			plt.figure(figsize=(11,11))
+#			weights = [g.edge[i][j]['weight']**2/5 for (i,j) in g.edges_iter()]
+#			networkx.draw(g, pos, width=weights, edge_color=[cm.jet(w/max(weights)) for w in weights])
 #			networkx.draw_networkx_edge_labels(g, pos, edge_labels=labels)
-			plt.savefig('PNG/'+str(counter0) + '_' + str(counter) + '.png')
-			plt.clf()
-			counter += 1
+#			plt.savefig('PNG/'+str(counter0) + '_' + str(counter) + '.png')
+#			plt.clf()
+#			counter += 1
 
 			print('LOGGING:::::::::::::::',tm.util, len(networkx.cycles.cycle_basis(self.network.toGraph())))
 
@@ -189,26 +189,26 @@ class TreeTensor(Tensor):
 				print(best[0])
 				tm.swap(best[1],best[2],best[3])
 
-			if False:
-				if len(networkx.cycles.cycle_basis(self.network.toGraph())) == 0 and len(self.network.toGraph().nodes()) > 0:
-					g = self.network.toGraph()
-					labels = networkx.get_edge_attributes(g, 'weight')
-					for l in labels.keys():
-						labels[l] = round(labels[l], 0)
-					reusePos = {}
-					if pos is not None:
-						for n in g.nodes():
-							if n in pos:
-								reusePos[n] = pos[n]
-						pos=networkx.fruchterman_reingold_layout(g, pos=reusePos, fixed=reusePos.keys())
-					else:
-						pos=networkx.fruchterman_reingold_layout(g)
-					plt.figure(figsize=(11,11))
-					weights = [g.edge[i][j]['weight']**2/5 for (i,j) in g.edges_iter()]
-					networkx.draw(g, pos, width=weights, edge_color=[cm.jet(w/max(weights)) for w in weights])
-		#			networkx.draw_networkx_edge_labels(g, pos, edge_labels=labels)
-					plt.savefig('PNG/'+str(counter0) + '_' + str(counter) + '.png')
-					plt.clf()
+#			if False:
+#				if len(networkx.cycles.cycle_basis(self.network.toGraph())) == 0 and len(self.network.toGraph().nodes()) > 0:
+#					g = self.network.toGraph()
+#					labels = networkx.get_edge_attributes(g, 'weight')
+#					for l in labels.keys():
+#						labels[l] = round(labels[l], 0)
+#					reusePos = {}
+#					if pos is not None:
+#						for n in g.nodes():
+#							if n in pos:
+#								reusePos[n] = pos[n]
+#						pos=networkx.fruchterman_reingold_layout(g, pos=reusePos, fixed=reusePos.keys())
+#					else:
+#						pos=networkx.fruchterman_reingold_layout(g)
+#					plt.figure(figsize=(11,11))
+#					weights = [g.edge[i][j]['weight']**2/5 for (i,j) in g.edges_iter()]
+#					networkx.draw(g, pos, width=weights, edge_color=[cm.jet(w/max(weights)) for w in weights])
+#					networkx.draw_networkx_edge_labels(g, pos, edge_labels=labels)
+#					plt.savefig('PNG/'+str(counter0) + '_' + str(counter) + '.png')
+#					plt.clf()
 
 			print(self.network)
 
