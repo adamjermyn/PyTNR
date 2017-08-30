@@ -1,6 +1,9 @@
 from TNRG.TreeTensor.treeTensor import TreeTensor
 from TNRG.Network.traceMin import traceMin
 import numpy as np
+import networkx
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 
 def utilHeuristic(n):
 	biggest = [-1e100, None, None]
@@ -9,11 +12,18 @@ def utilHeuristic(n):
 		for n2 in n1.connectedNodes:
 			if n1.tensor.rank <= 2 or n2.tensor.rank <= 2:
 				return [1e20, n1, n2]
+
+	for n1 in n.nodes:
+		for n2 in n1.connectedNodes:
 			length = len(n1.linksConnecting(n2))
+			connected = n1.connectedNodes
+			connected.update(n2.connectedNodes)
+			connected.remove(n1)
+			connected.remove(n2)
 			t, b = n.dummyMergeNodes(n1, n2)
-			tm = traceMin(t.network)
-			util = length**2/(n1.tensor.rank*n2.tensor.rank)
-			util /= (1 + tm.util)
+			tm = traceMin(t.network,None)
+			util = (length**2)/(n1.tensor.size*n2.tensor.size)
+			util /= (1 + tm.util)**0.5
 			if util > biggest[0]:
 				biggest = [util, n1, n2]
 
@@ -162,17 +172,35 @@ def mergeContractor(n, accuracy, optimize=True, merge=True, mergeCut = 35, verbo
 		2 - Node enumeration
 	'''
 #	node = next(iter(n.nodes))
+#	pos = None
+#	counter = 0
 	while len(n.nodes) > 1:
 #		q, n1, n2 = smallLoopHeuristic(n)
 #		q, n1, n2 = entropyHeuristic(n)
 #		q, n1, n2 = oneLoopHeuristic(n, node)
 #		q, n1, n2 = mergeHeuristic(n)
 
+#		g = n.toGraph()
+#		reusePos = {}
+#		if pos is not None:
+#			for nn in g.nodes():
+#				if nn in pos:
+#					reusePos[nn] = pos[nn]
+#			pos=networkx.fruchterman_reingold_layout(g, pos=reusePos, fixed=reusePos.keys())
+#		else:
+#			pos=networkx.fruchterman_reingold_layout(g)
+#		plt.figure(figsize=(11,11))
+#		networkx.draw(g, pos, width=2)
+#		plt.savefig('Overview/'+str(counter) + '.png')
+#		plt.clf()
+#		counter += 1
+
+
 		q, n1, n2 = utilHeuristic(n)
 
 		n3 = n.mergeNodes(n1, n2)
 
-		n3.tensor.eliminateLoops()
+		n3.eliminateLoops()
 
 		if optimize:
 			n3.tensor.optimize(verbose=verbose)
@@ -185,8 +213,8 @@ def mergeContractor(n, accuracy, optimize=True, merge=True, mergeCut = 35, verbo
 				while len(nn.tensor.network.nodes) > mergeCut and not done:
 					merged = n.mergeClosestLinks(n3, compress=True, accuracy=accuracy)
 					if merged is not None:
-						nn.tensor.eliminateLoops()
-						merged.tensor.eliminateLoops()
+						nn.eliminateLoops()
+						merged.eliminateLoops()
 						if optimize:
 							nn.tensor.optimize(verbose=verbose)
 							merged.tensor.optimize(verbose=verbose)
@@ -210,6 +238,10 @@ def mergeContractor(n, accuracy, optimize=True, merge=True, mergeCut = 35, verbo
 				if hasattr(nn.tensor, 'network'):
 					counter += 1
 			print('-------',len(n3.connectedNodes),q,counter,len(n.nodes),'-------')
+
+
+#	no = next(iter(n.nodes))
+#	no.tensor.eliminateLoops()
 	return n
 
 
