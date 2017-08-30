@@ -3,17 +3,17 @@ import numpy as np
 from TNRG.Models.isingModel import IsingModel3D
 from TNRG.Contractors.mergeContractor import mergeContractor
 
-nX = 4
-nY = 4
-nZ = 4
+nX = 6
+nY = 6
+nZ = 6
 
-accuracy = 1e-5
+accuracy = 1e-3
 
 h = 0.1
-J = 0.5
+J = 3.0
 
 n = IsingModel3D(nX, nY, nZ, h, J, accuracy)
-n = mergeContractor(n, accuracy, optimize=False, merge=False, verbose=2)
+n = mergeContractor(n, accuracy, optimize=True, merge=True, verbose=2, mergeCut=10)
 
 print(len(n.nodes))
 for nn in n.nodes:
