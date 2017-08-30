@@ -165,20 +165,48 @@ def util(adj):
 	return u
 
 class traceMin:
-	def __init__(self, network):
+	def __init__(self, network, otherNodes):
 		'''
 		A traceMin is an object which maintains the adjacency matrix for a network and
 		provides helper methods for evaluating functions of this method and evaluating the
 		effect of changes to this network.
+
+		otherNodes is a list of other nodes containing tree tensors whose graphs should be
+		accomodated in evaluating loops.
 		'''
+		otherNodes = None #TODODODODODODODODODODO
+		if otherNodes is None:
+			otherNodes = []
+
 		self.network = network
+		self.otherNodes = otherNodes
 		self.diffVals = {}
 
 		# Construct graph and cycle basis
 		self.refresh()
 
 	def refresh(self):
-		self.g = self.network.toGraph()
+		graphs = []
+		graphs.append(self.network.toGraph())
+		for n in self.otherNodes:
+			if hasattr(n.tensor,'compressedSize'):
+				graphs.append(n.tensor.network.toGraph())
+
+		assert len(graphs) > 0
+
+		u = networkx.Graph(networkx.union_all(graphs))
+
+		for n in self.otherNodes:
+			if hasattr(n.tensor,'compressedSize'):
+				for b in n.tensor.network.externalBuckets:
+					if b.linked:
+						u.add_edge(b.node, b.otherNode, weight=np.log(b.node.tensor.size*b.otherNode.tensor.size))
+
+		self.selfGraph = self.network.toGraph()
+		self.g = u
+
+
+#		self.g = self.network.toGraph()
 #		print('LEN:::',len(self.g.nodes()))
 		self.adj = networkx.adjacency_matrix(self.g, weight='weight').todense()
 		self.util = util(self.adj)
@@ -253,6 +281,7 @@ class traceMin:
 		uNew = util(adjNew)
 
 		diff = uNew - u
+#		diff *= (n1.tensor.size*n2.tensor.size)
 
 		self.diffVals[cacheSet] = diff
 
@@ -265,21 +294,23 @@ class traceMin:
 
 		basis = networkx.cycle_basis(gNew)
 
-		best = [1, None, None, None]
+		best = [1e100, None, None, None]
+
 		for e in gNew.edges():
-			n1 = e[0]
-			n2 = e[1]
-			l = n1.findLink(n2)
-			buckets = set(n1.buckets)
-			buckets.discard(l.bucket1)
-			buckets.discard(l.bucket2)
-			b1 = buckets.pop()
-			for b2 in n2.buckets:
-				if not b2.linked or b2.otherNode != n1:
-					benefit = self.swapBenefit(self.g, basis, l, b1, b2)
-					if benefit < best[0]:
-						best = [benefit, l, b1, b2]
-		print('Done.',best,gNew,'Hi',self.g)
+			if e in self.selfGraph.edges() or (e[1], e[0]) in self.selfGraph.edges():
+				n1 = e[0]
+				n2 = e[1]
+				l = n1.findLink(n2)
+				buckets = set(n1.buckets)
+				buckets.discard(l.bucket1)
+				buckets.discard(l.bucket2)
+				b1 = buckets.pop()
+				for b2 in n2.buckets:
+					if not b2.linked or b2.otherNode != n1:
+						benefit = self.swapBenefit(self.g, basis, l, b1, b2)
+						if benefit < best[0]:
+							best = [benefit, l, b1, b2]
+		print('Done.',best,gNew, self.g)
 		return best
 
 	def mergeEdge(self, edge):
@@ -324,7 +355,6 @@ class traceMin:
 
 		self.refresh()
 
-		assert sum(networkx.triangles(self.g).values()) == 0
 		return mergedAny
 
 	def swap(self, edge, b1, b2):
