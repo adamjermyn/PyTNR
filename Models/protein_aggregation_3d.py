@@ -1,10 +1,12 @@
 import numpy as np
-from scipy.integrate import quad  
+from scipy.integrate import quad 
+from copy import deepcopy
 
 from TNRG.Network.link import Link
 from TNRG.Network.node import Node
 from TNRG.Network.network import Network
 from TNRG.TreeTensor.identityTensor import IdentityTensor
+from TNRG.TreeTensor.treeTensor import TreeTensor
 from TNRG.Tensor.arrayTensor import ArrayTensor
 
 def PA3D(nX, nY, nZ, h, J, q, accuracy): 
@@ -77,6 +79,7 @@ def PA3D(nX, nY, nZ, h, J, q, accuracy):
 	arr[1,:,:,1,:,1,1] = np.exp(q)
 	arr[1,:,:,:,1,1,1] = np.exp(q)
 
+
 	# 5-point
 	for j in range(2):
 		for k in range(2):
@@ -87,11 +90,15 @@ def PA3D(nX, nY, nZ, h, J, q, accuracy):
 							if j + k + l + m + n + p >= 4:
 									arr[1,j,k,l,m,n,p] = 0
 
+	t = ArrayTensor(arr)
+	tt = TreeTensor(accuracy)
+	tt.addTensor(t)
+
 	# Make L-bonds
 	for i in range(nX):
 		for j in range(nY):
 			for k in range(nZ):
-				bondL[i][j].append(Node(ArrayTensor(arr)))
+				bondL[i][j].append(Node(deepcopy(tt)))
  
 	# Attach links
 	for i in range(nX): 
