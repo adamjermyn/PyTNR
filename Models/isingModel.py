@@ -49,6 +49,52 @@ def IsingModel1D(nX, h, J, accuracy):
  
 	return network
 
+
+def IsingModel1Ddisordered(nX, h0, J0, accuracy): 
+	network = Network()
+ 
+	# Place to store the tensors 
+	lattice = [] 
+	onSite = []
+	bond = []
+ 
+	# Each lattice site has seven indices of width five, and returns zero if they are unequal and one otherwise. 
+	for i in range(nX): 
+		lattice.append(Node(IdentityTensor(2, 3, accuracy=accuracy)))
+
+	# Each on-site term has one index of width two, and returns exp(-h) or exp(h) for 0 or 1 respectively. 
+	for i in range(nX): 
+		h = h0*np.random.randn()
+		arr = np.zeros((2)) 
+		arr[0] = np.exp(-h) 
+		arr[1] = np.exp(h)
+		onSite.append(Node(ArrayTensor(arr)))
+ 
+	# Each bond term has two indices of width two and returns exp(-J*(1+delta(index0,index1))/2). 
+	for i in range(nX): 
+		J = J0*np.random.randn()
+		arr = np.zeros((2,2)) 
+		arr[0][0] = np.exp(-J) 
+		arr[1][1] = np.exp(-J) 
+		arr[0][1] = np.exp(J) 
+		arr[1][0] = np.exp(J) 
+		bond.append(Node(ArrayTensor(arr)))
+ 
+	# Attach links
+	for i in range(nX): 
+		Link(lattice[i].buckets[0], onSite[i].buckets[0])
+		Link(lattice[i].buckets[1], bond[i].buckets[0])
+		Link(lattice[i].buckets[2], bond[(i+1)%nX].buckets[1])
+
+	# Add to Network
+	for i in range(nX):
+		network.addNode(lattice[i])
+		network.addNode(onSite[i])
+		network.addNode(bond[i])
+ 
+	return network
+
+
 def exactIsing1Dh(h):
 	return np.log(2*np.cosh(h))
 
