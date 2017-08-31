@@ -45,6 +45,8 @@ def bigSVD(matrix, bondDimension):
 	'''
 #	print('MAG:',np.max(np.abs(matrix)),matrix.shape)
 	try:
+		if bondDimension > 0.1*min(matrix.shape):
+			raise ValueError # The dense SVD is more robust when the bond dimension is large.
 		u, s, v = svds(matrix, k=bondDimension)
 	except:
 		print('Convergence error with sparse SVD. Trying full SVD.')
@@ -69,6 +71,8 @@ def bigSVDvals(matrix, bondDimension):
 	'''
 #	print('MAG:',np.max(np.abs(matrix)),matrix.shape)
 	try:
+		if bondDimension > 0.1*min(matrix.shape):
+			raise ValueError # The dense SVD is more robust when the bond dimension is large.
 		s = svds(matrix, k=bondDimension, return_singular_vectors=False)
 	except:
 		print('Convergence error with sparse SVD. Trying full SVD.')
