@@ -27,39 +27,53 @@ class Network:
 	@property
 	def array(self):
 		'''
-		Contracts the tree down to an array object.
+		Contracts the network down to an array object.
 		Indices are ordered by ascending bucket ID.
 		'''
 		net = deepcopy(self)
-		while len(net.nodes) > 1:
+
+		isolated = set()
+		
+		ret = []
+		while len(net.nodes) > 0:
 			n = net.nodes.pop()
 			net.nodes.add(n)
 
 			c = net.internalConnected(n)
-			c = c.pop()
+			if len(c) > 0:
+				c = c.pop()
+				net.mergeNodes(n,c)
+			else:
+				# Means that n is an isolated node
+				isolated.add(n)
+				net.nodes.remove(n)
 
-			net.mergeNodes(n,c)
 
-		n = net.nodes.pop()
-		arr = n.tensor.array
-
-		bids = [b.id for b in n.buckets]
+		arr = 1
+		buckets = []
+		while arr == 1 or len(isolated) > 0:
+			n = isolated.pop()
+			arr = np.tensordot(arr, n.tensor.array, axes=0)
+			buckets.extend(n.buckets)			
+	
+		bids = [b.id for b in buckets]
 		bids = sorted(bids)
 
 		bdict = {}
-		for i in range(len(n.buckets)):
-			bdict[n.buckets[i].id] = i
+		for i in range(len(buckets)):
+			bdict[buckets[i].id] = i
 
 		perm = []
 		for b in bids:
 			perm.append(bdict[b])
 
-		arr = np.transpose(arr, axes=perm)
+		if len(perm) > 0:
+			arr = np.transpose(arr, axes=perm)
 
 		bdict = {}
-		for i in range(len(n.buckets)):
+		for i in range(len(buckets)):
 			bdict[bids[i]] = i
-
+				
 		return arr, bdict
 
 	def addNode(self, node):
