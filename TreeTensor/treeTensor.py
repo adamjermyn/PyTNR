@@ -45,6 +45,7 @@ class TreeTensor(Tensor):
 
 	@property
 	def array(self):
+
 		arr, bdict = self.network.array
 
 		perm = []
@@ -360,7 +361,12 @@ class TreeTensor(Tensor):
 			b2 = b1.otherBucket
 			n1 = b1.node
 			n2 = b2.node
-
+			
+			if n1.tensor.rank < 3 or n2.tensor.rank < 3:
+				self.optimized.add(b1)
+				self.optimized.add(b2)
+				continue
+				
 			sh1 = n1.tensor.shape
 			sh2 = n2.tensor.shape
 			s = n1.tensor.size + n2.tensor.size
@@ -383,17 +389,23 @@ class TreeTensor(Tensor):
 			if set(best) != ss and set(best) != set(range(n1.tensor.rank+n2.tensor.rank-2)).difference(ss):
 				n = self.network.mergeNodes(n1, n2)
 				nodes = self.network.splitNode(n, ignore=best)
-				print(len(nodes), n.tensor.rank)
-				assert len(nodes) == 2
+
 				for b in nodes[0].buckets:
 					self.optimized.discard(b)
 				for b in nodes[1].buckets:
 					self.optimized.discard(b)
 
-				l = nodes[0].findLink(nodes[1])
-				self.optimized.add(l.bucket1)
-				self.optimized.add(l.bucket2)
-				print('Optimizer improved to shapes:',nodes[0].tensor.shape,nodes[1].tensor.shape)
+				if nodes[0] in nodes[1].connectedNodes:
+					print(len(nodes), n.tensor.rank)
+					assert len(nodes) == 2
+					l = nodes[0].findLink(nodes[1])
+					self.optimized.add(l.bucket1)
+					self.optimized.add(l.bucket2)
+					print('Optimizer improved to shapes:',nodes[0].tensor.shape,nodes[1].tensor.shape)
+				else:
+					# This means the link was cut
+					print('Optimizer cut a link:',nodes[0].tensor.shape,nodes[1].tensor.shape)
+					
 			else:
 				self.optimized.add(b1)
 				self.optimized.add(b2)
