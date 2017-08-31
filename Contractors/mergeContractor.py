@@ -195,6 +195,7 @@ def mergeContractor(n, accuracy, heuristic, optimize=True, merge=True, plot=Fals
 			networkx.draw(g, pos, width=2)
 			plt.savefig('Overview/'+str(counter) + '.png')
 			plt.clf()
+			plt.close()
 			counter += 1
 
 		q, n1, n2 = heuristic(n)
