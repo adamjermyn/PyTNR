@@ -451,7 +451,7 @@ class NetworkTree:
 		while self._sortedLinks.length > 0:
 			self.merge(mergeL=mergeL, compressL=compressL, eps=eps)
 
-			if counter%20 == 0:
+			if counter%1 == 0:
 				t = self.largestTopLevelTensor()
 				print(len(self.topLevelNodes()),self.topLevelSize(), t.tensor().shape())
 			counter += 1
