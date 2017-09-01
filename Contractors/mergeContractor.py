@@ -5,6 +5,9 @@ import networkx
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
+from TNRG.Utilities.logger import makeLogger
+from TNRG import config
+logger = makeLogger(__name__, config.levels['mergeContractor'])
 
 
 
@@ -17,11 +20,6 @@ def mergeContractor(n, accuracy, heuristic, optimize=True, merge=True, plot=Fals
 
 	The plot option, if True, plots the entire network at each step and saves the result to a PNG
 	file in the top-level Overview folder. This defaults to False.
-
-	The named argument verbose controls how much output to print:
-		0 - None
-		1 - Summary
-		2 - Node enumeration
 	'''
 
 	if plot:
@@ -54,10 +52,10 @@ def mergeContractor(n, accuracy, heuristic, optimize=True, merge=True, plot=Fals
 		n3.eliminateLoops()
 
 		if optimize:
-			n3.tensor.optimize(verbose=verbose)
+			n3.tensor.optimize()
 
 		if merge:
-			print('MERGE')
+			logger.info('Merging nodes...')
 			nn = n3
 			if hasattr(nn.tensor, 'compressedSize') and len(nn.tensor.network.nodes) > mergeCut:
 				done = False
@@ -67,27 +65,25 @@ def mergeContractor(n, accuracy, heuristic, optimize=True, merge=True, plot=Fals
 						nn.eliminateLoops()
 						merged.eliminateLoops()
 						if optimize:
-							nn.tensor.optimize(verbose=verbose)
-							merged.tensor.optimize(verbose=verbose)
+							nn.tensor.optimize()
+							merged.tensor.optimize()
 					else:
 						done = True
 
-			print('MERGEDONE')
+			logger.info('Merging complete.')
 
+		for nn in n.nodes:
+			if hasattr(nn.tensor,'compressedSize'):
+				logger.debug(nn.id, nn.tensor.shape, nn.tensor.compressedSize, 1.0*nn.tensor.compressedSize/nn.tensor.size,len(nn.tensor.network.nodes),[qq.tensor.shape for qq in nn.tensor.network.nodes])
+			else:
+				logger.debug(nn.tensor.shape, nn.tensor.size)
 
-		if verbose >= 2:
-			for nn in n.nodes:
-				if hasattr(nn.tensor,'compressedSize'):
-					print(nn.id, nn.tensor.shape, nn.tensor.compressedSize, 1.0*nn.tensor.compressedSize/nn.tensor.size,len(nn.tensor.network.nodes),[qq.tensor.shape for qq in nn.tensor.network.nodes])
-				else:
-					print(nn.tensor.shape, nn.tensor.size)
-
-		if verbose >= 1:
-			counter = 0
-			for nn in n.nodes:
-				if hasattr(nn.tensor, 'network'):
-					counter += 1
-			print('-------',len(n3.connectedNodes),q,counter,len(n.nodes),'-------')
+		counter = 0
+		for nn in n.nodes:
+			if hasattr(nn.tensor, 'network'):
+				counter += 1
+		logger.info('Network has '+str(len(n.nodes)) + ' nodes, of which ' + str(counter) + ' contain treeTensor objects.')
+		logger.info('Contraction had utility ' + str(q) + ' and resulted in a tensor connected to ' + str(len(n3.connectedNodes)) + ' nodes.')
 
 
 	return n

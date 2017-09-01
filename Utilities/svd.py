@@ -8,6 +8,10 @@ from itertools import combinations
 from TNRG.Utilities.arrays import permuteIndices
 from TNRG.Utilities.linalg import adjoint
 
+from TNRG.Utilities.logger import makeLogger
+from TNRG import config
+logger = makeLogger(__name__, config.levels['svd'])
+
 ###################################
 # Linear Operator and SVD Functions
 ###################################
@@ -43,16 +47,18 @@ def bigSVD(matrix, bondDimension):
 	with the singular values sorted in descending order (which the iterative
 	solver does not on its own guarantee).
 	'''
-#	print('MAG:',np.max(np.abs(matrix)),matrix.shape)
-	try:
-		if bondDimension > 0.1*min(matrix.shape):
-			raise ValueError # The dense SVD is more robust when the bond dimension is large.
-		u, s, v = svds(matrix, k=bondDimension)
-	except:
-		print('Convergence error with sparse SVD. Trying full SVD.')
-		print(matrix)
-		np.savetxt('err.txt', matrix)
+	logger.debug('Starting big SVD on matrix with shape ' + str(matrix.shape) + '.')
+
+	if bondDimension > 0.1*min(matrix.shape):
+		logger.debug('Bond dimension is more than 10% of matrix rank. Using dense SVD.')
 		u, s, v = np.linalg.svd(matrix, full_matrices=0, compute_uv=1)
+	else:
+		try:
+			logger.debug('Trying Sparse SVD.')
+			u, s, v = svds(matrix, k=bondDimension)
+		except:
+			logger.error('Convergence error with sparse SVD. Trying full SVD.')
+			u, s, v = np.linalg.svd(matrix, full_matrices=0, compute_uv=1)
 
 	inds = np.argsort(s)
 	inds = inds[::-1]
@@ -69,16 +75,18 @@ def bigSVDvals(matrix, bondDimension):
 	with the singular values sorted in descending order (which the iterative
 	solver does not on its own guarantee).
 	'''
-#	print('MAG:',np.max(np.abs(matrix)),matrix.shape)
-	try:
-		if bondDimension > 0.1*min(matrix.shape):
-			raise ValueError # The dense SVD is more robust when the bond dimension is large.
-		s = svds(matrix, k=bondDimension, return_singular_vectors=False)
-	except:
-		print('Convergence error with sparse SVD. Trying full SVD.')
-		print(matrix)
-		np.savetxt('err.txt', matrix)
+	logger.debug('Starting big SVD to extract singular values from matrix with shape ' + str(matrix.shape) + '.')
+
+	if bondDimension > 0.1*min(matrix.shape):
+		logger.debug('Bond dimension is more than 10% of matrix rank. Using dense SVD.')
 		s = np.linalg.svd(matrix, full_matrices=0, compute_uv=0)
+	else:
+		try:
+			logger.debug('Trying Sparse SVD.')
+			s = svds(matrix, k=bondDimension, return_singular_vectors=False)
+		except:
+			logger.error('Convergence error with sparse SVD. Trying full SVD.')
+			s = np.linalg.svd(matrix, full_matrices=0, compute_uv=0)
 
 	inds = np.argsort(s)
 	inds = inds[::-1]

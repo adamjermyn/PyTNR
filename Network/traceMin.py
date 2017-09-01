@@ -7,6 +7,10 @@ from collections import Counter
 from scipy.sparse.csgraph import shortest_path
 from scipy.sparse import csr_matrix
 
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 def hortonGraph(adj, s):
 	'''
 	adj - Adjacency matrix for the original graph
@@ -205,9 +209,6 @@ class traceMin:
 		self.selfGraph = self.network.toGraph()
 		self.g = u
 
-
-#		self.g = self.network.toGraph()
-#		print('LEN:::',len(self.g.nodes()))
 		self.adj = networkx.adjacency_matrix(self.g, weight='weight').todense()
 		self.util = util(self.adj)
 
@@ -262,16 +263,16 @@ class traceMin:
 			if n1 in c or n2 in c:
 				nodes.update(c)
 
-		print(len(nodes), len(g.nodes()), len(self.diffVals))
+		logger.debug('Computing swap benefit across ' + str(len(g.nodes())) + ' nodes with respect to basis with ' + str(len(nodes)) + ' nodes and ' + str(len(self.diffVals)) + ' cached values.')
 
 		cacheSet = set(nodes)
 
 		cacheSet = frozenset(cacheSet)
 		if cacheSet in self.diffVals:
-			print('Cached.')
+			logger.debug('Cache hit.')
 			return self.diffVals[cacheSet]
 
-		print('Not cached. Recomputing on',len(nodes),'nodes.')
+		logger.debug('Not cached. Recomputing on',len(nodes),'nodes.')
 		subG = g.subgraph(nodes)
 
 		adjCurrent = networkx.adjacency_matrix(subG, weight='weight').todense()
