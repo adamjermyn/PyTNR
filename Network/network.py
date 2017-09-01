@@ -29,6 +29,7 @@ class Network:
 		'''
 		Contracts the network down to an array object.
 		Indices are ordered by ascending bucket ID.
+		Returns the array, the log of a prefactor, and a bucket dictionary.
 		'''
 		net = deepcopy(self)
 
@@ -50,10 +51,13 @@ class Network:
 
 
 		arr = 1
+		logAcc = 0
 		buckets = []
-		while arr == 1 or len(isolated) > 0:
+		while len(isolated) > 0:
 			n = isolated.pop()
-			arr = np.tensordot(arr, n.tensor.array, axes=0)
+			arr2 = n.tensor.array
+			logAcc += np.log(np.max(arr2))
+			arr = np.tensordot(arr, arr2 / np.max(arr2), axes=0)
 			buckets.extend(n.buckets)			
 	
 		bids = [b.id for b in buckets]
@@ -74,7 +78,7 @@ class Network:
 		for i in range(len(buckets)):
 			bdict[bids[i]] = i
 				
-		return arr, bdict
+		return arr, logAcc, bdict
 
 	def addNode(self, node):
 		'''
