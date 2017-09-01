@@ -20,4 +20,4 @@ levels['arrayTensor'] = 'debug'
 levels['traceMin'] = 'debug'
 
 levels['mergeContractor'] = 'info'
-
+levels['generic'] = 'info'
