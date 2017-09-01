@@ -62,10 +62,6 @@ class TreeNetwork(Network):
 
 					return path2
 
-		if len(path) > 0:
-			assert node1 in path
-			assert node2 in path
-
 		return []
 
 	def trace(self, b1, b2):
