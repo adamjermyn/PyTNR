@@ -46,7 +46,9 @@ class TreeTensor(Tensor):
 	@property
 	def array(self):
 
-		arr, bdict = self.network.array
+		arr, logAcc, bdict = self.network.array
+
+		arr *= np.exp(logAcc)
 
 		perm = []
 		blist = [b.id for b in self.externalBuckets]
