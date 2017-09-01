@@ -5,6 +5,8 @@ from TNRG.Utilities.arrays import permuteIndices
 class ArrayTensor(Tensor):
 
 	def __init__(self, tens, logScalar=0):
+		assert np.sum(np.isnan(tens)) == 0
+
 		self._shape = tens.shape
 		self._rank = len(self._shape)
 
