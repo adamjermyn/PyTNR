@@ -30,7 +30,7 @@ for J in [-2,-1,0,1,2]:
 	res = []
 
 	for s in size:
-		logger.info('Examining system of size ' + str(s) + 'and J = ' + str(J) + '.')
+		logger.info('Examining system of size ' + str(s) + ' and J = ' + str(J) + '.')
 		f = ising2DFreeEnergy(s[0], s[1], h, J, accuracy)
 		res.append((s[0]*s[1], f, f - exactIsing2D(J)))
 

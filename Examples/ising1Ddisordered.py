@@ -1,14 +1,15 @@
 import numpy as np
 
 from TNRG.Models.isingModel import IsingModel1Ddisordered, exactIsing1DJ
-from TNRG.Contractors.mergeContractor import mergeContractor, entropyHeuristic
+from TNRG.Contractors.mergeContractor import mergeContractor
+from TNRG.Contractors.heuristics import entropyHeuristic
 
 import matplotlib.pyplot as plt
 plt.style.use('ggplot')
 
 def ising1DFreeEnergy(nX, h, J, accuracy):
 	n = IsingModel1Ddisordered(nX, h, J, accuracy)
-	n = mergeContractor(n, accuracy, entropyHeuristic, optimize=False, merge=False, plot=False, mergeCut=15, verbose=0)
+	n = mergeContractor(n, accuracy, entropyHeuristic, optimize=False, merge=False, plot=False, mergeCut=15)
 	return np.log(n.array[0])/nX
 
 fig = plt.figure(figsize=(7,7))
