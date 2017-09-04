@@ -9,7 +9,9 @@ from TNRG.Utilities.logger import makeLogger
 from TNRG import config
 logger = makeLogger(__name__, config.levels['mergeContractor'])
 
-
+import resource
+soft, hard = resource.getrlimit(resource.RLIMIT_AS)
+resource.setrlimit(resource.RLIMIT_AS, (2**32, hard))
 
 def mergeContractor(n, accuracy, heuristic, optimize=True, merge=True, plot=False, mergeCut = 35):
 	'''
