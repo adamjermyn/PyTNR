@@ -15,11 +15,13 @@ from TNRG.Network.link import Link
 from TNRG.Network.bucket import Bucket
 from TNRG.Network.traceMin import traceMin
 from TNRG.Utilities.svd import entropy
-
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
+from TNRG.Utilities.graphPlotter import makePlotter
 
 counter0 = 0
+
+from TNRG.Utilities.logger import makeLogger
+from TNRG import config
+logger = makeLogger(__name__, config.levels['treeTensor'])
 
 class TreeTensor(Tensor):
 
@@ -155,75 +157,28 @@ class TreeTensor(Tensor):
 
 		return t1
 
-	def eliminateLoops(self, otherNodes):
+	def eliminateLoops(self, otherNodes, plot=False):
 		global counter0
 		tm = traceMin(self.network, otherNodes)
 
-#		counter = 0
-#		pos = None
-
 		while len(networkx.cycles.cycle_basis(self.network.toGraph())) > 0:
-#			g = self.network.toGraph()
-#			labels = networkx.get_edge_attributes(g, 'weight')
-#			for l in labels.keys():
-#				labels[l] = round(labels[l], 0)
-#			reusePos = {}
-#			if pos is not None:
-#				for n in g.nodes():
-#					if n in pos:
-#						reusePos[n] = pos[n]
-#				pos=networkx.fruchterman_reingold_layout(g, pos=reusePos, fixed=reusePos.keys())
-#			else:
-#				pos=networkx.fruchterman_reingold_layout(g)
-#			plt.figure(figsize=(11,11))
-#			weights = [g.edge[i][j]['weight']**2/5 for (i,j) in g.edges_iter()]
-#			networkx.draw(g, pos, width=weights, edge_color=[cm.jet(w/max(weights)) for w in weights])
-#			networkx.draw_networkx_edge_labels(g, pos, edge_labels=labels)
-#			plt.savefig('PNG/'+str(counter0) + '_' + str(counter) + '.png')
-#			plt.clf()
-#			counter += 1
+			if plot:
+				plotter = makePlotter('PNG/' + str(counter0))
+				plotter = plotter(self.network.toGraph())
 
-			print('LOGGING:::::::::::::::',tm.util, len(networkx.cycles.cycle_basis(self.network.toGraph())))
+			logger.debug('Cycle utility is ' + str(tm.util) + ' and there are ' + str(len(networkx.cycles.cycle_basis(self.network.toGraph()))) + ' cycles remaining.')
 
 			merged = tm.mergeSmall()
 
 			if not merged:
 				best = tm.bestSwap()
-				print(best[0])
 				tm.swap(best[1],best[2],best[3])
 
-#			if False:
-#				if len(networkx.cycles.cycle_basis(self.network.toGraph())) == 0 and len(self.network.toGraph().nodes()) > 0:
-#					g = self.network.toGraph()
-#					labels = networkx.get_edge_attributes(g, 'weight')
-#					for l in labels.keys():
-#						labels[l] = round(labels[l], 0)
-#					reusePos = {}
-#					if pos is not None:
-#						for n in g.nodes():
-#							if n in pos:
-#								reusePos[n] = pos[n]
-#						pos=networkx.fruchterman_reingold_layout(g, pos=reusePos, fixed=reusePos.keys())
-#					else:
-#						pos=networkx.fruchterman_reingold_layout(g)
-#					plt.figure(figsize=(11,11))
-#					weights = [g.edge[i][j]['weight']**2/5 for (i,j) in g.edges_iter()]
-#					networkx.draw(g, pos, width=weights, edge_color=[cm.jet(w/max(weights)) for w in weights])
-#					networkx.draw_networkx_edge_labels(g, pos, edge_labels=labels)
-#					plt.savefig('PNG/'+str(counter0) + '_' + str(counter) + '.png')
-#					plt.clf()
-
-			print(self.network)
+			logger.debug(str(self.network))
 
 
 		counter0 += 1
 		assert len(networkx.cycles.cycle_basis(self.network.toGraph())) == 0
-#		if self.rank > 2:
-#			expRank = sum([n.tensor.rank for n in self.network.nodes]) - 2*len(self.network.nodes) + 2
-#			print(expRank)
-#			print(self.rank)
-#			print(self.network)
-#			assert self.rank == expRank
 
 	def trace(self, ind0, ind1):
 		'''
@@ -311,22 +266,19 @@ class TreeTensor(Tensor):
 		tt.externalBuckets[ind].node.tensor = ArrayTensor(arr, logScalar=tt.externalBuckets[ind].node.tensor.logScalar)
 		return tt
 
-	def optimize(self, verbose=0):
+	def optimize(self):
 		'''
 		Optimizes the tensor network to minimize memory usage.
-		The parameter verbose controls how much output to print:
-			0 - None
-			1 - Running status
 		'''
-		if verbose >= 1:
-			print('Starting optimizer.')
-			print('Optimizing tensor with shape',self.shape)
-			s2 = 0
-			for n in self.network.nodes:
-				s2 += n.tensor.size
 
-		if verbose >= 1:
-			print('Contracting Rank-2 Tensors.')
+		logger.info('Optimizing tensor with shape ' + str(self.shape) + '.')
+	
+		s2 = 0
+		for n in self.network.nodes:
+			s2 += n.tensor.size
+
+		logger.info('Stage 1: Contracting Rank-2 Tensors.')
+
 		done = set()
 		while len(done.intersection(self.network.nodes)) < len(self.network.nodes):
 			n = next(iter(self.network.nodes.difference(done)))
@@ -339,8 +291,8 @@ class TreeTensor(Tensor):
 			else:
 				done.add(n)
 
-		if verbose >= 1:
-			print('Contracting Double Links.')
+		logger.info('Stage 2: Contracting Double Links.')
+
 		done = set()
 		while len(done.intersection(self.network.nodes)) < len(self.network.nodes):
 			n = next(iter(self.network.nodes.difference(done)))
@@ -353,10 +305,7 @@ class TreeTensor(Tensor):
 			if not merged:
 				done.add(n)
 
-#		return
-
-		if verbose >= 1:
-			print('Optimizing links.')
+		logger.info('Stage 3: Optimizing Links.')
 
 		while len(self.optimized.intersection(self.network.internalBuckets)) < len(self.network.internalBuckets):
 			b1 = next(iter(self.network.internalBuckets.difference(self.optimized)))
@@ -373,7 +322,7 @@ class TreeTensor(Tensor):
 			sh2 = n2.tensor.shape
 			s = n1.tensor.size + n2.tensor.size
 
-			print('Optimizing:',n1.id,n2.id,n1.tensor.shape,n2.tensor.shape)
+			logger.debug('Optimizing tensors ' + str(n1.id) + ',' + str(n2.id) + ' with shapes' + str(n1.tensor.shape) + ',' + str(n2.tensor.shape))
 
 			t, buckets = self.network.dummyMergeNodes(n1, n2)
 			arr = t.array
@@ -384,9 +333,9 @@ class TreeTensor(Tensor):
 			else:
 				ss = None
 
-			print('Entropy...')
+			logger.debug('Computing minimum entropy cut...')
 			best = entropy(arr, pref=ss)
-			print('Done.')
+			logger.debug('Done.')
 
 			if set(best) != ss and set(best) != set(range(n1.tensor.rank+n2.tensor.rank-2)).difference(ss):
 				n = self.network.mergeNodes(n1, n2)
@@ -398,32 +347,24 @@ class TreeTensor(Tensor):
 					self.optimized.discard(b)
 
 				if nodes[0] in nodes[1].connectedNodes:
-					print(len(nodes), n.tensor.rank)
 					assert len(nodes) == 2
 					l = nodes[0].findLink(nodes[1])
 					self.optimized.add(l.bucket1)
 					self.optimized.add(l.bucket2)
-					print('Optimizer improved to shapes:',nodes[0].tensor.shape,nodes[1].tensor.shape)
+					logger.debug('Optimizer improved to shapes to' + str(nodes[0].tensor.shape) + ',' + str(nodes[1].tensor.shape))
 				else:
 					# This means the link was cut
-					print('Optimizer cut a link:',nodes[0].tensor.shape,nodes[1].tensor.shape)
+					logger.debug('Optimizer cut a link. The resulting shapes are ' + str(nodes[0].tensor.shape) + ', ' + str(nodes[1].tensor.shape))
 					
 			else:
 				self.optimized.add(b1)
 				self.optimized.add(b2)
 
-			if verbose >= 1:
-				print('Optimization steps left:',-len(self.optimized.intersection(self.network.internalBuckets)) + len(self.network.internalBuckets))
+			logger.debug('Optimization steps left:' + str(-len(self.optimized.intersection(self.network.internalBuckets)) + len(self.network.internalBuckets)))
 
-		if verbose >= 1:
-			print('Optimized network:')
-			s1 = 0
-			for n in self.network.nodes:
-				print(n)
-				s1 += n.tensor.size
-			print('Shape: ',self.shape)
-			print('Number of internal nodes:',len(self.network.nodes))
-			print('Reduced size from',s2,'to',s1)
-			print('Optimization done.\n')
+		s1 = 0
+		for n in self.network.nodes:
+			s1 += n.tensor.size
+		logger.info('Optimized network with shape ' + str(self.shape) + ' and ' + str(len(self.network.nodes)) + ' nodes. Size reduced from ' + str(s2) + ' to ' + str(s1) + '.')
 
 

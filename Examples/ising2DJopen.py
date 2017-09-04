@@ -1,6 +1,6 @@
 import numpy as np
 
-from TNRG.Models.isingModel import IsingModel2D, exactIsing2D
+from TNRG.Models.isingModel import IsingModel2Dopen, exactIsing2D
 from TNRG.Contractors.mergeContractor import mergeContractor
 from TNRG.Contractors.heuristics import loopHeuristic as heuristic
 
@@ -9,7 +9,7 @@ from TNRG import config
 logger = makeLogger(__name__, config.levels['generic'])
 
 def ising2DFreeEnergy(nX, nY, h, J, accuracy):
-	n = IsingModel2D(nX, nY, h, J, accuracy)
+	n = IsingModel2Dopen(nX, nY, h, J, accuracy)
 	n = mergeContractor(n, accuracy, heuristic, optimize=True, merge=False, plot=True, mergeCut=15)
 	return n.array[1]/(nX*nY)
 
@@ -49,7 +49,7 @@ ax2.set_xlabel('Number of sites')
 
 ax1.legend()
 plt.tight_layout()
-plt.savefig('./ising2DJ.pdf')
+plt.savefig('./ising2DJopen.pdf')
 
 
 
