@@ -83,8 +83,6 @@ def minimalCycleBasis(adj):
 	for i in range(N):
 		s.append(set([edges[i]]))
 
-	np.set_printoptions(linewidth=150)
-
 	cycles = []
 	for i in range(N):
 		ghAdj = hortonGraph(adj, s[i])
