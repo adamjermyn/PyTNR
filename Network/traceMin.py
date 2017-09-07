@@ -369,8 +369,10 @@ class traceMin:
 			n1, n2 = n2, n1
 
 		# Perform swap
+		logger.debug('Performing swap...')
 		n = self.network.mergeNodes(n1, n2)
 		nodes = self.network.splitNode(n, ignore=[n.bucketIndex(b1),n.bucketIndex(b2)])
+		logger.debug('Swap complete.')
 
 		self.refresh()
 
