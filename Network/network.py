@@ -6,6 +6,10 @@ from copy import deepcopy
 import numpy as np
 import networkx
 
+from TNRG.Utilities.logger import makeLogger
+from TNRG import config
+logger = makeLogger(__name__, config.levels['network'])
+
 class Network:
 	'''
 	A Network is an object storing Nodes as well as providing helper methods
@@ -57,8 +61,9 @@ class Network:
 		while len(isolated) > 0:
 			n = isolated.pop()
 			arr2 = n.tensor.array
-			logAcc += np.log(np.max(arr2))
-			arr = np.tensordot(arr, arr2 / np.max(arr2), axes=0)
+			logAcc += np.log(np.max(np.abs(arr2)))
+			arr = np.tensordot(arr, arr2 / np.max(np.abs(arr2)), axes=0)
+			logger.debug('Computing array. Log is '+str(logAcc)+'.')
 			buckets.extend(n.buckets)			
 	
 		bids = [b.id for b in buckets]

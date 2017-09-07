@@ -1,5 +1,3 @@
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
 import networkx
 
 def makePlotter(fname, counter=0, positions=None):
@@ -10,13 +8,18 @@ def makePlotter(fname, counter=0, positions=None):
 	This is done by having each graph plotter store this data and return a new graph plotter.
 	'''
 
+
 	def plotter(graph):
-		# plot
+		pos = None
+
+		# Matplotlib loads here so that it only loads if the plotter is called.
+		import matplotlib.pyplot as plt
+		import matplotlib.cm as cm
+
 		labels = networkx.get_edge_attributes(graph, 'weights')
 		for l in labels.keys():
 			labels[l] = round(labels[l], 0)
-
-		reusePos = {}
+			reusePos = {}
 
 		if positions is not None:
 			for n in g.nodes:

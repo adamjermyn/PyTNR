@@ -8,32 +8,37 @@ from TNRG.Contractors.heuristics import loopHeuristic as heuristic
 from TNRG.Utilities.logger import makeLogger
 from TNRG import config
 logger = makeLogger(__name__, config.levels['generic'])
+import logging
+print(logger.isEnabledFor(logging.INFO))
+print(logger.level)
+logger.warning('hi!')
+logger.error('hi!')
+logger.info('hi!')
+logger.debug('hi!')
+
 
 def ising2DFreeEnergy(nX, nY, h, J, accuracy):
 	n = IsingModel2D(nX, nY, h, J, accuracy)
 	n = mergeContractor(n, accuracy, heuristic, optimize=True, merge=False, plot=False)
 	return n.array[1]/(nX*nY)
 
-for J in [-2,-1,0,1,2]:
+size = (5,6)
+jran = np.linspace(-3,3,num=20,endpoint=True)
 
+res = []
+for J in jran:
 	h = 0
 	accuracy = 1e-3
-	size = [(2,2),(2,3),(2,4),(3,3),(2,5),(3,4),(4,4),(3,6),(4,5),(3,7),(3,8),(5,5),(3,9),(4,7),(5,6),(4,8),(5,7),(6,6),(6,7),(7,7)]#,(7,8),(8,8)]#]#,(8,9)]#,(9,9),(9,10),(10,10)]
 
-	res = []
+	logger.info('Examining system of J = ' + str(J) + '.')
+	start = time.clock()
+	f = ising2DFreeEnergy(size[0], size[1], h, J, accuracy)
+	end = time.clock()
+	res.append((J, f, f - exactIsing2D(J), end - start))
 
-	for s in size:
-		logger.info('Examining system of size ' + str(s) + ' and J = ' + str(J) + '.')
-		start = time.clock()
-		f = ising2DFreeEnergy(s[0], s[1], h, J, accuracy)
-		end = time.clock()
-		res.append((s[0]*s[1], f, f - exactIsing2D(J), end - start))
+res = np.array(res)
 
-	res = np.array(res)
+print('Result:')
+print(res)
 
-	print(res)
-
-	np.savetxt('ising2DJ_J='+str(J)+'.dat', res)
-
-
-
+np.savetxt('ising2DJ_sweep.dat', res)

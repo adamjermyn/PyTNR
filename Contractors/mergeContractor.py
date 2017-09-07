@@ -11,7 +11,7 @@ logger = makeLogger(__name__, config.levels['mergeContractor'])
 
 import resource
 soft, hard = resource.getrlimit(resource.RLIMIT_AS)
-resource.setrlimit(resource.RLIMIT_AS, (2**32, hard))
+resource.setrlimit(resource.RLIMIT_AS, (config.mem_limit, hard))
 
 def mergeContractor(n, accuracy, heuristic, optimize=True, merge=True, plot=False, mergeCut = 35):
 	'''

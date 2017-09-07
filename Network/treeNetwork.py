@@ -12,6 +12,10 @@ from TNRG.Utilities.svd import entropy, splitArray
 import sys
 sys.setrecursionlimit(10000)
 
+from TNRG.Utilities.logger import makeLogger
+from TNRG import config
+logger = makeLogger(__name__, config.levels['treeNetwork'])
+
 class TreeNetwork(Network):
 	'''
 	A treeNetwork is a special case of a Network in which the Network being represented
@@ -169,12 +173,12 @@ class TreeNetwork(Network):
  
 		assert len(loop) >= 3 
  
-		print('Loop:',len(loop)) 
+		logger.debug('Eliminating cycle of length ' + str(len(loop)) + ' with components of (ID, shape, size):')
 		for l in loop: 
-			print(l.id,l.tensor.shape,l.tensor.size) 
+			logger.debug(str(l.id) + ', ' + str(l.tensor.shape) + ', ' + str(l.tensor.size))
  
 		while len(loop) > 3: 
-			print('Loop:',len(loop)) 
+			logger.debug('Loop is now of size ' + str(len(loop)) + '.')
 			best = [0,0] 
 			for i in range(len(loop)): 
 				n1 = loop[(i + 1)%len(loop)] 
@@ -205,7 +209,7 @@ class TreeNetwork(Network):
 				assert l.bucket1 != b2 
 				assert l.bucket2 != b2 
  
-			print('Loop: Merging',n1.tensor.shape,n2.tensor.shape,ind1,ind2,n1.findLink(n2).bucket1.size) 
+			logger.debug('Merging loop components of shape ' + str(n1.tensor.shape) + ' and ' + str(n2.tensor.shape) + ' along indices ' + str(ind1) + ',' + str(ind2) + ' with bond dimension ' + str(n1.findLink(n2).bucket1.size))
 			n = self.mergeNodes(n1, n2) 
  
 			loop.pop(1) 
@@ -215,11 +219,12 @@ class TreeNetwork(Network):
 				assert b2 in n.buckets 
 				assert b1.node is n 
 				assert b2.node is n 
-				print('Loop: Splitting',n.tensor.shape) 
+				logger.debug('Splitting tensor of shape ' + str(n.tensor.shape) + '...')
 				nodes = self.splitNode(n, ignore=[n.bucketIndex(b1),n.bucketIndex(b2)]) 
-				print('Loop split. Size ratio:',1.0*sum(q.tensor.size for q in nodes)/(n.tensor.size)) 
+				logger.debug('Done! Size ratio is ' + str(1.0*sum(q.tensor.size for q in nodes)/(n.tensor.size)) + '.')
+				logger.debug('Resulting shapes:')
 				for p in nodes: 
-					print(p.tensor.shape) 
+					logger.debug(str(p.tensor.shape))
 				n = nodes[0] # The ignored indices always end up in the first node 
  
 			loop[1] = n 

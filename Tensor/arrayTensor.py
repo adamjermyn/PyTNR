@@ -15,7 +15,6 @@ class ArrayTensor(Tensor):
 		# We normalize the Tensor by factoring out the log of the
 		# maximum-magnitude element.
 		m = np.max(np.abs(tens))
-		print(m)
 		self._logScalar = np.log(m) + logScalar
 		self._array = np.copy(tens/m)
 

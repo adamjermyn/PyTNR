@@ -1,19 +1,14 @@
 import numpy as np
+import time
 
-from TNRG.Models.isingModel import IsingModel1Ddisordered, exactIsing1DJ
+from TNRG.Models.isingModel import IsingModel1Ddisordered
 from TNRG.Contractors.mergeContractor import mergeContractor
 from TNRG.Contractors.heuristics import entropyHeuristic
 
-import matplotlib.pyplot as plt
-plt.style.use('ggplot')
-
 def ising1DFreeEnergy(nX, h, J, accuracy):
 	n = IsingModel1Ddisordered(nX, h, J, accuracy)
-	n = mergeContractor(n, accuracy, entropyHeuristic, optimize=False, merge=False, plot=False, mergeCut=15)
+	n = mergeContractor(n, accuracy, entropyHeuristic, optimize=False, merge=False, plot=False)
 	return np.log(n.array[0])/nX
-
-fig = plt.figure(figsize=(7,7))
-ax = plt.subplot(111)
 
 h = 1
 J = 1
@@ -25,14 +20,12 @@ res = []
 
 for s in size:
 	print(s)
+	start = time.clock()
 	f = ising1DFreeEnergy(s, h, J, accuracy)
-	res.append((s, f, f - exactIsing1DJ(s, J)))
+	end = time.clock()
+	res.append((s, f, end - start))
 
 res = np.array(res)
-ax.scatter(res[:,0],res[:,1])
-ax.set_ylabel('Free energy per site')
-ax.set_xlabel('Number of sites')
+np.savetxt('ising1Dh_disordered.dat', res)
 
-plt.tight_layout()
-plt.savefig('./ising1Ddisordered.pdf')
 
