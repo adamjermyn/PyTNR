@@ -13,7 +13,7 @@ def ising1DFreeEnergy(nX, h, J, accuracy):
 for J in [-2,-1,-0.5,0,0.5,1,2]:
 	size = list(range(2,25))
 
-	J = 0
+	h = 0
 	accuracy = 1e-3
 
 	res = []
