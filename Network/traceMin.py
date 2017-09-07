@@ -6,9 +6,9 @@ from collections import Counter
 from scipy.sparse.csgraph import shortest_path
 from scipy.sparse import csr_matrix
 
-import logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from TNRG.Utilities.logger import makeLogger
+from TNRG import config
+logger = makeLogger(__name__, config.levels['traceMin'])
 
 def hortonGraph(adj, s):
 	'''
@@ -279,14 +279,13 @@ class traceMin:
 		uNew = util(adjNew)
 
 		diff = uNew - u
-#		diff *= (n1.tensor.size*n2.tensor.size)
 
 		self.diffVals[cacheSet] = diff
 
 		return diff
 
 	def bestSwap(self):
-		print('Evaluating...')
+		logger.debug('Determining optimal swap.')
 
 		gNew = pruneGraph(self.g)
 
@@ -308,7 +307,9 @@ class traceMin:
 						benefit = self.swapBenefit(self.g, basis, l, b1, b2)
 						if benefit < best[0]:
 							best = [benefit, l, b1, b2]
-		print('Done.',best,gNew, self.g)
+		logger.debug('Done. Best swap is: ' + str(best) + '.')
+		logger.debug('The old network was: ' + str(self.g))
+		logger.debug('The new network is: ' + str(gNew))
 		return best
 
 	def mergeEdge(self, edge):
