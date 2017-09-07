@@ -80,14 +80,15 @@ def sortSVD(decomp):
 
 	return ret	
 
-def svdHelper(matrix, precision, compute_uv):
+def svdByPrecision(matrix, precision, compute_uv):
 	'''
-	This method wraps various SVD methods to provide a unified interface. It returns the SVD
-	with the singular values sorted in descending order, which some solvers do not guarantee.
+	This method wraps various SVD methods to provide a unified interface for computing the
+	SVD to a specified precision. It returns the SVD with the singular values sorted in
+	descending order, which some solvers do not guarantee.
 	
 	The arguments are:
 		matrix		-	A 2D array
-		precision	-	A float in (0,1] inclusive specifying
+		precision	-	This is a float in the range [0,1) specifying
 					the relative precision of the desired decomposition.
 		compute_uv	-	A bool specifying whether or not to compute the matrices
 					U and V or just the singular values. Note that some methods
@@ -102,11 +103,11 @@ def svdHelper(matrix, precision, compute_uv):
 
 	The cutoff between large and small here is specified in the config file.
 	'''
-	if precision <= 0:
-		raise ValueError('Precision cannot be zero or negative. Specified: ' + str(precision) + '.')
-	if precision > 1:
-		raise ValueError('Precision cannot exceed one. Specified: ' + str(precision) + '.')
-	if np.sum(np.isfinite(matrix)) > 0:
+	if precision < 0:
+		raise ValueError('Precision cannot be negative. Specified: ' + str(precision) + '.')
+	if precision >= 1:
+		raise ValueError('Precision cannot be greater than 1. Specified: ' + str(precision) + '.')
+	if np.sum(1 - np.isfinite(matrix)) > 0:
 		raise ValueError('Cannot decompose a matrix with infinite or NaN elements.')
 
 	if matrix.size < config.svdCutoff: # The dense decomposition is more efficient for small matrices.
@@ -136,12 +137,40 @@ def svdHelper(matrix, precision, compute_uv):
 				decomp = s	
 
 	decomp = sortSVD(decomp)
-	return decomp			
+	return decomp		
 
-# A note on precision:
-# the precision option here allows you to truncate the svd when the desired accuracy
-# is achieved. This is done by comparing the sum of the valued obtained so far to the
-# frobenius norm ofthe matrix.
+def svdByRank(matrix, rank, compute_uv):
+	'''
+	This method wraps various SVD methods to provide a unified interface. It returns the SVD
+	with the singular values sorted in descending order, which some solvers do not guarantee.
+	
+	The arguments are:
+		matrix		-	A 2D array
+		precision	-	This is an integer >= 1 giving the bond dimension of the decomposition.
+		compute_uv	-	A bool specifying whether or not to compute the matrices
+					U and V or just the singular values. Note that some methods
+					intrinsically compute all of these, so when those are used
+					this just determines whether or not U and V are returned.	
+
+	For small matrices the default is to use the dense SVD implementation found in NumPy.
+	For larger matrices iterative methods are tried first and compared against the desired precision.
+	The cutoff between large and small here is specified in the config file.
+	'''
+	if rank < 1:
+		raise ValueError('Rank cannot be zero or negative. Specified: ' + str(rank) + '.')
+	if np.sum(1 - np.isfinite(matrix)) > 0:
+		raise ValueError('Cannot decompose a matrix with infinite or NaN elements.')
+
+	# In this case the precision is an integer giving the desired bond dimension.
+	if matrix.size < config.svdCutoff or rank > config.svdBondCutoff*min(matrix.shape):
+		# The dense decomposition is more efficient for small matrices and for high bond dimension.
+		decomp = svd(matrix, full_matrices=False, compute_uv = compute_uv)
+	else: # The regular sparse decomposition is more efficient for large matrices at low bond dimension.
+		decomp = svds(matrix, k = rank, which='LM', return_singular_vectors = compute_uv)
+
+	decomp = sortSVD(decomp)
+	return decomp				
+
 
 def entropy(array, pref=None, tol=1e-3):
 	'''
@@ -223,11 +252,7 @@ def entropy(array, pref=None, tol=1e-3):
 			mat = np.dot(mat, np.transpose(mat))
 
 			# If the bond dimension is too large, full SVD is required.
-			if bondDimension > min(arr.shape) - 1:
-				lams = np.linalg.svd(mat, full_matrices=0, compute_uv=False)
-			else:
-				lams = bigSVDvals(mat, bondDimension)
-
+			lams = svdByRank(mat, bondDimension, False)
 			lams = np.sqrt(lams)
 			lams /= norms[i]					# Normalize
 			knownVals[i] = lams**2				# Turn into probabilities
@@ -273,7 +298,11 @@ def splitArray(array, indices, accuracy=1e-4):
 
 	arr = permuteIndices(array, indices)
 	arr = np.reshape(arr, (np.product(sh1), np.product(sh2)))
-	u, lam, v, p, cp = svdHelper(arr, precision=accuracy)
+	u, lam, v = svdByPrecision(arr, accuracy, True)
+
+	p = lam**2
+	p /= np.sum(p)
+	cp = np.cumsum(p)
 
 	ind = np.searchsorted(cp, accuracy, side='left')
 	ind = len(cp) - ind
