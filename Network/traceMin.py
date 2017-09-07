@@ -269,7 +269,7 @@ class traceMin:
 			logger.debug('Cache hit.')
 			return self.diffVals[cacheSet]
 
-		logger.debug('Not cached. Recomputing on',len(nodes),'nodes.')
+		logger.debug('Not cached. Recomputing on' + str(len(nodes)) + 'nodes.')
 		subG = g.subgraph(nodes)
 
 		adjCurrent = networkx.adjacency_matrix(subG, weight='weight').todense()
