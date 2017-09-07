@@ -1,3 +1,5 @@
+### Logging levels
+
 levels = {}
 levels['svd'] = 'debug'
 levels['linalg'] = 'debug'
@@ -21,3 +23,15 @@ levels['traceMin'] = 'debug'
 
 levels['mergeContractor'] = 'info'
 levels['generic'] = 'info'
+
+### Specifies whether to enable plotting
+
+plot = False
+
+### Determines the cutoff size below which matrices default to the dense SVD.
+
+svdCutoff = 1e3
+
+### Determines the maximum number of attempts for the interpolative SVD.
+
+svdTries = 4
