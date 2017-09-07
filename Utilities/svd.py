@@ -1,5 +1,6 @@
 import numpy as np
 from numpy.linalg import svd
+from scipy.linalg.interpolative import svd as svdI
 from scipy.sparse.linalg import aslinearoperator
 from scipy.sparse.linalg import LinearOperator
 from scipy.sparse.linalg import svds
@@ -39,274 +40,108 @@ def matrixProductLinearOperator(matrix1, matrix2):
 
 	return LinearOperator(shape, matvec=matvec, matmat=matmat, rmatvec=rmatvec)
 
-def bigSVD(matrix, bondDimension):
+def compareSVD(matrix, u, s, v):
 	'''
-	This is a helper method for wrapping the iterative SVD method scipy provides.
-	It takes as input a matrix and an integer bond dimension which corresponds
-	to the bond which was contracted to form this matrix. It returns the SVD
-	with the singular values sorted in descending order (which the iterative
-	solver does not on its own guarantee).
-	'''
-	logger.debug('Starting big SVD on matrix with shape ' + str(matrix.shape) + '.')
+	This method compares a matrix against its singular value decomposition
+	and returns the relative L2 error.
 
-	if bondDimension > 0.1*min(matrix.shape):
-		logger.debug('Bond dimension is more than 10% of matrix rank. Using dense SVD.')
-		u, s, v = np.linalg.svd(matrix, full_matrices=0, compute_uv=1)
+	The arguments are:
+		matrix		-	The matrix.
+		u		-	The unitary matrix U in the SVD.
+		s		-	The diagonal matrix S in the SVD.
+		v		-	The unitary matrix V^adjoint in the SVD.
+	'''
+	return np.sum(np.abs(np.einsum('ij,j,jk->ik',u,s,v) - matrix)**2) / np.sum(np.abs(matrix)**2)
+
+def sortSVD(decomp):
+	'''
+	This method sorts the singular values of an SVD.
+	If provided the U and V matrices are permuted accordingly.
+	This method takes as input:
+		decomp - Either an array of singular values or a tuple of the form (U, S, V), where S is the array of singular values.
+
+	The returned data is in the same format as the input.
+	'''
+
+	if type(decomp) is np.ndarray:
+		inds = np.argsort(decomp)
+		inds = inds[::-1]
+		ret = decomp[inds]		
 	else:
-		try:
-			logger.debug('Trying Sparse SVD.')
-			u, s, v = svds(matrix, k=bondDimension)
-		except:
-			logger.error('Convergence error with sparse SVD. Trying full SVD.')
-			u, s, v = np.linalg.svd(matrix, full_matrices=0, compute_uv=1)
+		if len(decomp) != 3:
+			raise ValueError('Unknown input format. Not a numpy array and not of the form (U,S,V).')
+		u, s, v = decomp
+		inds = np.argsort(s)
+		inds = inds[::-1]
+		u = u[:, inds]
+		s = s[inds]
+		v = v[inds, :]
+		ret = (u,s,v)
 
-	inds = np.argsort(s)
-	inds = inds[::-1]
-	u = u[:, inds]
-	s = s[inds]
-	v = v[inds, :]
-	return u, s, v
+	return ret	
 
-def bigSVDvals(matrix, bondDimension):
+def svdHelper(matrix, precision, compute_uv):
 	'''
-	This is a helper method for wrapping the iterative SVD method scipy provides.
-	It takes as input a matrix and an integer bond dimension which corresponds
-	to the bond which was contracted to form this matrix. It returns the SVD
-	with the singular values sorted in descending order (which the iterative
-	solver does not on its own guarantee).
-	'''
-	logger.debug('Starting big SVD to extract singular values from matrix with shape ' + str(matrix.shape) + '.')
+	This method wraps various SVD methods to provide a unified interface. It returns the SVD
+	with the singular values sorted in descending order, which some solvers do not guarantee.
+	
+	The arguments are:
+		matrix		-	A 2D array
+		precision	-	A float in (0,1] inclusive specifying
+					the relative precision of the desired decomposition.
+		compute_uv	-	A bool specifying whether or not to compute the matrices
+					U and V or just the singular values. Note that some methods
+					intrinsically compute all of these, so when those are used
+					this just determines whether or not U and V are returned.	
 
-	if bondDimension > 0.1*min(matrix.shape):
-		logger.debug('Bond dimension is more than 10% of matrix rank. Using dense SVD.')
-		s = np.linalg.svd(matrix, full_matrices=0, compute_uv=0)
+	For small matrices the default is to use the dense SVD implementation found in NumPy.
+	For larger matrices iterative methods are tried first and compared against the desired precision.
+	These may be applied repeatedly with different arguments until either the decomposition converges,
+	an error is found, or it becomes more performant to move on to another method.
+	Large matrices then fall back on the dense SVD.
+
+	The cutoff between large and small here is specified in the config file.
+	'''
+	if precision <= 0:
+		raise ValueError('Precision cannot be zero or negative. Specified: ' + str(precision) + '.')
+	if precision > 1:
+		raise ValueError('Precision cannot exceed one. Specified: ' + str(precision) + '.')
+	if np.sum(np.isfinite(matrix)) > 0:
+		raise ValueError('Cannot decompose a matrix with infinite or NaN elements.')
+
+	if matrix.size < config.svdCutoff: # The dense decomposition is more efficient for small matrices.
+		decomp = svd(matrix, full_matrices=False, compute_uv = compute_uv)
 	else:
-		try:
-			logger.debug('Trying Sparse SVD.')
-			s = svds(matrix, k=bondDimension, return_singular_vectors=False)
-		except:
-			logger.error('Convergence error with sparse SVD. Trying full SVD.')
-			s = np.linalg.svd(matrix, full_matrices=0, compute_uv=0)
+		# First try the interpolative decomposition SVD. This typically performs very well.
+		u, s, v = svdI(matrix, precision)
+		v = np.conjugate(np.transpose(v))
+		tries = 0
+		error = compareSVD(matrix, u, s, v)
 
-	inds = np.argsort(s)
-	inds = inds[::-1]
-	s = s[inds]
-	return s
+		# If the error is not below the requested precision, try again with an artificially more precise request.
+		while error > precision and tries < config.svdTries:
+			logger.debug('Interpolative SVD did not reach required precision. Actual: ' + str(precision) + '. Requested: ' + str(precision) + '. Retrying with more precise request.')
+			tries += 1
+			u, s, v = svdI(matrix, precision / 2**tries)
+			error = compareSVD(matrix, u, s, v)
+		
+		if error > precision:
+			# Getting to this stage means the interpolative decomposition just isn't working.
+			# We now fall back on the dense decomposition.
+			decomp = svd(matrix, full_matrices=False, compute_uv = compute_uv)
+		else:
+			if compute_uv:
+				decomp = (u,s,v)
+			else:
+				decomp = s	
+
+	decomp = sortSVD(decomp)
+	return decomp			
 
 # A note on precision:
 # the precision option here allows you to truncate the svd when the desired accuracy
 # is achieved. This is done by comparing the sum of the valued obtained so far to the
 # frobenius norm ofthe matrix.
-
-def generalSVD(matrix, bondDimension=np.inf, optimizerMatrix=None, arr1=None, arr2=None, precision=1e-5, searchFactor=1.3):
-	'''
-	This is a helper method for SVD calculations.
-
-	In the case where the matrix of interest was formed as a product A*B where
-	A.shape[1] == B.shape[0] << A.shape[0], B.shape[1], the SVD is mathematically
-	guaranteed to return at most A.shape[1] nonzero singular values, and so
-	we ought to use an iterative solver rather than the full solver.
-
-	In the remaining cases the iterative solve will fail because it cannot retrieve
-	all singular values of a matrix (it can retrieve at most one fewer). This is
-	just an implementation detail, and only arises in rare cases, so we just revert
-	to the full SVD solve.
-
-	If an optimizerArray is provided, we perform the procedure outlined in Eq7-13
-	in "Second Renormalization of Tensor-Network States" by Xie et. al. (arXiv:0809.0182v3).
-
-	This method accepts as input:
-		matrix 			-	The matrix to SVD.
-		bondDimension	-	The bond dimension used to form the matrix (i.e. A.shape[1]).
-		optimizerTensor	-	The 'environment' array to optimize against.
-
-	This method returns:
-		u 	-	A matrix of the left singular vectors
-		lam	-	An array of the singular values
-		v 	-	An array of the right singular vectors
-		p 	-	An array whose entries reflect the portion of the total weight in each
-				singular value.
-		cp 	-	An array whose entries reflect the cumulative portion of the total weight
-				associated with all singular values past a given index.
-
-	As a result of the above definitions, p and cp are both sorted in descending order.
-	'''
-	if arr1 is not None and arr2 is not None:
-		u1, s1, v1 = np.linalg.svd(arr1, full_matrices=0)
-		u2, s2, v2 = np.linalg.svd(arr2, full_matrices=0)
-
-		arr3 = np.dot(v1, u2)
-		arr3 = np.einsum('i,ij,j->ij',s1,arr3,s2)
-
-		up, lam, vp = np.linalg.svd(arr3, full_matrices=0)
-		u = np.dot(u1, up)
-		v = np.dot(vp, v2)
-	elif precision is not None and bondDimension is np.inf and min(matrix.shape) > 4:
-		if max(matrix.shape) > 2*min(matrix.shape):
-			print('Significant shape mismatch: pre-computing bond dimension.')
-			lam, p, cp = generalSVDvals(matrix, precision=precision)
-			k = len(lam)
-			print('Matrix-k:',matrix.shape)
-			print('BD-k:',k)
-			if k > min(matrix.shape) - 1:
-				u, lam, v = np.linalg.svd(matrix, full_matrices=0)
-			else:
-				u, lam, v = bigSVD(matrix, k)
-		else:
-			# Matches Frobenius norm
-			norm = np.linalg.norm(matrix)**2
-			err = 1.0
-
-			bondDimension = 2
-
-			while err > precision:
-				print('Matrix:',matrix.shape)
-				print('BD:',bondDimension)
-				print('Error, Precision:', err, precision)
-				oldBD = bondDimension
-				bondDimension *= searchFactor
-				bondDimension = int(bondDimension)
-				if bondDimension == oldBD:
-					bondDimension += 1
-				if bondDimension > min(matrix.shape) - 1:
-					u, lam, v = np.linalg.svd(matrix, full_matrices=0)
-					err = 0
-				else:
-					u, lam, v = bigSVD(matrix, bondDimension)
-					err = abs(norm - np.sum(lam**2))/norm
-			if err == 0:
-				print('BD:',min(matrix.shape),min(matrix.shape))
-			else:
-				print('BD:',bondDimension,min(matrix.shape))
-	elif optimizerMatrix is None:
-		if bondDimension > 0 and bondDimension < matrix.shape[0] and bondDimension < matrix.shape[1]:
-			# Required so sparse bond is properly represented
-			u, lam, v = bigSVD(matrix, bondDimension)
-		else:
-			try:
-				u, lam, v = np.linalg.svd(matrix, full_matrices=0)
-			except:
-				print('Erm.... SVD not converged!')
-				print(matrix)
-				print(np.sum(matrix**2))
-				print(matrix.shape)
-				print(np.max(matrix), np.min(matrix))
-				np.savetxt('error',matrix)
-				exit()
-	else:
-		ue, lame, ve = np.linalg.svd(optimizerMatrix, full_matrices=0)
-
-		lams = np.sqrt(lame)
-
-		print(lams.shape, ve.shape, matrix.shape, ue.shape, lams.shape)
-
-		mmod = lams*np.dot(ve,np.dot(matrix,ue))*lams
-
-		um, lamm, vm = np.linalg.svd(mmod, full_matrices=0)
-
-		lamms = np.sqrt(lamm)
-
-		uf = np.einsum('ij,j,jk->ik',adjoint(ve),1/lamms,um)
-		vf = np.einsum('ij,j,jk->ik',vm,1/lamms,adjoint(ue))
-
-		u, lam, v = uf, lamm, vf
-
-		assert u.shape[0] == matrix.shape[0]
-		assert v.shape[1] == matrix.shape[1]
-
-	p = lam**2
-	p /= np.sum(p)
-	cp = np.cumsum(p[::-1])
-
-	return u, lam, v, p, cp
-
-def generalSVDvals(matrix, bondDimension=np.inf, optimizerMatrix=None, precision=1e-5, searchFactor=1.3):
-	'''
-	This is a helper method for SVD calculations.
-
-	In the case where the matrix of interest was formed as a product A*B where
-	A.shape[1] == B.shape[0] << A.shape[0], B.shape[1], the SVD is mathematically
-	guaranteed to return at most A.shape[1] nonzero singular values, and so
-	we ought to use an iterative solver rather than the full solver.
-
-	In the remaining cases the iterative solve will fail because it cannot retrieve
-	all singular values of a matrix (it can retrieve at most one fewer). This is
-	just an implementation detail, and only arises in rare cases, so we just revert
-	to the full SVD solve.
-
-	If an optimizerArray is provided, we perform the procedure outlined in Eq7-13
-	in "Second Renormalization of Tensor-Network States" by Xie et. al. (arXiv:0809.0182v3).
-
-	This method accepts as input:
-		matrix 			-	The matrix to SVD.
-		bondDimension	-	The bond dimension used to form the matrix (i.e. A.shape[1]).
-		optimizerTensor	-	The 'environment' array to optimize against.
-
-	This method returns:
-		lam	-	An array of the singular values
-		p 	-	An array whose entries reflect the portion of the total weight in each
-				singular value.
-		cp 	-	An array whose entries reflect the cumulative portion of the total weight
-				associated with all singular values past a given index.
-
-	As a result of the above definitions, p and cp are both sorted in descending order.
-	'''
-
-	# We first dot the matrix with itself along the axis that minimizes its size.
-	m = np.copy(matrix)
-	if m.shape[1] < m.shape[0]:
-		m = np.transpose(m)
-	m = np.dot(m, np.transpose(m))
-	matrix = m
-
-	if precision is not None and bondDimension is np.inf and min(matrix.shape) > 4:
-		# Matches Frobenius norm
-		norm = np.trace(matrix)
-		err = 1.0
-
-		bondDimension = 2
-
-		while err > precision:
-			print('Matrix:',matrix.shape)
-			print('BD:',bondDimension)
-			print('Error, Precision:', err, precision)
-			oldBD = bondDimension
-			bondDimension *= searchFactor
-			bondDimension = int(bondDimension)
-			if bondDimension == oldBD:
-				bondDimension += 1
-			if bondDimension > min(matrix.shape) - 1:
-				lam = np.linalg.svd(matrix, full_matrices=0, compute_uv=False)
-				err = 0
-			else:
-				lam = bigSVDvals(matrix, bondDimension)
-				err = abs(norm - np.sum(lam))/norm
-		if err == 0:
-			print('BD:',min(matrix.shape),min(matrix.shape))
-		else:
-			print('BD:',bondDimension,min(matrix.shape))
-	elif optimizerMatrix is None:
-		if bondDimension > 0 and bondDimension < matrix.shape[0] and bondDimension < matrix.shape[1]:
-			# Required so sparse bond is properly represented
-			lam = bigSVDvals(matrix, bondDimension)
-		else:
-			try:
-				lam = np.linalg.svd(matrix, full_matrices=0, compute_uv=False)
-			except:
-				print('Erm.... SVD not converged!')
-				print(matrix)
-				print(np.sum(matrix))
-				print(matrix.shape)
-				print(np.max(matrix), np.min(matrix))
-				np.savetxt('error',matrix)
-				exit()
-
-	mal = np.sqrt(lam)
-	p = lam**2
-	p /= np.sum(p)
-	cp = np.cumsum(p[::-1])
-
-	return lam, p, cp
 
 def entropy(array, pref=None, tol=1e-3):
 	'''
@@ -438,7 +273,7 @@ def splitArray(array, indices, accuracy=1e-4):
 
 	arr = permuteIndices(array, indices)
 	arr = np.reshape(arr, (np.product(sh1), np.product(sh2)))
-	u, lam, v, p, cp = generalSVD(arr, precision=accuracy)
+	u, lam, v, p, cp = svdHelper(arr, precision=accuracy)
 
 	ind = np.searchsorted(cp, accuracy, side='left')
 	ind = len(cp) - ind
