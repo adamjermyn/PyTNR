@@ -121,9 +121,10 @@ def svdByPrecision(matrix, precision, compute_uv):
 
 		# If the error is not below the requested precision, try again with an artificially more precise request.
 		while error > precision and tries < config.svdTries:
-			logger.debug('Interpolative SVD did not reach required precision. Actual: ' + str(precision) + '. Requested: ' + str(precision) + '. Retrying with more precise request.')
+			logger.debug('Interpolative SVD did not reach required precision. Actual: ' + str(error) + '. Requested: ' + str(precision) + '. Retrying with more precise request.')
 			tries += 1
 			u, s, v = svdI(matrix, precision / 2**tries)
+			v = np.conjugate(np.transpose(v))
 			error = compareSVD(matrix, u, s, v)
 		
 		if error > precision:

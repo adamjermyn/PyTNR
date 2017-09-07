@@ -21,9 +21,9 @@ for h in [-2,-1,-0.5,0,0.5,1,2]:
 
 	for s in size:
 		start = time.clock()
-		f = ising2DFreeEnergy(s, h, J, accuracy)
+		f = ising2DFreeEnergy(s[0], s[1], h, J, accuracy)
 		end = time.clock()
-		res.append((s, f, f - exactIsing1Dh(h), end - start))
+		res.append((s[0]*s[1], f, f - exactIsing1Dh(h), end - start))
 
 	res = np.array(res)
 

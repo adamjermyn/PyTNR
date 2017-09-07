@@ -14,7 +14,7 @@ def ising2DFreeEnergy(nX, nY, h, J, accuracy):
 	n = mergeContractor(n, accuracy, heuristic, optimize=True, merge=False, plot=False)
 	return n.array[1]/(nX*nY)
 
-for J in [-2,-1,0,1,2]:
+for J in [-2,-1,-0.5,0,0.5,1,2]:
 
 	h = 0
 	accuracy = 1e-3
@@ -33,6 +33,6 @@ for J in [-2,-1,0,1,2]:
 
 	print(res)
 
-	np.savetxt('ising2DJ_open_J='+str(J)+'.dat')
+	np.savetxt('ising2DJ_open_J='+str(J)+'.dat', res)
 
 

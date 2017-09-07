@@ -10,7 +10,7 @@ def ising1DFreeEnergy(nX, h, J, accuracy):
 	n = mergeContractor(n, accuracy, entropyHeuristic, optimize=False, merge=False, plot=False)
 	return np.log(n.array[0])/nX
 
-for h in [-2,-1,-0.5,0,0.5,1,2]:
+for J in [-2,-1,-0.5,0,0.5,1,2]:
 	size = list(range(2,25))
 
 	J = 0
@@ -22,7 +22,7 @@ for h in [-2,-1,-0.5,0,0.5,1,2]:
 		start = time.clock()
 		f = ising1DFreeEnergy(s, h, J, accuracy)
 		end = time.clock()
-		res.append((s, f, f - exactIsing1DJ(J), end - start))
+		res.append((s, f, f - exactIsing1DJ(s, J), end - start))
 
 	res = np.array(res)
 
