@@ -1,6 +1,7 @@
 import numpy as np
+import time
 
-from TNRG.Models.isingModel import IsingModel2Ddisordered, exactIsing2D
+from TNRG.Models.isingModel import IsingModel2Ddisordered
 from TNRG.Contractors.mergeContractor import mergeContractor
 from TNRG.Contractors.heuristics import loopHeuristic as heuristic
 
@@ -10,15 +11,8 @@ logger = makeLogger(__name__, config.levels['generic'])
 
 def ising2DFreeEnergy(nX, nY, h, J, accuracy):
 	n = IsingModel2Ddisordered(nX, nY, h, J, accuracy)
-	n = mergeContractor(n, accuracy, heuristic, optimize=True, merge=False, plot=True, mergeCut=15)
+	n = mergeContractor(n, accuracy, heuristic, optimize=True, merge=False, plot=False)
 	return n.array[1]/(nX*nY)
-
-
-import matplotlib.pyplot as plt
-plt.style.use('ggplot')
-
-fig = plt.figure(figsize=(7,7))
-ax1 = plt.subplot(111)
 
 h = 1
 J = 1
@@ -30,21 +24,13 @@ res = []
 for s in size:
 	for _ in range(3):
 		logger.info('Examining system of size ' + str(s) + ' and J = ' + str(J) + '.')
+		start = time.clock()
 		f = ising2DFreeEnergy(s[0], s[1], h, J, accuracy)
-		res.append((s[0]*s[1], f, f - exactIsing2D(J)))
+		end = time.clock()
+		res.append((s[0]*s[1], f, end - start))
 
 res = np.array(res)
 
 print(res)
 
-ax1.scatter(res[:,0],res[:,1])
-
-ax1.set_ylabel('Free energy per site')
-ax1.set_xlabel('Number of sites')
-
-ax1.legend()
-plt.tight_layout()
-plt.savefig('./ising2DJdisordered.pdf')
-
-
-
+np.savetxt('ising2D_disordered.dat', res)
