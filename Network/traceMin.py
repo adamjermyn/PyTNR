@@ -2,7 +2,6 @@ from collections import defaultdict
 import networkx
 import numpy as np
 import operator
-import community
 from collections import Counter
 from scipy.sparse.csgraph import shortest_path
 from scipy.sparse import csr_matrix
