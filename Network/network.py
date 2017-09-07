@@ -6,6 +6,10 @@ from copy import deepcopy
 import numpy as np
 import networkx
 
+from TNRG.Utilities.logger import makeLogger
+from TNRG import config
+logger = makeLogger(__name__, config.levels['network'])
+
 class Network:
 	'''
 	A Network is an object storing Nodes as well as providing helper methods
