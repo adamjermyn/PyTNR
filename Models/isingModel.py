@@ -359,7 +359,7 @@ def exactIsing2D(J):
  
 	return np.log(2)/2 + (1/(2*np.pi))*inte
 
-def IsingModel3D(nX, nY, nZ, h, J, accuracy): 
+def IsingModel3Dopen(nX, nY, nZ, h, J, accuracy): 
 	network = Network()
  
 	# Place to store the tensors 
@@ -455,55 +455,47 @@ def IsingModel3D(nX, nY, nZ, h, J, accuracy):
  
 	return network
 
-''' 
-def RandomIsingModel2D(nX, nY): 
-	network = NetworkTree() 
+def IsingSpinGlass(n, J, k, accuracy): 
+	network = Network()
  
+	nBonds = int(n*k)
+
 	# Place to store the tensors 
-	lattice = [[] for i in range(nX)] 
-	onSite = [[] for i in range(nX)] 
-	bondV = [[] for i in range(nX)] 
-	bondH = [[] for i in range(nY)] 
+	lattice = [] 
+	bond = []
  
-	# Each lattice site has seven indices of width five, and returns zero if they are unequal and one otherwise. 
-	for i in range(nX): 
-		for j in range(nY): 
-			lattice[i].append(latticeNode(2,network)) 
+	# Determine bond locations
+	options = [(i,j) for i in range(n) for j in range(i)]
+	print(len(options), nBonds)
+	choices = np.random.choice(list(range(len(options))), size=nBonds, replace=False)
+	choices = [options[c] for c in choices]
+
+	ranks = [sum([1 for i,j in options if i == q or j == q]) for q in range(n)]
+
+	for i in range(n): 
+		lattice.append(Node(IdentityTensor(2, ranks[i], accuracy=accuracy)))
  
-	# Each on-site term has one index of width two, and returns exp(-h) or exp(h) for 0 or 1 respectively. 
-	for i in range(nX): 
-		for j in range(nY): 
-			arr = np.zeros((2)) 
-			h = np.random.randn()
-			arr[0] = np.exp(-h) 
-			arr[1] = np.exp(h) 
-			onSite[i].append(network.addNodeFromArray(arr)) 
-			lattice[i][j].addLink(onSite[i][j],0) 
+	counters = [0 for _ in range(n)]
+
+	# Attach bonds
+	for i,j in options:
+		arr = np.zeros((2,2)) 
+		arr[0][0] = np.exp(-J) 
+		arr[1][1] = np.exp(-J) 
+		arr[0][1] = np.exp(J) 
+		arr[1][0] = np.exp(J) 
+		bond.append(Node(ArrayTensor(arr)))
+		Link(lattice[i].buckets[counters[i]], bond[-1].buckets[0])
+		Link(lattice[j].buckets[counters[j]], bond[-1].buckets[1])
+		counters[i] += 1
+		counters[j] += 1
  
-	# Each bond term has two indices of width two and returns exp(-J*(1+delta(index0,index1))/2). 
-	for i in range(nX): 
-		for j in range(nY): 
-			arr = np.zeros((2,2)) 
-			J = np.random.randn()
-			arr[0][0] = np.exp(-J) 
-			arr[1][1] = np.exp(-J) 
-			arr[0][1] = np.exp(J) 
-			arr[1][0] = np.exp(J) 
-			bondV[i].append(network.addNodeFromArray(np.copy(arr))) 
-			bondH[i].append(network.addNodeFromArray(np.copy(arr))) 
+	# Add to Network
+	for n in lattice:
+		network.addNode(n)
+	for n in bond:
+		network.addNode(n)
  
-	# Attach bond terms 
-	for i in range(nX): 
-		for j in range(nY): 
-			lattice[i][j].addLink(bondV[i][j],0) 
-			lattice[i][j].addLink(bondV[i][(j+1)%nY],1) 
-			lattice[i][j].addLink(bondH[i][j],0) 
-			lattice[i][j].addLink(bondH[(i+1)%nX][j],1) 
- 
-	return network, lattice 
- 
+	return network
 
 
-
-
-'''

@@ -8,7 +8,7 @@ from TNRG.Contractors.heuristics import entropyHeuristic
 def ising1DFreeEnergy(nX, h, J, accuracy):
 	n = IsingModel1Ddisordered(nX, h, J, accuracy)
 	n = mergeContractor(n, accuracy, entropyHeuristic, optimize=False, merge=False, plot=False)
-	return np.log(n.array[0])/nX
+	return n.array[1]/nX
 
 h = 1
 J = 1

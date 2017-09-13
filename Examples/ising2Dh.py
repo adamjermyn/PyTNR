@@ -9,7 +9,7 @@ def ising2DFreeEnergy(nX, nY, h, J, accuracy):
 	n = IsingModel2D(nX, nY, h, J, accuracy)
 	n = mergeContractor(n, accuracy, entropyHeuristic, optimize=True, merge=False, plot=False)
 	arr = n.array
-	return np.log(n.array[0])/(nX*nY)
+	return n.array[1]/(nX*nY)
 
 for h in [-2,-1,-0.5,0,0.5,1,2]:
 	size = [(2,2),(2,3),(2,4),(3,3),(2,5),(3,4),(4,4),(3,6),(4,5),(3,7),(3,8),(5,5),(3,9),(4,7),(5,6),(4,8),(5,7),(6,6)]

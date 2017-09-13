@@ -9,12 +9,6 @@ from TNRG.Utilities.logger import makeLogger
 from TNRG import config
 logger = makeLogger(__name__, config.levels['generic'])
 import logging
-print(logger.isEnabledFor(logging.INFO))
-print(logger.level)
-logger.warning('hi!')
-logger.error('hi!')
-logger.info('hi!')
-logger.debug('hi!')
 
 
 def ising2DFreeEnergy(nX, nY, h, J, accuracy):
@@ -22,8 +16,8 @@ def ising2DFreeEnergy(nX, nY, h, J, accuracy):
 	n = mergeContractor(n, accuracy, heuristic, optimize=True, merge=False, plot=False)
 	return n.array[1]/(nX*nY)
 
-size = (5,6)
-jran = np.linspace(-3,3,num=20,endpoint=True)
+size = (7,7)
+jran = np.linspace(-3,3,num=35,endpoint=True)
 
 res = []
 for J in jran:
