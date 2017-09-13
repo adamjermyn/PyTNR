@@ -114,28 +114,34 @@ def svdByPrecision(matrix, precision, compute_uv):
 		decomp = svd(matrix, full_matrices=False, compute_uv = compute_uv)
 	else:
 		# First try the interpolative decomposition SVD. This typically performs very well.
-		u, s, v = svdI(matrix, precision)
-		v = np.conjugate(np.transpose(v))
-		tries = 0
-		error = compareSVD(matrix, u, s, v)
-
-		# If the error is not below the requested precision, try again with an artificially more precise request.
-		while error > precision and tries < config.svdTries:
-			logger.debug('Interpolative SVD did not reach required precision. Actual: ' + str(error) + '. Requested: ' + str(precision) + '. Retrying with more precise request.')
-			tries += 1
-			u, s, v = svdI(matrix, precision / 2**tries)
+		try:
+			u, s, v = svdI(matrix, precision)
 			v = np.conjugate(np.transpose(v))
+			tries = 0
 			error = compareSVD(matrix, u, s, v)
-		
-		if error > precision:
-			# Getting to this stage means the interpolative decomposition just isn't working.
-			# We now fall back on the dense decomposition.
-			decomp = svd(matrix, full_matrices=False, compute_uv = compute_uv)
-		else:
-			if compute_uv:
-				decomp = (u,s,v)
+
+			# If the error is not below the requested precision, try again with an artificially more precise request.
+			while error > precision and tries < config.svdTries:
+				logger.debug('Interpolative SVD did not reach required precision. Actual: ' + str(error) + '. Requested: ' + str(precision) + '. Retrying with more precise request.')
+				tries += 1
+				u, s, v = svdI(matrix, precision / 2**tries)
+				v = np.conjugate(np.transpose(v))
+				error = compareSVD(matrix, u, s, v)
+
+			if error > precision:
+				# Getting to this stage means the interpolative decomposition just isn't working.
+				# We now fall back on the dense decomposition.
+				decomp = svd(matrix, full_matrices=False, compute_uv = compute_uv)
 			else:
-				decomp = s	
+				if compute_uv:
+					decomp = (u,s,v)
+				else:
+					decomp = s	
+
+		except:
+			# Means the SVD has raised an error so we fall back on the dense one.
+			decomp = svd(matrix, full_matrices=False, compute_uv = compute_uv)
+		
 
 	decomp = sortSVD(decomp)
 	return decomp		
