@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.linalg import expm
-from TNRG.TreeTensor.treeTensor import TreeTensor
-from TNRG.Tensor.arrayTensor import ArrayTensor
+from TNR.TreeTensor.treeTensor import TreeTensor
+from TNR.Tensor.arrayTensor import ArrayTensor
 
 epsilon = 1e-10
 

@@ -1,9 +1,9 @@
 import numpy as np
 
-from TNRG.Network.node import Node
-from TNRG.Network.link import Link
-from TNRG.Tensor.arrayTensor import ArrayTensor
-from TNRG.TreeTensor.treeTensor import TreeTensor
+from TNR.Network.node import Node
+from TNR.Network.link import Link
+from TNR.Tensor.arrayTensor import ArrayTensor
+from TNR.TreeTensor.treeTensor import TreeTensor
 
 epsilon = 1e-10
 

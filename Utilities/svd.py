@@ -6,11 +6,11 @@ from scipy.sparse.linalg import LinearOperator
 from scipy.sparse.linalg import svds
 from itertools import combinations
 
-from TNRG.Utilities.arrays import permuteIndices
-from TNRG.Utilities.linalg import adjoint
+from TNR.Utilities.arrays import permuteIndices
+from TNR.Utilities.linalg import adjoint
 
-from TNRG.Utilities.logger import makeLogger
-from TNRG import config
+from TNR.Utilities.logger import makeLogger
+from TNR import config
 logger = makeLogger(__name__, config.levels['svd'])
 
 ###################################

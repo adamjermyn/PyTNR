@@ -1,7 +1,7 @@
 import numpy as np
 
-from TNRG.Models.protein_aggregation_2D import PA2D
-from TNRG.Contractors.mergeContractor import mergeContractor
+from TNR.Models.protein_aggregation_2D import PA2D
+from TNR.Contractors.mergeContractor import mergeContractor
 
 nX = 40
 nY = 40

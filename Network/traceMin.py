@@ -6,8 +6,8 @@ from collections import Counter
 from scipy.sparse.csgraph import shortest_path
 from scipy.sparse import csr_matrix
 
-from TNRG.Utilities.logger import makeLogger
-from TNRG import config
+from TNR.Utilities.logger import makeLogger
+from TNR import config
 logger = makeLogger(__name__, config.levels['traceMin'])
 
 def hortonGraph(adj, s):

@@ -2,12 +2,12 @@ import numpy as np
 from scipy.integrate import quad 
 from copy import deepcopy
 
-from TNRG.Network.link import Link
-from TNRG.Network.node import Node
-from TNRG.Network.network import Network
-from TNRG.TreeTensor.identityTensor import IdentityTensor
-from TNRG.TreeTensor.treeTensor import TreeTensor
-from TNRG.Tensor.arrayTensor import ArrayTensor
+from TNR.Network.link import Link
+from TNR.Network.node import Node
+from TNR.Network.network import Network
+from TNR.TreeTensor.identityTensor import IdentityTensor
+from TNR.TreeTensor.treeTensor import TreeTensor
+from TNR.Tensor.arrayTensor import ArrayTensor
 
 def PA3D(nX, nY, nZ, h, J, q, accuracy): 
 	network = Network()

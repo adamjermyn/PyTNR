@@ -1,6 +1,6 @@
 import numpy as np
-from TNRG.Tensor.tensor import Tensor
-from TNRG.Utilities.arrays import permuteIndices
+from TNR.Tensor.tensor import Tensor
+from TNR.Utilities.arrays import permuteIndices
 
 class ArrayTensor(Tensor):
 

@@ -2,18 +2,18 @@ from copy import deepcopy
 import numpy as np
 import operator
 
-from TNRG.Network.network import Network
-from TNRG.Network.node import Node
-from TNRG.Network.bucket import Bucket
-from TNRG.Network.link import Link
-from TNRG.Tensor.arrayTensor import ArrayTensor
-from TNRG.Utilities.svd import entropy, splitArray
+from TNR.Network.network import Network
+from TNR.Network.node import Node
+from TNR.Network.bucket import Bucket
+from TNR.Network.link import Link
+from TNR.Tensor.arrayTensor import ArrayTensor
+from TNR.Utilities.svd import entropy, splitArray
 
 import sys
 sys.setrecursionlimit(10000)
 
-from TNRG.Utilities.logger import makeLogger
-from TNRG import config
+from TNR.Utilities.logger import makeLogger
+from TNR import config
 logger = makeLogger(__name__, config.levels['treeNetwork'])
 
 class TreeNetwork(Network):

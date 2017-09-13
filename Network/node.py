@@ -1,5 +1,5 @@
 import itertools
-from TNRG.Network.bucket import Bucket
+from TNR.Network.bucket import Bucket
 
 class Node:
 	newid = itertools.count().__next__

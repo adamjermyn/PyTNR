@@ -1,6 +1,6 @@
 import numpy as np
 
-import TNRG.Utilities.arrays as arrays
+import TNR.Utilities.arrays as arrays
 
 epsilon = 1e-10
 

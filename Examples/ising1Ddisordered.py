@@ -1,9 +1,9 @@
 import numpy as np
 import time
 
-from TNRG.Models.isingModel import IsingModel1Ddisordered
-from TNRG.Contractors.mergeContractor import mergeContractor
-from TNRG.Contractors.heuristics import entropyHeuristic
+from TNR.Models.isingModel import IsingModel1Ddisordered
+from TNR.Contractors.mergeContractor import mergeContractor
+from TNR.Contractors.heuristics import entropyHeuristic
 
 def ising1DFreeEnergy(nX, h, J, accuracy):
 	n = IsingModel1Ddisordered(nX, h, J, accuracy)

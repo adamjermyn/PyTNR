@@ -1,12 +1,12 @@
-from TNRG.TreeTensor.treeTensor import TreeTensor
-from TNRG.Network.traceMin import traceMin
+from TNR.TreeTensor.treeTensor import TreeTensor
+from TNR.Network.traceMin import traceMin
 import numpy as np
 import networkx
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
-from TNRG.Utilities.logger import makeLogger
-from TNRG import config
+from TNR.Utilities.logger import makeLogger
+from TNR import config
 logger = makeLogger(__name__, config.levels['mergeContractor'])
 
 import resource

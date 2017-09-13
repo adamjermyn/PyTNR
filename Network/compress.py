@@ -1,6 +1,6 @@
 import numpy as np
-from TNRG.Utilities.arrays import ndArrayToMatrix, matrixToNDArray
-from TNRG.Utilities.svd import svdByPrecision, matrixProductLinearOperator
+from TNR.Utilities.arrays import ndArrayToMatrix, matrixToNDArray
+from TNR.Utilities.svd import svdByPrecision, matrixProductLinearOperator
 
 def compressLink(l, accuracy):
 	b1 = l.bucket1

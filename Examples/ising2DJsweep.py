@@ -1,12 +1,12 @@
 import numpy as np
 import time
 
-from TNRG.Models.isingModel import IsingModel2D, exactIsing2D
-from TNRG.Contractors.mergeContractor import mergeContractor
-from TNRG.Contractors.heuristics import loopHeuristic as heuristic
+from TNR.Models.isingModel import IsingModel2D, exactIsing2D
+from TNR.Contractors.mergeContractor import mergeContractor
+from TNR.Contractors.heuristics import loopHeuristic as heuristic
 
-from TNRG.Utilities.logger import makeLogger
-from TNRG import config
+from TNR.Utilities.logger import makeLogger
+from TNR import config
 logger = makeLogger(__name__, config.levels['generic'])
 import logging
 

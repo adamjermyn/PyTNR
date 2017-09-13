@@ -1,6 +1,6 @@
 import numpy as np
-from TNRG.Models.isingModel import IsingModel2Dopen
-from TNRG.Contractors.mergeContractor import mergeContractor
+from TNR.Models.isingModel import IsingModel2Dopen
+from TNR.Contractors.mergeContractor import mergeContractor
 
 fi = open('out.txt', 'w+')
 

@@ -1,7 +1,7 @@
 import numpy as np
 
-from TNRG.Models.protein_aggregation_3d import PA3D
-from TNRG.Contractors.mergeContractor import mergeContractor
+from TNR.Models.protein_aggregation_3d import PA3D
+from TNR.Contractors.mergeContractor import mergeContractor
 
 nX = 4
 nY = 5

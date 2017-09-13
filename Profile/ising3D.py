@@ -1,7 +1,7 @@
 import numpy as np
 
-from TNRG.Models.isingModel import IsingModel3D
-from TNRG.Contractors.mergeContractor import mergeContractor
+from TNR.Models.isingModel import IsingModel3D
+from TNR.Contractors.mergeContractor import mergeContractor
 
 nX = 6
 nY = 6

@@ -1,13 +1,13 @@
-from TNRG.Network.node import Node
-from TNRG.Network.link import Link
-from TNRG.Network.compress import compressLink
+from TNR.Network.node import Node
+from TNR.Network.link import Link
+from TNR.Network.compress import compressLink
 
 from copy import deepcopy
 import numpy as np
 import networkx
 
-from TNRG.Utilities.logger import makeLogger
-from TNRG import config
+from TNR.Utilities.logger import makeLogger
+from TNR import config
 logger = makeLogger(__name__, config.levels['network'])
 
 class Network:

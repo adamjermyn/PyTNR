@@ -1,7 +1,7 @@
 import numpy as np
 
-from TNRG.Models.isingModel import IsingModel1D, exactIsing1Dh, exactIsing1DJ, IsingModel2D, exactIsing2D
-from TNRG.Contractors.mergeContractor import mergeContractor
+from TNR.Models.isingModel import IsingModel1D, exactIsing1Dh, exactIsing1DJ, IsingModel2D, exactIsing2D
+from TNR.Contractors.mergeContractor import mergeContractor
 
 epsilon = 1e-10
 

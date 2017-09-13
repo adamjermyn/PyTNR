@@ -1,11 +1,11 @@
 import numpy as np
 from scipy.integrate import quad  
 
-from TNRG.Network.link import Link
-from TNRG.Network.node import Node
-from TNRG.Network.network import Network
-from TNRG.TreeTensor.identityTensor import IdentityTensor
-from TNRG.Tensor.arrayTensor import ArrayTensor
+from TNR.Network.link import Link
+from TNR.Network.node import Node
+from TNR.Network.network import Network
+from TNR.TreeTensor.identityTensor import IdentityTensor
+from TNR.Tensor.arrayTensor import ArrayTensor
 
 def IsingModel1D(nX, h, J, accuracy): 
 	network = Network()

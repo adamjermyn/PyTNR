@@ -7,20 +7,20 @@ import numpy as np
 import operator
 import networkx
 
-from TNRG.Tensor.tensor import Tensor
-from TNRG.Tensor.arrayTensor import ArrayTensor
-from TNRG.Network.treeNetwork import TreeNetwork
-from TNRG.Network.node import Node
-from TNRG.Network.link import Link
-from TNRG.Network.bucket import Bucket
-from TNRG.Network.traceMin import traceMin
-from TNRG.Utilities.svd import entropy
-from TNRG.Utilities.graphPlotter import makePlotter
+from TNR.Tensor.tensor import Tensor
+from TNR.Tensor.arrayTensor import ArrayTensor
+from TNR.Network.treeNetwork import TreeNetwork
+from TNR.Network.node import Node
+from TNR.Network.link import Link
+from TNR.Network.bucket import Bucket
+from TNR.Network.traceMin import traceMin
+from TNR.Utilities.svd import entropy
+from TNR.Utilities.graphPlotter import makePlotter
 
 counter0 = 0
 
-from TNRG.Utilities.logger import makeLogger
-from TNRG import config
+from TNR.Utilities.logger import makeLogger
+from TNR import config
 logger = makeLogger(__name__, config.levels['treeTensor'])
 
 class TreeTensor(Tensor):

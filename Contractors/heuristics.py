@@ -1,5 +1,5 @@
-from TNRG.TreeTensor.treeTensor import TreeTensor
-from TNRG.Network.traceMin import traceMin
+from TNR.TreeTensor.treeTensor import TreeTensor
+from TNR.Network.traceMin import traceMin
 import numpy as np
 import networkx
 

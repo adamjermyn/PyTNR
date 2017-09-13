@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.linalg import expm
-from TNRG.Tensor.arrayTensor import ArrayTensor
+from TNR.Tensor.arrayTensor import ArrayTensor
 
 epsilon = 1e-10
 
