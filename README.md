@@ -60,6 +60,7 @@ Efficient Decomposition of High-Rank Tensors - Adam S. Jermyn arXiv:1708.07471
 
 BibTex entries for these are included below:
 
+```
 @ARTICLE{2017arXiv170903080J,
    author = {{Jermyn}, A.~S.},
     title = "{Automatic Contraction of Unstructured Tensor Networks}",
@@ -87,3 +88,4 @@ archivePrefix = "arXiv",
    adsurl = {http://adsabs.harvard.edu/abs/2017arXiv170807471J},
   adsnote = {Provided by the SAO/NASA Astrophysics Data System}
 }
+```
