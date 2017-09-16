@@ -14,8 +14,14 @@ J = 2
 q = 1
 
 n = PA3D(nX, nY, nZ, h, J, q, accuracy)
-n = mergeContractor(n, accuracy, optimize=False, merge=False, verbose=2, mergeCut=20)
+n = mergeContractor(
+    n,
+    accuracy,
+    optimize=False,
+    merge=False,
+    verbose=2,
+    mergeCut=20)
 
 print(len(n.nodes))
 for nn in n.nodes:
-	print(np.log(nn.tensor.array))
+    print(np.log(nn.tensor.array))

@@ -12,8 +12,8 @@ import logging
 
 accuracy = 1e-3
 
-observations = np.random.randint(0, high=20, size=(20,2))
-observations[:,1] = observations[:,0] + observations[:,1]
+observations = np.random.randint(0, high=20, size=(20, 2))
+observations[:, 1] = observations[:, 0] + observations[:, 1]
 
 res = 12
 
@@ -22,7 +22,19 @@ discreteQ = np.linspace(0, 1, num=res, endpoint=True)
 discreteW = np.linspace(0, 1, num=res, endpoint=True)
 discreteH = np.linspace(0, 1, num=res, endpoint=True)
 
-n = BayesTest2(observations, discreteG, discreteQ, discreteW, discreteH, accuracy)
-n = mergeContractor(n, accuracy, heuristic, optimize=True, merge=False, plot=False)
+n = BayesTest2(
+    observations,
+    discreteG,
+    discreteQ,
+    discreteW,
+    discreteH,
+    accuracy)
+n = mergeContractor(
+    n,
+    accuracy,
+    heuristic,
+    optimize=True,
+    merge=False,
+    plot=False)
 
 print(n.nodes.pop().tensor.array)

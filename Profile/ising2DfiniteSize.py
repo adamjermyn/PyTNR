@@ -15,9 +15,15 @@ h = 0.1
 J = 0.5
 
 n = IsingModel2Dopen(nX, nY, h, J, accuracy)
-n = mergeContractor(n, accuracy, optimize=False, merge=False, mergeCut=10, verbose=2)
+n = mergeContractor(
+    n,
+    accuracy,
+    optimize=False,
+    merge=False,
+    mergeCut=10,
+    verbose=2)
 
 assert len(n.nodes) == 1
 
-fi.write(str(s) + ',' + str(np.log(next(iter(n.nodes)).tensor.array)/s**2)+'\n')
+fi.write(str(s) + ',' + str(np.log(next(iter(n.nodes)).tensor.array) / s**2) + '\n')
 fi.flush()

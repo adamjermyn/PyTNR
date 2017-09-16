@@ -15,7 +15,7 @@ To insert tensors into the network, construct an array representing the tensor o
 from TNR.Network.node import Node
 from TNR.Tensor.arrayTensor import ArrayTensor
 import numpy as np
-arr = np.random.randn(3,3,3,2)
+arr = np.random.randn(3, 3, 3, 2)
 tens = ArrayTensor(arr)
 node = Node(tens)
 ```
@@ -47,45 +47,45 @@ n = mergeContractor(network, accuracy, utilHeuristic, optimize=True)
 ```
 That's all there is to it. Now `n` contains a tensor tree or collection of tensor trees representing the contraction of `network`.
 
-If you have any questions don't hesitate to ask, and also please take a look at the provided examples (in Examples/).
-
+If you have any questions don't hesitate to ask, and also please take a look at the provided examples (in Examples /).
 
 
 # Referencing PyTNR
 
 PyTNR is free to use, but if you use it for academic purposes please include a citation to the two methods papers:
 
-Automatic Contraction of Unstructured Tensor Networks - Adam S. Jermyn arXiv:1709.03080
-Efficient Decomposition of High-Rank Tensors - Adam S. Jermyn arXiv:1708.07471
+Automatic Contraction of Unstructured Tensor Networks - Adam S. Jermyn arXiv: 1709.03080
+Efficient Decomposition of High - Rank Tensors - Adam S. Jermyn arXiv: 1708.07471
 
 BibTex entries for these are included below:
 
 ```
-@ARTICLE{2017arXiv170903080J,
-   author = {{Jermyn}, A.~S.},
-    title = "{Automatic Contraction of Unstructured Tensor Networks}",
-  journal = {ArXiv e-prints},
-archivePrefix = "arXiv",
-   eprint = {1709.03080},
- primaryClass = "physics.comp-ph",
- keywords = {Physics - Computational Physics, Condensed Matter - Statistical Mechanics, Condensed Matter - Strongly Correlated Electrons},
-     year = 2017,
-    month = sep,
-   adsurl = {http://adsabs.harvard.edu/abs/2017arXiv170903080J},
-  adsnote = {Provided by the SAO/NASA Astrophysics Data System}
-}
 
+
+@ARTICLE{2017arXiv170903080J,
+         author = {{Jermyn}, A.~S.},
+         title = "{Automatic Contraction of Unstructured Tensor Networks}",
+         journal = {ArXiv e - prints},
+         archivePrefix = "arXiv",
+         eprint = {1709.03080},
+         primaryClass = "physics.comp-ph",
+         keywords = {Physics - Computational Physics, Condensed Matter - Statistical Mechanics, Condensed Matter - Strongly Correlated Electrons},
+         year = 2017,
+         month = sep,
+         adsurl = {http: // adsabs.harvard.edu / abs / 2017arXiv170903080J},
+         adsnote = {Provided by the SAO / NASA Astrophysics Data System}
+         }
 @ARTICLE{2017arXiv170807471J,
-   author = {{Jermyn}, A.~S.},
-    title = "{Efficient Decomposition of High-Rank Tensors}",
-  journal = {ArXiv e-prints},
-archivePrefix = "arXiv",
-   eprint = {1708.07471},
- primaryClass = "physics.comp-ph",
- keywords = {Physics - Computational Physics, Computer Science - Numerical Analysis},
-     year = 2017,
-    month = aug,
-   adsurl = {http://adsabs.harvard.edu/abs/2017arXiv170807471J},
-  adsnote = {Provided by the SAO/NASA Astrophysics Data System}
-}
+         author = {{Jermyn}, A.~S.},
+         title = "{Efficient Decomposition of High-Rank Tensors}",
+         journal = {ArXiv e - prints},
+         archivePrefix = "arXiv",
+         eprint = {1708.07471},
+         primaryClass = "physics.comp-ph",
+         keywords = {Physics - Computational Physics, Computer Science - Numerical Analysis},
+         year = 2017,
+         month = aug,
+         adsurl = {http: // adsabs.harvard.edu / abs / 2017arXiv170807471J},
+         adsnote = {Provided by the SAO / NASA Astrophysics Data System}
+         }
 ```
