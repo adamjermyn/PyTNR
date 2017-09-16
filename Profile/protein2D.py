@@ -17,4 +17,4 @@ n = mergeContractor(n, accuracy, optimize=True, merge=True, verbose=2)
 
 print(len(n.nodes))
 for nn in n.nodes:
-	print(nn.tensor.array)
+    print(nn.tensor.array)
