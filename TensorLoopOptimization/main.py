@@ -109,7 +109,7 @@ def normMat(tensors, index):
 
 	iden = np.identity(tensors[index].shape[1])
 	x = np.tensordot(x, iden, axes=(tuple(),tuple()))
-	x = np.transpose(x, axes=(0,4,1,2,5,3))
+	x = np.transpose(x, axes=(3,5,0,2,4,1))
 	x = np.reshape(x, (tensors[index].size, tensors[index].size))
 
 	return x
@@ -185,6 +185,8 @@ def optimizeTensor(t1, t2, index, eps=1e-5):
 	# (eg t2[0] and t2[1]). This points to it being associated with the construction of the matrix
 	# rather than subsequent logic.
 	# 
+	# The fact that also affects the operator form in the same indices but with different results suggests an
+	# underlying logic error.
 
 	op = normMat(t2, index)
 	res = np.linalg.solve(op, W).reshape(t2[index].shape)
@@ -203,6 +205,7 @@ def optimizeTensor(t1, t2, index, eps=1e-5):
 	print('DDD',np.sum(x**2))
 
 	print(err0, err1, np.sum(np.abs(op-op.T)), norm(ret) - np.dot(x, np.dot(op, x)), norm(t1), norm(ret), np.dot(x,W))
+	assert abs(norm(ret) / np.dot(x, np.dot(op, x)) - 1) < 1e-3
 	assert err0 >= 0
 	assert err1 >= 0
 #	assert err1 <= err0
