@@ -9,6 +9,44 @@ def shift(l, n):
 	n = n % len(l)
 	return l[-n:] + l[:-n]
 
+def zipTensors(t1, t2):
+	'''
+	t1 and t2 are lists of equal length of rank-3 tensors. The second dimension in each tensor
+	in one list matches that of the corresponding tensor, such that they may be contracted.
+
+	The return value is the list of rank-4 tensors which results from contracting corresponding
+	tensors in these lists.
+	'''
+	return [np.tensordot(a,b, axes=((1,),(1,))) for a,b in zip(*(t1, t2))]
+
+def contractRank4(tens1, tens2):
+	'''
+	tens1 and tens2 are rank-4 tensors resulting from a zipTensors operation.
+	It is assumed that they are each wired in the following way:
+
+		0 -		  - 1
+			Tensor
+		2 - 	  - 3
+
+	The return value is their contraction (placed side by side in the orientation shown above).
+	This is given such that the indices not involved in the contraction are numbered in the same fashion
+	as before the contraction.
+	'''
+
+	# Contract tensors
+	x = np.tensordot(tens1, tens2, axes=((1,3),(0,2)))
+
+	# Now the result has the form
+	#
+	#	0 -		  - 2
+	#		Tensor
+	#	1 - 	  - 3
+	#
+	# So we swap axes 1 and 2 to restore it to the desired form.
+	x = np.swapaxes(x, 1, 2)
+
+	return x
+
 def contract(t1, t2):
 	'''
 	t1 and t2 are lists of rank-3 tensors set such that in each list the last index of
@@ -19,16 +57,15 @@ def contract(t1, t2):
 	'''
 
 	# Contract the connections between the two lists
-	cont = [np.tensordot(a,b, axes=((1,),(1,))) for a,b in zip(*(t1, t2))]
+	cont = zipTensors(t1, t2)
 
 	# Contract the two lists
 	x = cont[0]
-	x = np.swapaxes(x, 1, 2)
 	for y in cont[1:]:
-		x = np.tensordot(x, y, axes=((2,3),(0,2)))
+		x = contractRank4(x, y)
 
 	# Contract the periodic indices
-	n = np.einsum('ijij->',x)
+	n = np.einsum('iijj->',x)
 
 	return n
 
@@ -42,49 +79,6 @@ def norm(tensors):
 	'''
 	return contract(tensors, tensors)
 
-def normOp(tensors, index):
-	'''
-	tensors is a list of rank-3 tensors set such that the last index of each contracts
-	with the first index of the next, and the last index of the last tensor contracts
-	with the first index of the first one.
-
-	The return value is a sparse linear operator which represents the action of the tensor
-	minus that at index contracted against itself minus that at index. This is the operator
-	N from equation S10 in arXiv:1512.04938.
-	'''
-	
-	# Contract the connections between the two lists
-	cont = [np.tensordot(a,b, axes=((1,),(1,))) for a,b in zip(*(tensors, tensors))]
-	
-	# Rotate cont so that index becomes len(cont)-1.
-	cont = shift(cont, len(cont) - 1 - index)
-
-	# Contract the two lists aside from index
-	x = cont[0]
-	x = np.swapaxes(x, 1, 2)
-	for y in cont[1:len(cont)-1]:
-		x = np.tensordot(x, y, axes=((2,3),(0,2)))
-
-	# Construct N as a sparse linear operator.
-	def matvec(v):
-		# v is a flattened version of a rank-3 tensor.
-		v = np.reshape(v, tensors[index].shape)
-		ret = np.tensordot(x, v, axes=((2,0),(0,2)))
-		ret = np.swapaxes(ret, 1, 2)
-
-		# At this point a careful counting suggests that we should swap indices 0 and 2.
-		# A more careful counting, however, reveals that because these swap upon moving from
-		# the space to its dual, we don't need to do so.
-		return ret
-
-	def rmatvec(v):
-		# This is a square operator.
-		return matvec(v)
-
-	op = LinearOperator((tensors[index].size,tensors[index].size), matvec=matvec, rmatvec=rmatvec)
-
-	return op
-
 def normMat(tensors, index):
 	'''
 	tensors is a list of rank-3 tensors set such that the last index of each contracts
@@ -96,20 +90,46 @@ def normMat(tensors, index):
 	N from equation S10 in arXiv:1512.04938.
 	'''
 	# Contract the connections between the two lists
-	cont = [np.tensordot(a,b, axes=((1,),(1,))) for a,b in zip(*(tensors, tensors))]
+	cont = zipTensors(tensors, tensors)
 	
 	# Rotate cont so that index becomes len(cont)-1.
 	cont = shift(cont, len(cont) - 1 - index)
 
 	# Contract the two lists aside from index
 	x = cont[0]
-	x = np.swapaxes(x, 1, 2)
 	for y in cont[1:len(cont)-1]:
-		x = np.tensordot(x, y, axes=((2,3),(0,2)))
+		x = contractRank4(x, y)
 
+	# Now the result has the form
+	#
+	#	0 -		  - 1
+	#		Tensor
+	#	2 - 	  - 3
+	#
+	# We outer product with the identity
 	iden = np.identity(tensors[index].shape[1])
 	x = np.tensordot(x, iden, axes=(tuple(),tuple()))
-	x = np.transpose(x, axes=(3,5,0,2,4,1))
+	# This gives
+	#
+	#	0 -		  - 1
+	#		Tensor
+	#	2 - 	  - 3
+	#
+	#	4 - Ident - 5
+	#
+	# Now we want to permute these indices so that upon flattening
+	# the first three and the last three we obtain a matrix which
+	# may be dotted against a vector formed by flattening a rank-3 tensor
+	# to produce a result which may be un-flattened into a rank-3 tensor.
+	# Indices 0, 1, and 5 dot against a rank-3 tensor, so these must become the last 3.
+	# The identity (5) touches the middle index, so it must be the second in this group.
+	# The first three must then be 2, 3, 4, with 4 in the middle.
+	# Thus we want to permute the indices to be (2, 4, 3), (0, 5, 1).
+	# This is not quite right, however, as the non-identity indices must match up with the convention
+	# that the first in each group is the one that touches the left-index of the rank-3 object
+	# and the final in each group is the one that touches the right-index. Thus we actually want
+	# (3, 4, 2), (1, 5, 0).
+	x = np.transpose(x, axes=(3,4,2,1,5,0))
 	x = np.reshape(x, (tensors[index].size, tensors[index].size))
 
 	return x
@@ -165,16 +185,16 @@ def optimizeTensor(t1, t2, index, eps=1e-5):
 
 	ret = t2[::]
 
-	for _ in range(3):
-		for i in range(len(ret)):
-			print('IND:',i,index)
-			op = normMat(t2, i)
-			ret = t2[::]
-			for _ in range(3):
-				ret[i] = np.random.randn(*ret[i].shape)
-				x = ret[i].reshape((-1,))
-				print(norm(ret)-np.dot(x, np.dot(op, x)))
-				print(norm(ret)-np.dot(x, normOp(t2, i).matvec(x)))
+	if False:
+		for _ in range(3):
+			for i in range(len(ret)):
+				print('IND:',i,index)
+				op = normMat(t2, i)
+				ret = t2[::]
+				for _ in range(3):
+					ret[i] = np.random.randn(*ret[i].shape)
+					x = ret[i].reshape((-1,))
+					print(norm(ret)-np.dot(x, np.dot(op, x)))
 
 	# Something breaks here which causes x.op.x to not always be norm(ret).
 	# Whatver it is is persistent (e.g. breaks in the same place even when op
@@ -200,14 +220,15 @@ def optimizeTensor(t1, t2, index, eps=1e-5):
 	err0 = norm(t1) + np.dot(y, np.dot(op, y)) - 2 * np.dot(y, W)
 	err1 = norm(t1) + np.dot(x, np.dot(op, x)) - 2 * np.dot(x, W)
 
-	print('CCC',contract(t1,ret) - np.dot(x,W))
-	print('BBB',norm(ret) / np.dot(x, np.dot(op, x)), norm(ret), np.sum(np.abs(np.dot(op, ret[index].reshape((-1,))) - W)))
-	print('DDD',np.sum(x**2))
+	if False:
+		print('CCC',contract(t1,ret) - np.dot(x,W))
+		print('BBB',norm(ret) / np.dot(x, np.dot(op, x)), norm(ret), np.sum(np.abs(np.dot(op, ret[index].reshape((-1,))) - W)))
+		print('DDD',np.sum(x**2))
 
-	print(err0, err1, np.sum(np.abs(op-op.T)), norm(ret) - np.dot(x, np.dot(op, x)), norm(t1), norm(ret), np.dot(x,W))
-	assert abs(norm(ret) / np.dot(x, np.dot(op, x)) - 1) < 1e-3
-	assert err0 >= 0
-	assert err1 >= 0
+#	print(err0, err1, np.sum(np.abs(op-op.T)), norm(ret) - np.dot(x, np.dot(op, x)), norm(t1), norm(ret), np.dot(x,W))
+#	assert abs(norm(ret) / np.dot(x, np.dot(op, x)) - 1) < 1e-3
+#	assert err0 >= 0
+#	assert err1 >= 0
 #	assert err1 <= err0
 
 	return ret, err0, err1
@@ -228,10 +249,6 @@ def optimizeRank(tensors, ranks, stop=1e-2, start=None):
 
 	A starting point for optimization may be provided using the option start.
 	'''
-	
-	# Normalize tensors
-#	n = norm(tensors)
-#	tensors[0] /= np.sqrt(n)
 
 	# Generate random starting point and normalize.
 	if start is not None:
@@ -248,13 +265,8 @@ def optimizeRank(tensors, ranks, stop=1e-2, start=None):
 			t2, err1, err2 = optimizeTensor(tensors, t2, i)
 			derr = (err1 - err2)
 			dlnerr = derr / err1
-			print(dlnerr,err1,err2)
+#			print(dlnerr,err1,err2)
 			err1 = err2
-
-	print('Done.')
-	# Restore normalization
-#	t2[0] *= np.sqrt(n)
-#	tensors[0] *= np.sqrt(n)
 
 	return t2, err1
 
@@ -322,7 +334,7 @@ def test(dim):
 	x = 1 + np.random.randn(dim,dim,dim)
 	return x
 
-tensors = [test(2) for _ in range(5)]
+tensors = [test(5) for _ in range(5)]
 tensors[0] /= np.sqrt(norm(tensors))
 optimize(tensors, 1e-5)
 	
