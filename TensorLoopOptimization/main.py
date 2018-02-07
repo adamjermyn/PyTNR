@@ -185,32 +185,8 @@ def optimizeTensor(t1, t2, index, eps=1e-5):
 
 	ret = t2[::]
 
-	if False:
-		for _ in range(3):
-			for i in range(len(ret)):
-				print('IND:',i,index)
-				op = normMat(t2, i)
-				ret = t2[::]
-				for _ in range(3):
-					ret[i] = np.random.randn(*ret[i].shape)
-					x = ret[i].reshape((-1,))
-					print(norm(ret)-np.dot(x, np.dot(op, x)))
-
-	# Something breaks here which causes x.op.x to not always be norm(ret).
-	# Whatver it is is persistent (e.g. breaks in the same place even when op
-	# is regenerated), does not rely on modifying ret or t2, and generally
-	# only affects op for some indices and not others.
-	# In addition, for unclear reasons it only ever affects non-terminal indices (e.g.
-	# not the final one in t2). In fact, it seems to only affect the first two indices
-	# (eg t2[0] and t2[1]). This points to it being associated with the construction of the matrix
-	# rather than subsequent logic.
-	# 
-	# The fact that also affects the operator form in the same indices but with different results suggests an
-	# underlying logic error.
-
 	op = normMat(t2, index)
 	res = np.linalg.solve(op, W).reshape(t2[index].shape)
-#	res = lsqr(op, W)[0].reshape(t2[index].shape)
 
 	ret = t2[::]
 	ret[index] = res
@@ -220,20 +196,9 @@ def optimizeTensor(t1, t2, index, eps=1e-5):
 	err0 = norm(t1) + np.dot(y, np.dot(op, y)) - 2 * np.dot(y, W)
 	err1 = norm(t1) + np.dot(x, np.dot(op, x)) - 2 * np.dot(x, W)
 
-	if False:
-		print('CCC',contract(t1,ret) - np.dot(x,W))
-		print('BBB',norm(ret) / np.dot(x, np.dot(op, x)), norm(ret), np.sum(np.abs(np.dot(op, ret[index].reshape((-1,))) - W)))
-		print('DDD',np.sum(x**2))
-
-#	print(err0, err1, np.sum(np.abs(op-op.T)), norm(ret) - np.dot(x, np.dot(op, x)), norm(t1), norm(ret), np.dot(x,W))
-#	assert abs(norm(ret) / np.dot(x, np.dot(op, x)) - 1) < 1e-3
-#	assert err0 >= 0
-#	assert err1 >= 0
-#	assert err1 <= err0
-
 	return ret, err0, err1
 
-def optimizeRank(tensors, ranks, stop=1e-2, start=None):
+def optimizeRank(tensors, ranks, stop, start=None):
 	'''
 	tensors is a list of rank-3 tensors set such that the last index of each contracts
 	with the first index of the next, and the last index of the last tensor contracts
@@ -259,14 +224,15 @@ def optimizeRank(tensors, ranks, stop=1e-2, start=None):
 
 	# Optimization loop
 	dlnerr = 1
+	err1 = 1e100
 
-	while dlnerr > 0.01:
+	while dlnerr > stop:
 		for i in range(len(tensors)):
-			t2, err1, err2 = optimizeTensor(tensors, t2, i)
-			derr = (err1 - err2)
-			dlnerr = derr / err1
-#			print(dlnerr,err1,err2)
-			err1 = err2
+			t2, _, err2 = optimizeTensor(tensors, t2, i)
+		derr = (err1 - err2)
+		dlnerr = derr / err1
+		print(dlnerr,err1,err2)
+		err1 = err2
 
 	return t2, err1
 
@@ -285,36 +251,34 @@ def optimize(tensors, tol):
 	ranks = [1 for _ in range(len(tensors))]
 
 	# Optimization loop
-	t2, err = optimizeRank(tensors, ranks)
+	t2, err = optimizeRank(tensors, ranks, 1e-2)
 	while err > tol:		
 		options = []
-		print(err)
 		# Try different rank increases
 		for i in range(len(tensors)):
-			ranksNew = ranks[::]
-			ranksNew[i] += 1
+			if ranks[i] < tensors[i].shape[1]:
+				ranksNew = ranks[::]
+				ranksNew[i] += 1
 
-			print(ranksNew)
+				# Generate starting point
+				start = t2[::]
 
-			# Generate starting point
-			start = t2[::]
+				# Enlarge tensor to the left of the bond
+				sh = list(start[i].shape)
+				sh[2] += 1
+				start[i] = np.random.randn(*sh)
+				start[i][:,:,:-1] = t2[i]
 
-			# Enlarge tensor to the left of the bond
-			sh = list(start[i].shape)
-			sh[2] += 1
-			start[i] = np.zeros(sh)
-			start[i][:,:,:-1] = t2[i]
+				# Enlarge tensor to the right of the bond
+				sh = list(start[(i+1)%len(start)].shape)
+				sh[0] += 1
+				start[(i+1)%len(start)] = np.random.randn(*sh)
+				start[(i+1)%len(start)][:-1,:,:] = t2[(i+1)%len(start)]
 
-			# Enlarge tensor to the right of the bond
-			sh = list(start[(i+1)%len(start)].shape)
-			sh[0] += 1
-			start[(i+1)%len(start)] = np.zeros(sh)
-			start[(i+1)%len(start)][:-1,:,:] = t2[(i+1)%len(start)]
-
-			# Optimize
-			t2New, errNew = optimizeRank(tensors, ranksNew, start=None)
-			options.append((ranksNew, t2New, errNew))
-			print(errNew)
+				# Optimize
+				t2New, errNew = optimizeRank(tensors, ranksNew, err, start=start)
+				options.append((ranksNew, t2New, errNew))
+				print(ranksNew, errNew)
 
 		# Pick the best option
 		print(min(options, key=lambda x: x[2])[2], err)
@@ -331,7 +295,7 @@ def kronecker(dim):
 	return x
 
 def test(dim):
-	x = 1 + np.random.randn(dim,dim,dim)
+	x = 2 + np.random.randn(dim,dim,dim)
 	return x
 
 tensors = [test(5) for _ in range(5)]
