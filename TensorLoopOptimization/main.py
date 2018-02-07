@@ -276,7 +276,7 @@ def optimize(tensors, tol):
 				start[(i+1)%len(start)][:-1,:,:] = t2[(i+1)%len(start)]
 
 				# Optimize
-				t2New, errNew = optimizeRank(tensors, ranksNew, err, start=start)
+				t2New, errNew = optimizeRank(tensors, ranksNew, (err)**0.5, start=start)
 				options.append((ranksNew, t2New, errNew))
 				print(ranksNew, errNew)
 
@@ -286,7 +286,7 @@ def optimize(tensors, tol):
 		ranks, t2, err = min(options, key=lambda x: x[2])
 		print(ranks, err)
 
-	return ranks, t2, err
+	return ranks, err, t2
 
 def kronecker(dim):
 	x = np.zeros((dim, dim, dim))
@@ -295,10 +295,10 @@ def kronecker(dim):
 	return x
 
 def test(dim):
-	x = 2 + np.random.randn(dim,dim,dim)
+	x = 5 + np.random.randn(dim,dim,dim)
 	return x
 
 tensors = [test(5) for _ in range(5)]
 tensors[0] /= np.sqrt(norm(tensors))
-optimize(tensors, 1e-5)
+print(optimize(tensors, 1e-5)[:2])
 	
