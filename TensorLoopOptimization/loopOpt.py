@@ -291,7 +291,7 @@ def optimize(tensors, tol):
 			ranks, t2, err = min(options, key=lambda x: x[2])
 		else:
 			return None
-#		print(ranks, err)
+		print(ranks, err)
 
 	return ranks, err, t2
 
