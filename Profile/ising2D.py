@@ -17,8 +17,7 @@ n = mergeContractor(
     accuracy,
     optimize=False,
     merge=False,
-    mergeCut=15,
-    verbose=2)
+    mergeCut=15)
 
 print(len(n.nodes))
 for nn in n.nodes:
