@@ -167,18 +167,20 @@ class TreeTensor(Tensor):
         # Get tensors and transpose into correct form
         tensors = []
         inds = []
+        shs = []
         for i,l in enumerate(loop):
             arr = l.tensor.array
             ind0 = l.indexConnecting(loop[i-1])
             ind2 = l.indexConnecting(loop[(i+1)%len(loop)])
             ind1 = set((0,1,2)).difference(set((ind0,ind2))).pop()
+            shs.append(arr.shape[ind1])
             inds.append((ind0, ind1, ind2))
             arr = np.transpose(arr, axes=(ind0, ind1, ind2))
             tensors.append(arr)
 
         # Optimize
-
         arrs = optimize(tensors, self.accuracy)
+
 
         # Now transpose back to the original shape
         for i,arr in enumerate(arrs):
@@ -189,8 +191,18 @@ class TreeTensor(Tensor):
             ind2 = inds[i].index(2)
 
             arr = np.transpose(arr, axes=(ind0, ind1, ind2))
+            assert arr.shape[inds[i][1]] == shs[i]
 
             loop[i].tensor = ArrayTensor(arr)
+
+        for i,l in enumerate(loop):
+            arrM1 = loop[i-1].tensor.array
+            arr = loop[i].tensor.array
+            arrP1 = loop[(i+1)%len(loop)].tensor.array
+
+            assert arr.shape[inds[i][1]] == shs[i]
+            assert arrM1.shape[inds[i-1][2]] == arr.shape[inds[i][0]]
+            assert arr.shape[inds[i][2]] == arrP1.shape[inds[(i+1)%len(loop)][0]]
 
         logger.debug('Optimized.')
 
