@@ -74,7 +74,7 @@ def test_mergeNode_ArrayTensor():
         assert len(net.externalBuckets) == 4
         assert len(net.optimizedLinks) == 0
 
-        arr, bdict = net.array
+        arr, logAcc, bdict = net.array
         assert arr.shape == (3, 3, 3, 3)
         for b in net.buckets:
             assert b.id in bdict
@@ -83,7 +83,7 @@ def test_mergeNode_ArrayTensor():
                 if b1.id < b2.id:
                     assert bdict[b1.id] < bdict[b2.id]
 
-        assert np.sum((arr - np.einsum('ijk,ilm->jklm', x, x))**2) < epsilon
+        assert np.sum((np.exp(logAcc) * arr - np.einsum('ijk,ilm->jklm', x, x))**2) < epsilon
 
 
 def test_mergeNode_TreeTensor():
@@ -111,7 +111,7 @@ def test_mergeNode_TreeTensor():
         assert len(net.externalBuckets) == 8
         assert len(net.optimizedLinks) == 0
 
-        arr, bdict = net.array
+        arr, logAcc, bdict = net.array
         assert arr.shape == (2, 2, 2, 2, 2, 2, 2, 2)
         for b in net.buckets:
             assert b.id in bdict
@@ -120,8 +120,10 @@ def test_mergeNode_TreeTensor():
                 if b1.id < b2.id:
                     assert bdict[b1.id] < bdict[b2.id]
 
+        print(logAcc)
+
         assert np.sum(
-            (arr -
+            (np.exp(logAcc) * arr -
              np.einsum(
                  'ijklm,iqwer->jklmqwer',
                  x,
@@ -143,14 +145,13 @@ def test_mergeLinks_ArrayTensor():
         Link(n1.buckets[1], n2.buckets[1])
         net.addNode(n2)
 
-        arr1, bdict1 = net.array
+        arr1, logAcc1, bdict1 = net.array
 
         net.mergeLinks(n1)
 
-        arr2, bdict2 = net.array
+        arr2, logAcc2, bdict2 = net.array
 
-        assert np.sum((arr1 - arr2)**2) < epsilon
-        assert np.sum((arr1 - arr2)**2) < epsilon
+        assert np.sum((arr1 * np.exp(logAcc1) - arr2 * np.exp(logAcc2))**2) < epsilon
 
 
 def test_mergeLinks_TreeTensor():
@@ -171,13 +172,13 @@ def test_mergeLinks_TreeTensor():
         Link(n1.buckets[5], n2.buckets[4])
         net.addNode(n2)
 
-        arr1, bdict1 = net.array
+        arr1, logAcc1, bdict1 = net.array
 
         net.mergeLinks(n1)
 
-        arr2, bdict2 = net.array
+        arr2, logAcc2, bdict2 = net.array
 
-        assert np.sum((arr1 - arr2)**2) < epsilon
+        assert np.sum((arr1 * np.exp(logAcc1) - arr2 * np.exp(logAcc2))**2) < epsilon
 
     for i in range(5):
         net = Network()
@@ -196,13 +197,13 @@ def test_mergeLinks_TreeTensor():
         Link(n1.buckets[5], n2.buckets[0])
         net.addNode(n2)
 
-        arr1, bdict1 = net.array
+        arr1, logAcc1, bdict1 = net.array
 
         net.mergeLinks(n1)
 
-        arr2, bdict2 = net.array
+        arr2, logAcc2, bdict2 = net.array
 
-        assert np.sum((arr1 - arr2)**2) < epsilon
+        assert np.sum((arr1 * np.exp(logAcc1) - arr2 * np.exp(logAcc2))**2) < epsilon
 
 
 def test_mergeLinks_ArrayTensor_Compress():
@@ -220,14 +221,13 @@ def test_mergeLinks_ArrayTensor_Compress():
         Link(n1.buckets[1], n2.buckets[1])
         net.addNode(n2)
 
-        arr1, bdict1 = net.array
+        arr1, logAcc1, bdict1 = net.array
 
         net.mergeLinks(n1, compress=True, accuracy=epsilon)
 
-        arr2, bdict2 = net.array
+        arr2, logAcc2, bdict2 = net.array
 
-        assert np.sum((arr1 - arr2)**2) < epsilon
-        assert np.sum((arr1 - arr2)**2) < epsilon
+        assert np.sum((arr1 * np.exp(logAcc1) - arr2 * np.exp(logAcc2))**2) < epsilon
 
 
 def test_mergeLinks_TreeTensor_Compress():
@@ -248,11 +248,10 @@ def test_mergeLinks_TreeTensor_Compress():
         Link(n1.buckets[1], n2.buckets[1])
         net.addNode(n2)
 
-        arr1, bdict1 = net.array
+        arr1, logAcc1, bdict1 = net.array
 
         net.mergeLinks(n1, compress=True, accuracy=epsilon)
 
-        arr2, bdict2 = net.array
+        arr2, logAcc2, bdict2 = net.array
 
-        assert np.sum((arr1 - arr2)**2) < epsilon
-        assert np.sum((arr1 - arr2)**2) < epsilon
+        assert np.sum((arr1 * np.exp(logAcc1) - arr2 * np.exp(logAcc2))**2) < epsilon
