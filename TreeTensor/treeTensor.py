@@ -16,6 +16,7 @@ from TNR.Network.bucket import Bucket
 from TNR.Network.traceMin import traceMin
 from TNR.Utilities.svd import entropy
 from TNR.Utilities.graphPlotter import makePlotter
+from TNR.TensorLoopOptimization.loopOpt import optimizeNorm as optimize
 
 counter0 = 0
 
@@ -160,9 +161,52 @@ class TreeTensor(Tensor):
 
         return t1
 
+    def optimizeLoop(self, loop):
+        logger.debug('Optimizing loop.')
+
+        # Get tensors and transpose into correct form
+        tensors = []
+        inds = []
+        for i,l in enumerate(loop):
+            arr = l.tensor.array
+            ind0 = l.indexConnecting(loop[i-1])
+            ind2 = l.indexConnecting(loop[(i+1)%len(loop)])
+            ind1 = set((0,1,2)).difference(set((ind0,ind2))).pop()
+            inds.append((ind0, ind1, ind2))
+            arr = np.transpose(arr, axes=(ind0, ind1, ind2))
+            tensors.append(arr)
+
+        # Optimize
+
+        arrs = optimize(tensors, self.accuracy)
+
+        # Now transpose back to the original shape
+        for i,arr in enumerate(arrs):
+            ind0, ind1, ind2 = inds[i]
+
+            ind0 = inds[i].index(0)
+            ind1 = inds[i].index(1)
+            ind2 = inds[i].index(2)
+
+            arr = np.transpose(arr, axes=(ind0, ind1, ind2))
+
+            loop[i].tensor = ArrayTensor(arr)
+
+        logger.debug('Optimized.')
+
+
+    def optimizeLoops(self):
+        cycles = networkx.cycles.cycle_basis(self.network.toGraph())
+
+        for c in cycles:
+            self.optimizeLoop(c)
+
+
     def eliminateLoops(self, otherNodes, plot=False):
         global counter0
         tm = traceMin(self.network, otherNodes)
+
+        self.optimizeLoops()
 
         while len(networkx.cycles.cycle_basis(self.network.toGraph())) > 0:
             if plot:
