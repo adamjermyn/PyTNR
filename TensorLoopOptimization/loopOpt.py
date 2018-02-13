@@ -234,7 +234,7 @@ def optimizeRank(tensors, ranks, stop, start=None):
 			t2, _, err2 = optimizeTensor(tensors, t2, i)
 		derr = (err1 - err2)
 		dlnerr = derr / err1
-		print(dlnerr,err1,err2)
+#		print(dlnerr,err1,err2)
 		err1 = err2
 
 	return t2, err1
@@ -281,15 +281,29 @@ def optimize(tensors, tol):
 				# Optimize
 				t2New, errNew = optimizeRank(tensors, ranksNew, (err)**0.5, start=start)
 				options.append((ranksNew, t2New, errNew))
-				print(ranksNew, errNew)
+#				print(ranksNew, errNew)
 
 		# Pick the best option
-		print(min(options, key=lambda x: x[2])[2], err)
-		assert min(options, key=lambda x: x[2])[2] < err
-		ranks, t2, err = min(options, key=lambda x: x[2])
-		print(ranks, err)
+#		print(min(options, key=lambda x: x[2])[2], err)
+#		print(min(options, key=lambda x: x[2])[2], err)
+#		assert min(options, key=lambda x: x[2])[2] < err
+		if len(options) > 0:
+			ranks, t2, err = min(options, key=lambda x: x[2])
+		else:
+			return None
+#		print(ranks, err)
 
 	return ranks, err, t2
+
+def optimizeNorm(tensors, tol):
+	n = np.sqrt(norm(tensors))
+	tensors[0] /= n
+	tNew = optimize(tensors, tol)
+	if tNew is not None:
+		tensors = tNew[2]
+
+	tensors[0] *= n
+	return tensors
 
 def kronecker(dim):
 	x = np.zeros((dim, dim, dim))
