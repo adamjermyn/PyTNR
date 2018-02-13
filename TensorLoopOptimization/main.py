@@ -361,23 +361,24 @@ def test2(dimRoot):
 
 	return [a,b,r]
 
-dimRoot = 5
-dim = dimRoot**2
-tensors = test2(dimRoot)
+#dimRoot = 5
 
-a,b,r = tensors
+#dim = dimRoot**2
+#tensors = test2(dimRoot)
 
-print(np.linalg.svd(np.einsum('ijk,kml->ijml',a,b).reshape((dim*dimRoot,dim*dimRoot)))[1])
-print(np.linalg.svd(np.einsum('ijk,kml->ijml',b,r).reshape((dim**2*dimRoot,dim*dimRoot)))[1])
-print(np.linalg.svd(np.einsum('ijk,kml->ijml',r,a).reshape((dimRoot**2,dim*dimRoot**2)))[1])
+#a,b,r = tensors
+
+#print(np.linalg.svd(np.einsum('ijk,kml->ijml',a,b).reshape((dim*dimRoot,dim*dimRoot)))[1])
+#print(np.linalg.svd(np.einsum('ijk,kml->ijml',b,r).reshape((dim**2*dimRoot,dim*dimRoot)))[1])
+#print(np.linalg.svd(np.einsum('ijk,kml->ijml',r,a).reshape((dimRoot**2,dim*dimRoot**2)))[1])
 
 #tensors = [test(5) for _ in range(5)]
 #tensors = testTensors(5, 5)
-tensors[0] /= np.sqrt(norm(tensors))
-print(optimize(tensors, 1e-5)[:2])
+#tensors[0] /= np.sqrt(norm(tensors))
+#print(optimize(tensors, 1e-5)[:2])
 	
 
-print(np.linalg.svd(np.einsum('ijk,kml->ijml',a,b).reshape((dim*dimRoot,dim*dimRoot)))[1])
-print(np.linalg.svd(np.einsum('ijk,kml->ijml',b,r).reshape((dim**2*dimRoot,dim*dimRoot)))[1])
-print(np.linalg.svd(np.einsum('ijk,kml->ijml',r,a).reshape((dimRoot**2,dim*dimRoot**2)))[1])
+#print(np.linalg.svd(np.einsum('ijk,kml->ijml',a,b).reshape((dim*dimRoot,dim*dimRoot)))[1])
+#print(np.linalg.svd(np.einsum('ijk,kml->ijml',b,r).reshape((dim**2*dimRoot,dim*dimRoot)))[1])
+#print(np.linalg.svd(np.einsum('ijk,kml->ijml',r,a).reshape((dimRoot**2,dim*dimRoot**2)))[1])
 
