@@ -1,6 +1,7 @@
 from copy import deepcopy
 import numpy as np
 import operator
+import sys
 
 from TNR.Network.network import Network
 from TNR.Network.node import Node
@@ -9,7 +10,6 @@ from TNR.Network.link import Link
 from TNR.Tensor.arrayTensor import ArrayTensor
 from TNR.Utilities.svd import entropy, splitArray
 
-import sys
 sys.setrecursionlimit(10000)
 
 from TNR.Utilities.logger import makeLogger
@@ -201,6 +201,7 @@ class TreeNetwork(Network):
 
         logger.debug('Eliminating cycle of length ' +
                      str(len(loop)) + ' with components of (ID, shape, size):')
+
         for l in loop:
             logger.debug(str(l.id) + ', ' + str(l.tensor.shape) +
                          ', ' + str(l.tensor.size))
