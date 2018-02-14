@@ -41,6 +41,30 @@ class TreeNetwork(Network):
 
         self.accuracy = accuracy
 
+    def cutLinks(self):
+        '''
+        Identifies links with dimension 1 and eliminates them.
+        '''
+
+        for n in self.nodes:
+            for m in self.internalConnected(n):
+                dim = 1
+                while dim == 1 and m in self.internalConnected(n):
+                    inds = n.indicesConnecting(m)
+                    i = inds[0][0]
+                    j = inds[1][0]
+                    print(i,j,n.tensor.shape,m.tensor.shape)
+                    dim = n.tensor.shape[i]
+                    if dim == 1:
+                        sl = i * [Ellipsis] + [0] + (n.tensor.rank - i - 1) * [Ellipsis]
+                        n.tensor = ArrayTensor(n.tensor.array[sl])
+                        n.buckets.remove(n.buckets[i])
+                        sl = j * [Ellipsis] + [0] + (m.tensor.rank - j - 1) * [Ellipsis]
+                        m.tensor = ArrayTensor(m.tensor.array[sl])
+                        m.buckets.remove(m.buckets[j])
+
+
+
     def pathBetween(self, node1, node2, calledFrom=None):
         '''
         Returns the unique path between node1 and node2.

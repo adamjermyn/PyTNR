@@ -212,6 +212,7 @@ class TreeTensor(Tensor):
 
         for c in cycles:
             self.optimizeLoop(c)
+            self.network.cutLinks()
 
 
     def eliminateLoops(self, otherNodes, plot=False):
@@ -237,6 +238,7 @@ class TreeTensor(Tensor):
                 best = tm.bestSwap()
                 tm.swap(best[1], best[2], best[3])
 
+            self.network.cutLinks()
             logger.debug(str(self.network))
 
         counter0 += 1
