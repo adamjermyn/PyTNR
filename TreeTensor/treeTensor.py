@@ -17,6 +17,8 @@ from TNR.Network.traceMin import traceMin
 from TNR.Utilities.svd import entropy
 from TNR.Utilities.graphPlotter import makePlotter
 from TNR.TensorLoopOptimization.loopOpt import optimizeNorm as optimize
+from TNR.TensorLoopOptimization.loopOpt import cutNorm as cut
+
 
 counter0 = 0
 
@@ -214,34 +216,62 @@ class TreeTensor(Tensor):
             self.optimizeLoop(c)
             self.network.cutLinks()
 
+    def cutLoop(self, loop):
+        logger.debug('Cutting loop.')
+
+        # Get tensors and transpose into correct form
+        tensors = []
+        inds = []
+        shs = []
+        for i,l in enumerate(loop):
+            arr = l.tensor.array
+            ind0 = l.indexConnecting(loop[i-1])
+            ind2 = l.indexConnecting(loop[(i+1)%len(loop)])
+            ind1 = set((0,1,2)).difference(set((ind0,ind2))).pop()
+            shs.append(arr.shape[ind1])
+            inds.append((ind0, ind1, ind2))
+            arr = np.transpose(arr, axes=(ind0, ind1, ind2))
+            tensors.append(arr)
+
+        # Optimize
+        arrs = cut(tensors, self.accuracy)
+
+        # Now transpose back to the original shape
+        for i,arr in enumerate(arrs):
+            ind0, ind1, ind2 = inds[i]
+
+            ind0 = inds[i].index(0)
+            ind1 = inds[i].index(1)
+            ind2 = inds[i].index(2)
+
+            arr = np.transpose(arr, axes=(ind0, ind1, ind2))
+            assert arr.shape[inds[i][1]] == shs[i]
+
+            loop[i].tensor = ArrayTensor(arr)
+
+        for i,l in enumerate(loop):
+            arrM1 = loop[i-1].tensor.array
+            arr = loop[i].tensor.array
+            arrP1 = loop[(i+1)%len(loop)].tensor.array
+
+            assert arr.shape[inds[i][1]] == shs[i]
+            assert arrM1.shape[inds[i-1][2]] == arr.shape[inds[i][0]]
+            assert arr.shape[inds[i][2]] == arrP1.shape[inds[(i+1)%len(loop)][0]]
+
+        print([l.tensor.shape for l in loop])
+        self.network.cutLinks()
+
+        logger.debug('Cut.')
+
 
     def eliminateLoops(self, otherNodes, plot=False):
-        global counter0
-        tm = traceMin(self.network, otherNodes)
-
-        self.optimizeLoops()
-
         while len(networkx.cycles.cycle_basis(self.network.toGraph())) > 0:
-            if plot:
-                plotter = makePlotter('PNG/' + str(counter0))
-                plotter = plotter(self.network.toGraph())
+            cycles = networkx.cycles.cycle_basis(self.network.toGraph())
+            print(len(cycles))
+            c = cycles.pop()
+            self.cutLoop(c)
+            self.contractRank2()
 
-            logger.debug('Cycle utility is ' +
-                         str(tm.util) +
-                         ' and there are ' +
-                         str(len(networkx.cycles.cycle_basis(self.network.toGraph()))) +
-                         ' cycles remaining.')
-
-            merged = tm.mergeSmall()
-
-            if not merged:
-                best = tm.bestSwap()
-                tm.swap(best[1], best[2], best[3])
-
-            self.network.cutLinks()
-            logger.debug(str(self.network))
-
-        counter0 += 1
         assert len(networkx.cycles.cycle_basis(self.network.toGraph())) == 0
 
     def trace(self, ind0, ind1):
@@ -331,19 +361,7 @@ class TreeTensor(Tensor):
             arr, logScalar=tt.externalBuckets[ind].node.tensor.logScalar)
         return tt
 
-    def optimize(self):
-        '''
-        Optimizes the tensor network to minimize memory usage.
-        '''
-
-        logger.info('Optimizing tensor with shape ' + str(self.shape) + '.')
-
-        s2 = 0
-        for n in self.network.nodes:
-            s2 += n.tensor.size
-
-        logger.info('Stage 1: Contracting Rank-2 Tensors.')
-
+    def contractRank2(self):
         done = set()
         while len(
             done.intersection(
@@ -357,10 +375,25 @@ class TreeTensor(Tensor):
                 else:
                     done.add(n)
             else:
-                done.add(n)
+                done.add(n)      
+
+    def optimize(self):
+        '''
+        Optimizes the tensor network to minimize memory usage.
+        '''
+
+        logger.info('Optimizing tensor with shape ' + str(self.shape) + '.')
+
+        s2 = 0
+        for n in self.network.nodes:
+            s2 += n.tensor.size
+
+        logger.info('Stage 1: Contracting Rank-2 Tensors.')
+        self.contractRank2()
+
+
 
         logger.info('Stage 2: Contracting Double Links.')
-
         done = set()
         while len(
             done.intersection(
@@ -374,8 +407,7 @@ class TreeTensor(Tensor):
                     self.network.mergeNodes(n, n2)
                     merged = True
             if not merged:
-                done.add(n)
-
+                done.add(n) 
         logger.info('Stage 3: Optimizing Links.')
 
         while len(

@@ -58,9 +58,11 @@ class TreeNetwork(Network):
                     if dim == 1:
                         sl = i * [Ellipsis] + [0] + (n.tensor.rank - i - 1) * [Ellipsis]
                         n.tensor = ArrayTensor(n.tensor.array[sl])
+                        self.internalBuckets.remove(n.buckets[i])
                         n.buckets.remove(n.buckets[i])
                         sl = j * [Ellipsis] + [0] + (m.tensor.rank - j - 1) * [Ellipsis]
                         m.tensor = ArrayTensor(m.tensor.array[sl])
+                        self.internalBuckets.remove(m.buckets[j])
                         m.buckets.remove(m.buckets[j])
 
 

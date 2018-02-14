@@ -314,28 +314,27 @@ def cut(tensors, tol):
 		options = []
 		# Try different rank increases
 		for i in range(len(tensors)):
-			if ranks[i] < tensors[i].shape[1]:
-				ranksNew = ranks[::]
-				ranksNew[i] += 1
+			ranksNew = ranks[::]
+			ranksNew[i] += 1
 
-				# Generate starting point
-				start = t2[::]
+			# Generate starting point
+			start = t2[::]
 
-				# Enlarge tensor to the left of the bond
-				sh = list(start[i].shape)
-				sh[2] += 1
-				start[i] = np.random.randn(*sh)
-				start[i][:,:,:-1] = t2[i]
+			# Enlarge tensor to the left of the bond
+			sh = list(start[i].shape)
+			sh[2] += 1
+			start[i] = np.random.randn(*sh)
+			start[i][:,:,:-1] = t2[i]
 
-				# Enlarge tensor to the right of the bond
-				sh = list(start[(i+1)%len(start)].shape)
-				sh[0] += 1
-				start[(i+1)%len(start)] = np.random.randn(*sh)
-				start[(i+1)%len(start)][:-1,:,:] = t2[(i+1)%len(start)]
+			# Enlarge tensor to the right of the bond
+			sh = list(start[(i+1)%len(start)].shape)
+			sh[0] += 1
+			start[(i+1)%len(start)] = np.random.randn(*sh)
+			start[(i+1)%len(start)][:-1,:,:] = t2[(i+1)%len(start)]
 
-				# Optimize
-				t2New, errNew = optimizeRank(tensors, ranksNew, (err)**0.5, start=start)
-				options.append((ranksNew, t2New, errNew))
+			# Optimize
+			t2New, errNew = optimizeRank(tensors, ranksNew, (err)**0.5, start=start)
+			options.append((ranksNew, t2New, errNew))
 #				print(ranksNew, errNew)
 
 		# Pick the best option
