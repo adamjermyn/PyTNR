@@ -295,10 +295,80 @@ def optimize(tensors, tol):
 
 	return ranks, err, t2
 
+def cut(tensors, tol):
+	'''
+	tensors is a list of rank-3 tensors set such that the last index of each contracts
+	with the first index of the next, and the last index of the last tensor contracts
+	with the first index of the first one.
+
+	The return value is an optimized list of tensors representing the original to
+	relative L2 error tol.
+	'''
+
+	# Initialize ranks to one.
+	ranks = [1 for _ in range(len(tensors))]
+
+	# Optimization loop
+	t2, err = optimizeRank(tensors, ranks, 1e-2)
+	while err > tol:		
+		options = []
+		# Try different rank increases
+		for i in range(len(tensors)):
+			if ranks[i] < tensors[i].shape[1]:
+				ranksNew = ranks[::]
+				ranksNew[i] += 1
+
+				# Generate starting point
+				start = t2[::]
+
+				# Enlarge tensor to the left of the bond
+				sh = list(start[i].shape)
+				sh[2] += 1
+				start[i] = np.random.randn(*sh)
+				start[i][:,:,:-1] = t2[i]
+
+				# Enlarge tensor to the right of the bond
+				sh = list(start[(i+1)%len(start)].shape)
+				sh[0] += 1
+				start[(i+1)%len(start)] = np.random.randn(*sh)
+				start[(i+1)%len(start)][:-1,:,:] = t2[(i+1)%len(start)]
+
+				# Optimize
+				t2New, errNew = optimizeRank(tensors, ranksNew, (err)**0.5, start=start)
+				options.append((ranksNew, t2New, errNew))
+#				print(ranksNew, errNew)
+
+		# Pick the best option
+#		print(min(options, key=lambda x: x[2])[2], err)
+#		print(min(options, key=lambda x: x[2])[2], err)
+#		assert min(options, key=lambda x: x[2])[2] < err
+		cutable = [i for i,r in enumerate(ranks) if r == 1]
+		if len(cutable) == 1 and len(options) > 0:
+			ind = cutable[0]
+			ranks, t2, err = min(options[:ind] + options[ind+1:], key=lambda x: x[2])
+		elif len(options) > 0:
+			ranks, t2, err = min(options, key=lambda x: x[2])
+		else:
+			return None
+		print(ranks, err)
+
+	return ranks, err, t2
+
+
 def optimizeNorm(tensors, tol):
 	n = np.sqrt(norm(tensors))
 	tensors[0] /= n
 	tNew = optimize(tensors, tol)
+	if tNew is not None:
+		tensors = tNew[2]
+
+	tensors[0] *= n
+	return tensors
+
+def cutNorm(tensors, tol):
+	n = np.sqrt(norm(tensors))
+	tensors[0] /= n
+	tNew = cut(tensors, tol)
 	if tNew is not None:
 		tensors = tNew[2]
 
