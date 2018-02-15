@@ -75,6 +75,8 @@ BibTex entries for these are included below:
          adsurl = {http: // adsabs.harvard.edu / abs / 2017arXiv170903080J},
          adsnote = {Provided by the SAO / NASA Astrophysics Data System}
          }
+'''
+'''
 @ARTICLE{2017arXiv170807471J,
          author = {{Jermyn}, A.~S.},
          title = "{Efficient Decomposition of High-Rank Tensors}",
