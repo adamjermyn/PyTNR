@@ -131,6 +131,23 @@ class Network:
             if b in self.externalBuckets:
                 self.externalBuckets.remove(b)
 
+    def check(self):
+        '''
+        Checks that all links in the network are valid.
+        '''
+        for n1 in self.nodes:
+            for n2 in self.internalConnected(n1):
+                links = n1.linksConnecting(n2)
+                for l in links:
+                    b1, b2 = l.bucket1, l.bucket2
+                    if b1.node == n2:
+                        b1, b2 = b2, b1
+                    assert b1.node == n1
+                    assert b2.node == n2
+                    assert b1.otherBucket == b2
+                    assert b2.otherBucket == b1
+                    assert b1.size == b2.size
+
     def dummyMergeNodes(self, n1, n2):
         '''
         Calculates the tensor and bucket array which would arise
