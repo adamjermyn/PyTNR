@@ -259,7 +259,9 @@ class TreeTensor(Tensor):
             assert arr.shape[inds[i][2]] == arrP1.shape[inds[(i+1)%len(loop)][0]]
 
         print([l.tensor.shape for l in loop])
+        self.network.check()
         self.network.cutLinks()
+        self.network.check()
 
         logger.debug('Cut.')
 
