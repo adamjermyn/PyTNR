@@ -53,14 +53,13 @@ class TreeNetwork(Network):
                     inds = n.indicesConnecting(m)
                     i = inds[0][0]
                     j = inds[1][0]
-                    print(i,j,n.tensor.shape,m.tensor.shape)
                     dim = n.tensor.shape[i]
                     if dim == 1:
-                        sl = list(slice(0,n.tensor.shape[k]) for k in range(i-1)) + [0] + list(slice(0,n.tensor.shape[k]) for k in range(n.tensor.rank-i+1, n.tensor.rank))
+                        sl = list(slice(0,n.tensor.shape[k]) for k in range(i)) + [0] + list(slice(0,n.tensor.shape[k]) for k in range(i+1,n.tensor.rank))
                         n.tensor = ArrayTensor(n.tensor.array[sl])
                         self.internalBuckets.remove(n.buckets[i])
                         n.buckets.remove(n.buckets[i])
-                        sl = list(slice(0,m.tensor.shape[k]) for k in range(j-1)) + [0] + list(slice(0,m.tensor.shape[k]) for k in range(m.tensor.rank-j+1, m.tensor.rank))
+                        sl = list(slice(0,m.tensor.shape[k]) for k in range(j)) + [0] + list(slice(0,m.tensor.shape[k]) for k in range(j+1,m.tensor.rank))
                         m.tensor = ArrayTensor(m.tensor.array[sl])
                         self.internalBuckets.remove(m.buckets[j])
                         m.buckets.remove(m.buckets[j])
