@@ -256,7 +256,7 @@ def optimize(tensors, tol):
 	# Optimization loop
 	t2, err = optimizeRank(tensors, ranks, 1e-2)
 	while err > tol:		
-		options = []
+		best = [None, None, 1e100]
 		# Try different rank increases
 		for i in range(len(tensors)):
 			if ranks[i] < tensors[i].shape[1]:
@@ -280,15 +280,14 @@ def optimize(tensors, tol):
 
 				# Optimize
 				t2New, errNew = optimizeRank(tensors, ranksNew, (err)**0.5, start=start)
-				options.append((ranksNew, t2New, errNew))
-#				print(ranksNew, errNew)
+
+				if errNew < best[2]:
+					best = [ranksNew, t2New, errNew]
+
 
 		# Pick the best option
-#		print(min(options, key=lambda x: x[2])[2], err)
-#		print(min(options, key=lambda x: x[2])[2], err)
-#		assert min(options, key=lambda x: x[2])[2] < err
-		if len(options) > 0:
-			ranks, t2, err = min(options, key=lambda x: x[2])
+		if best[0] is not None:
+			ranks, t2, err = best
 		else:
 			return None
 		print(ranks, err)
@@ -311,42 +310,37 @@ def cut(tensors, tol):
 	# Optimization loop
 	t2, err = optimizeRank(tensors, ranks, 1e-2)
 	while err > tol:		
-		options = []
+		best = [None, None, 1e100]
+		cutable = [i for i,r in enumerate(ranks) if r == 1]
 		# Try different rank increases
 		for i in range(len(tensors)):
-			ranksNew = ranks[::]
-			ranksNew[i] += 1
+			if len(cutable) != 1 or i == cutable[0]:
+				ranksNew = ranks[::]
+				ranksNew[i] += 1
 
-			# Generate starting point
-			start = t2[::]
+				# Generate starting point
+				start = t2[::]
 
-			# Enlarge tensor to the left of the bond
-			sh = list(start[i].shape)
-			sh[2] += 1
-			start[i] = np.random.randn(*sh)
-			start[i][:,:,:-1] = t2[i]
+				# Enlarge tensor to the left of the bond
+				sh = list(start[i].shape)
+				sh[2] += 1
+				start[i] = np.random.randn(*sh)
+				start[i][:,:,:-1] = t2[i]
 
-			# Enlarge tensor to the right of the bond
-			sh = list(start[(i+1)%len(start)].shape)
-			sh[0] += 1
-			start[(i+1)%len(start)] = np.random.randn(*sh)
-			start[(i+1)%len(start)][:-1,:,:] = t2[(i+1)%len(start)]
+				# Enlarge tensor to the right of the bond
+				sh = list(start[(i+1)%len(start)].shape)
+				sh[0] += 1
+				start[(i+1)%len(start)] = np.random.randn(*sh)
+				start[(i+1)%len(start)][:-1,:,:] = t2[(i+1)%len(start)]
 
-			# Optimize
-			t2New, errNew = optimizeRank(tensors, ranksNew, (err)**0.5, start=start)
-			options.append((ranksNew, t2New, errNew))
-#				print(ranksNew, errNew)
+				# Optimize
+				t2New, errNew = optimizeRank(tensors, ranksNew, (err)**0.5, start=start)
+				if errNew < best[2]:
+					best = [ranksNew, t2New, errNew]
 
 		# Pick the best option
-#		print(min(options, key=lambda x: x[2])[2], err)
-#		print(min(options, key=lambda x: x[2])[2], err)
-#		assert min(options, key=lambda x: x[2])[2] < err
-		cutable = [i for i,r in enumerate(ranks) if r == 1]
-		if len(cutable) == 1 and len(options) > 0:
-			ind = cutable[0]
+		if best[0] is not None:
 			ranks, t2, err = min(options[:ind] + options[ind+1:], key=lambda x: x[2])
-		elif len(options) > 0:
-			ranks, t2, err = min(options, key=lambda x: x[2])
 		else:
 			return None
 		print(ranks, err)
