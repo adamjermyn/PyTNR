@@ -56,11 +56,11 @@ class TreeNetwork(Network):
                     print(i,j,n.tensor.shape,m.tensor.shape)
                     dim = n.tensor.shape[i]
                     if dim == 1:
-                        sl = i * [Ellipsis] + [0] + (n.tensor.rank - i - 1) * [Ellipsis]
+                        sl = i * [slice(0,-1)] + [0] + (n.tensor.rank - i - 1) * [slice(0,-1)]
                         n.tensor = ArrayTensor(n.tensor.array[sl])
                         self.internalBuckets.remove(n.buckets[i])
                         n.buckets.remove(n.buckets[i])
-                        sl = j * [Ellipsis] + [0] + (m.tensor.rank - j - 1) * [Ellipsis]
+                        sl = j * [slice(0,-1)] + [0] + (m.tensor.rank - j - 1) * [slice(0,-1)]
                         m.tensor = ArrayTensor(m.tensor.array[sl])
                         self.internalBuckets.remove(m.buckets[j])
                         m.buckets.remove(m.buckets[j])
