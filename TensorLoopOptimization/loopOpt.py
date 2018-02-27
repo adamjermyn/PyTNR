@@ -314,7 +314,7 @@ def cut(tensors, tol):
 		cutable = [i for i,r in enumerate(ranks) if r == 1]
 		# Try different rank increases
 		for i in range(len(tensors)):
-			if len(cutable) != 1 or i == cutable[0]:
+			if len(cutable) != 1 or i != cutable[0]:
 				ranksNew = ranks[::]
 				ranksNew[i] += 1
 
