@@ -340,7 +340,7 @@ def cut(tensors, tol):
 
 		# Pick the best option
 		if best[0] is not None:
-			ranks, t2, err = min(options[:ind] + options[ind+1:], key=lambda x: x[2])
+			ranks, t2, err = best
 		else:
 			return None
 		print(ranks, err)
