@@ -1,6 +1,9 @@
 import numpy as np
 from scipy.sparse.linalg import LinearOperator, bicgstab, lsqr
 
+def cost(tensors):
+	return sum(t.size for t in tensors)
+
 def shift(l, n):
 	'''
 	Shifts the list l forward by n indices.
@@ -293,9 +296,6 @@ def optimize(tensors, tol):
 		print(ranks, err, errdc)
 
 	return ranks, err, t2
-
-def cost(tensors):
-	return sum(t.size for t in tensors)
 
 def cut(tensors, tol):
 	'''
