@@ -304,6 +304,10 @@ def cut(tensors, tol):
 	relative L2 error tol.
 	'''
 
+	# Predict ranks
+	print('Prediction:')
+	print(predict(tensors, tol))
+
 	# Initialize ranks to one.
 	ranks = [1 for _ in range(len(tensors))]
 
