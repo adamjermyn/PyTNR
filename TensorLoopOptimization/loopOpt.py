@@ -294,6 +294,9 @@ def optimize(tensors, tol):
 
 	return ranks, err, t2
 
+def cost(tensors):
+	return sum(t.size for t in tensors)
+
 def cut(tensors, tol):
 	'''
 	tensors is a list of rank-3 tensors set such that the last index of each contracts
@@ -305,8 +308,8 @@ def cut(tensors, tol):
 	'''
 
 	# Predict ranks
-	print('Prediction:')
-	print(predict(tensors, tol))
+#	print('Prediction:')
+#	print(predict(tensors, tol))
 
 	# Initialize ranks to one.
 	ranks = [1 for _ in range(len(tensors))]
@@ -314,7 +317,7 @@ def cut(tensors, tol):
 	# Optimization loop
 	t2, err = optimizeRank(tensors, ranks, 1e-2)
 	while err > tol:		
-		best = [None, None, 1e100]
+		best = [None, None, None, -1e100]
 		cutable = [i for i,r in enumerate(ranks) if r == 1]
 		# Try different rank increases
 		for i in range(len(tensors)):
@@ -339,15 +342,17 @@ def cut(tensors, tol):
 
 				# Optimize
 				t2New, errNew = optimizeRank(tensors, ranksNew, (err)**0.5, start=start)
-				if errNew < best[2]:
-					best = [ranksNew, t2New, errNew]
+				dc = cost(t2New) - cost(t2)
+
+				if (err - errNew)/(1 + dc) > best[3]:
+					best = [ranksNew, t2New, errNew, (err - errNew)/dc]
 
 		# Pick the best option
 		if best[0] is not None:
-			ranks, t2, err = best
+			ranks, t2, err, errdc = best
 		else:
 			return None
-		print(ranks, err)
+		print(ranks, err, errdc)
 
 	return ranks, err, t2
 
