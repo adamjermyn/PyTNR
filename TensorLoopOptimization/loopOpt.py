@@ -280,17 +280,17 @@ def optimize(tensors, tol):
 
 				# Optimize
 				t2New, errNew = optimizeRank(tensors, ranksNew, (err)**0.5, start=start)
+				dc = cost(t2New) - cost(t2)
 
-				if errNew < best[2]:
-					best = [ranksNew, t2New, errNew]
-
+				if (err - errNew)/(1 + dc) > best[3]:
+					best = [ranksNew, t2New, errNew, (err - errNew)/dc]
 
 		# Pick the best option
 		if best[0] is not None:
-			ranks, t2, err = best
+			ranks, t2, err, errdc = best
 		else:
 			return None
-		print(ranks, err)
+		print(ranks, err, errdc)
 
 	return ranks, err, t2
 
