@@ -2,7 +2,7 @@ import numpy as np
 import time
 import sys
 
-from TNR.Models.isingModel import IsingModel2D, exactIsing2D
+from TNR.Models.isingModel import IsingModel3Dopen
 from TNR.Contractors.mergeContractor import mergeContractor
 from TNR.Contractors.heuristics import loopHeuristic as heuristic
 
@@ -11,8 +11,8 @@ from TNR import config
 logger = makeLogger(__name__, config.levels['generic'])
 
 
-def ising2DFreeEnergy(nX, nY, h, J, accuracy):
-    n = IsingModel2D(nX, nY, h, J, accuracy)
+def ising3DFreeEnergy(nX, nY, nZ, h, J, accuracy):
+    n = IsingModel3Dopen(nX, nY, nZ, h, J, accuracy)
     n = mergeContractor(
         n,
         accuracy,
@@ -20,14 +20,14 @@ def ising2DFreeEnergy(nX, nY, h, J, accuracy):
         optimize=True,
         merge=False,
         plot=False)
-    return n.array[1] / (nX * nY)
+    return n.array[1] / (nX * nY * nZ)
 
 
 J = float(sys.argv[1])
 
 h = 0
 accuracy = 1e-3
-size = [(12,12)]
+size = [(4,4,4)]
 
 res = []
 
@@ -39,12 +39,10 @@ for s in size:
         str(J) +
         '.')
     start = time.clock()
-    f = ising2DFreeEnergy(s[0], s[1], h, J, accuracy)
+    f = ising3DFreeEnergy(s[0], s[1], s[2], h, J, accuracy)
     end = time.clock()
-    res.append((s[0] * s[1], f, f - exactIsing2D(J), end - start))
+    res.append((s[0] * s[1] * s[2], f, end - start))
 
 res = np.array(res)
 
 print(res)
-
-np.savetxt('ising2DJ_J=' + str(J) + '.dat', res)
