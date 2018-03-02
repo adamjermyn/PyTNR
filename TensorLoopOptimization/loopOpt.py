@@ -204,7 +204,7 @@ def optimizeTensor(t1, t2, index, eps=1e-5):
 
 	return ret, err0, err1
 
-def optimizeRank(tensors, ranks, stop, start=None):
+def optimizeRank(tensors, ranks, stop=0.1, start=None):
 	'''
 	tensors is a list of rank-3 tensors set such that the last index of each contracts
 	with the first index of the next, and the last index of the last tensor contracts
@@ -237,7 +237,6 @@ def optimizeRank(tensors, ranks, stop, start=None):
 			t2, _, err2 = optimizeTensor(tensors, t2, i)
 		derr = (err1 - err2)
 		dlnerr = derr / err1
-#		print(dlnerr,err1,err2)
 		err1 = err2
 
 	return t2, err1
@@ -282,7 +281,7 @@ def optimize(tensors, tol):
 				start[(i+1)%len(start)][:-1,:,:] = t2[(i+1)%len(start)]
 
 				# Optimize
-				t2New, errNew = optimizeRank(tensors, ranksNew, (err)**0.5, start=start)
+				t2New, errNew = optimizeRank(tensors, ranksNew, start=start)
 				dc = cost(t2New) - cost(t2)
 
 				if (err - errNew)/(1 + dc) > best[3]:
