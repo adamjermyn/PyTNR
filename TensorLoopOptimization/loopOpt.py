@@ -82,6 +82,132 @@ def norm(tensors):
 	'''
 	return contract(tensors, tensors)
 
+def densityMatrix(tensors, i, j):
+	'''
+	tensors is a list of rank-3 tensors set such that the last index of each contracts
+	with the first index of the next, and the last index of the last tensor contracts
+	with the first index of the first one.
+
+	Returns the density matrix between indices i and j.
+	'''
+
+	# Force i < j
+	assert i != j
+	if i > j:
+		i,j = j,i
+
+
+	# Contract all pairs other than i,j
+	t = []
+	for k in range(len(tensors)):
+		if k != i and k != j:
+			t.append(np.tensordot(tensors[k],tensors[k], axes=((1,),(1,))))
+		elif k == i or k == j:
+			t.append(k)
+
+	# Contract all 
+
+
+	# Contract connections except at i and j:
+	ij = tensors[1:j]
+	jp = tensors[j+1:]
+
+	ij = zipTensors(ij, ij)
+	jp = zipTensors(jp, jp)
+
+	# Contract the two lists
+	x = ij[0]
+	for y in ij[1:]:
+		x = contractRank4(x, y)
+	
+	z = jp[0]
+	for y in jp[1:]:
+		z = contractRank4(z, y)
+
+	# Now ij and jp are wired this way
+	#
+	#	0 -       - 1
+	#		Tensor
+	#	2 -       - 3
+	#
+	# and tensors[0] and tensors[j] are wired as usual (0 and 1 going left and right).
+
+	# In the next operation:
+	# 1 is consumed
+	# 0 -> 0
+	# 2 -> 1
+	# 3 -> 2
+	# 3 is the outgoing index
+	# 4 is the upper rightgoing index
+	rho = np.tensordot(x, tensors[j], axes=((1,),(0,)))
+
+	# In the next operation:
+	# 2 is consumed
+	# 0 -> 0
+	# 1 -> 1
+	# 3 -> 2 (outgoing upper)
+	# 4 -> 3 (rightgoing upper)
+	# 4 is the lower outgoing index
+	# 5 is the lower rightgoing index
+	rho = np.tensordot(rho, tensors[j], axes=((2,),(0,)))
+
+	# In the next operation:
+	# 3 and 5 are consumed
+	# 0 -> 0 (leftgoing upper)
+	# 1 -> 1 (leftgoing lower)
+	# 2 -> 2 (outgoing upper)
+	# 4 -> 3 (outgoing lower)
+	# 4 is rightgoing upper
+	# 5 is rightgoing lower
+	rho = np.tensordot(rho, z, axes=((3,5),(0,2)))
+
+	# After this the first two indices are the outgoing from j and the last two
+	# are the outgoing from i.
+	rho = np.einsum('abcdef,eqa,fpb->cdqp',rho,tensors[0],tensors[0])
+
+	rho = np.einsum('abcd -> acbd', rho)
+
+	print(rho - np.transpose(rho))
+
+	# Flatten
+	rho = np.reshape(rho, (tensors[j].shape[1]**2, tensors[0].shape[1]**2))
+	
+	# Flip axes
+	rho = np.transpose(rho)
+
+	return rho
+
+def dimension(rho, epsilon):
+	'''
+	Returns the number of singular values required to estimate a matrix rho to the
+	tolerance epsilon.
+	'''
+	_, s, _ = np.linalg.svd(rho)
+	p = s / np.sum(s)
+	cp = 1 - np.cumsum(p)
+	cp = cp[::-1]
+	ind = len(cp) - np.searchsorted(cp, epsilon, side='right')
+	return ind
+
+def predict(tensors, epsilon):
+	p = np.zeros(len(tensors))
+	t = list(tensors)
+	for i in range(len(tensors)):
+		if i == 0:
+			c = 1
+		else:
+			c = 0
+		for j in range(i+2, len(tensors) - c):
+			d = dimension(densityMatrix(t, i, j), epsilon)
+			for k in range(i, j-1):
+				if d > p[k]:
+					p[k] = d
+
+	p = np.array(p)
+	p /= 2 # Correction because we get two bonds to transmit this information
+	return p
+
+
 def normMat(tensors, index):
 	'''
 	tensors is a list of rank-3 tensors set such that the last index of each contracts
@@ -355,21 +481,22 @@ def cut(tensors, tol):
 
 	return ranks, err, t2
 
+def cutTryAll(tensors, tol):
+	best = [None, None, None, 1e100]
+	for i in range(len(tensors)):
+		ret = cutSpecific(tensors, tol, i)
+		if ret is not None:
+			ranks, err, t = ret
+			c = cost(t)
+			if c < best[3]:
+				print(best[3], c)
+				best = [ranks, err, t, c]
+	return best[0], best[1], best[2]
 
 def optimizeNorm(tensors, tol):
 	n = np.sqrt(norm(tensors))
 	tensors[0] /= n
 	tNew = optimize(tensors, tol)
-	if tNew is not None:
-		tensors = tNew[2]
-
-	tensors[0] *= n
-	return tensors
-
-def cutNorm(tensors, tol):
-	n = np.sqrt(norm(tensors))
-	tensors[0] /= n
-	tNew = cut(tensors, tol)
 	if tNew is not None:
 		tensors = tNew[2]
 
