@@ -17,7 +17,7 @@ from TNR.Network.traceMin import traceMin
 from TNR.Utilities.svd import entropy
 from TNR.Utilities.graphPlotter import makePlotter
 from TNR.TensorLoopOptimization.loopOpt import optimizeNorm as optimize
-from TNR.TensorLoopOptimization.loopOpt import cutNorm as cut
+from TNR.TensorLoopOptimization.optimizer import cut
 
 
 counter0 = 0
@@ -218,6 +218,11 @@ class TreeTensor(Tensor):
 
     def cutLoop(self, loop):
         logger.debug('Cutting loop.')
+        self.network.check()
+
+        print('----')
+        print(self)
+        print('--')
 
         # Get tensors and transpose into correct form
         tensors = []
@@ -258,6 +263,9 @@ class TreeTensor(Tensor):
             assert arrM1.shape[inds[i-1][2]] == arr.shape[inds[i][0]]
             assert arr.shape[inds[i][2]] == arrP1.shape[inds[(i+1)%len(loop)][0]]
 
+        print(self)
+        print('----')
+
         self.network.check()
         self.network.cutLinks()
         self.network.check()
@@ -267,11 +275,44 @@ class TreeTensor(Tensor):
 
     def eliminateLoops(self, otherNodes, plot=False):
         while len(networkx.cycles.cycle_basis(self.network.toGraph())) > 0:
+            todo = 1
+            while todo > 0:
+                # Contract rank 2 objects
+                self.contractRank2()
+
+                # Contract along double links
+                done = set()
+                while len(
+                    done.intersection(
+                        self.network.nodes)) < len(
+                        self.network.nodes):
+                    n = next(iter(self.network.nodes.difference(done)))
+                    nodes = self.network.internalConnected(n)
+                    merged = False
+                    for n2 in nodes:
+                        if len(n.findLinks(n2)) > 1:
+                            self.network.mergeNodes(n, n2)
+                            merged = True
+                    if not merged:
+                        done.add(n)
+                    print(len(done.intersection(self.network.nodes)), len(self.network.nodes), len(done))
+
+                # See if done
+                todo = 0
+                for n in self.network.nodes:
+                    if n.tensor.rank == 2 and len(self.network.internalConnected(n)):
+                        todo += 1
+                    for m in self.network.internalConnected(n):
+                        if len(n.linksConnecting(m)) > 1:
+                            todo += 1
+                print(todo)
+
             cycles = networkx.cycles.cycle_basis(self.network.toGraph())
-            print(len(cycles))
-            c = cycles.pop()
-            self.cutLoop(c)
-            self.contractRank2()
+            if len(cycles) > 0:
+                print(len(cycles))
+                c = cycles.pop()
+                self.cutLoop(c)
+                self.contractRank2()
 
         assert len(networkx.cycles.cycle_basis(self.network.toGraph())) == 0
 
