@@ -363,10 +363,12 @@ class TreeTensor(Tensor):
             else:
                 # We may be introducing a loop
                 _ = Link(b1, b2)
+                t.network.externalBuckets.remove(b1)
+                t.network.externalBuckets.remove(b2)
+                t.network.internalBuckets.add(b1)
+                t.network.internalBuckets.add(b2)
                 t.eliminateLoops()
 
-            t.network.externalBuckets.remove(b1)
-            t.network.externalBuckets.remove(b2)
             t.externalBuckets.remove(b1)
             t.externalBuckets.remove(b2)
 
