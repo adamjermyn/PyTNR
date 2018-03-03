@@ -13,9 +13,7 @@ from TNR.Network.treeNetwork import TreeNetwork
 from TNR.Network.node import Node
 from TNR.Network.link import Link
 from TNR.Network.bucket import Bucket
-from TNR.Network.traceMin import traceMin
 from TNR.Utilities.svd import entropy
-from TNR.Utilities.graphPlotter import makePlotter
 from TNR.TensorLoopOptimization.loopOpt import optimizeNorm as optimize
 from TNR.TensorLoopOptimization.optimizer import cut
 
