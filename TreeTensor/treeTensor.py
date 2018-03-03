@@ -273,7 +273,7 @@ class TreeTensor(Tensor):
         logger.debug('Cut.')
 
 
-    def eliminateLoops(self, otherNodes, plot=False):
+    def eliminateLoops(self):
         while len(networkx.cycles.cycle_basis(self.network.toGraph())) > 0:
             todo = 1
             while todo > 0:
@@ -362,19 +362,8 @@ class TreeTensor(Tensor):
                 n1.buckets.remove(b2)
             else:
                 # We may be introducing a loop
-                loop = t.network.pathBetween(n1, n2)
-                if len(loop) > 0:
-                    if len(loop) == 2:
-                        # This special case is not possible when contracting in a new node.
-                        # The easy way to handle it is just to merge the two nodes and then
-                        # split them if the resulting rank is too high.
-                        _ = Link(b1, b2)
-                        n = t.network.mergeNodes(n1, n2)
-                        t.network.splitNode(n)
-                    else:
-                        _ = Link(b1, b2)
-                        t.eliminateLoop(loop)
-
+                _ = Link(b1, b2)
+                t.eliminateLoops()
 
             t.network.externalBuckets.remove(b1)
             t.network.externalBuckets.remove(b2)
