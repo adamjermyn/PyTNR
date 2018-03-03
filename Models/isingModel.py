@@ -374,6 +374,114 @@ def IsingModel2Ddisordered(nX, nY, h0, J0, accuracy):
     return network
 
 
+def IsingModel2DdisorderedProbs(nX, nY, h0, J0, accuracy):
+    network = Network()
+
+    # Place to store the tensors
+    lattice = [[] for i in range(nX)]
+    onSite = [[] for i in range(nX)]
+    bondV = [[] for i in range(nX)]
+    bondH = [[] for i in range(nX - 1)]
+
+    # Store buckets for later referencing
+    buckets = [[] for i in range(nX)]
+
+    counters = [[0 for j in range(nY)] for i in range(nX)]
+
+    # Each lattice site has seven indices of width five, and returns zero if
+    # they are unequal and one otherwise.
+    lattice[0].append(Node(IdentityTensor(2, 4, accuracy=accuracy)))
+    lattice[-1].append(Node(IdentityTensor(2, 4, accuracy=accuracy)))
+    for j in range(1, nY - 1):
+        lattice[0].append(Node(IdentityTensor(2, 5, accuracy=accuracy)))
+        lattice[-1].append(Node(IdentityTensor(2, 5, accuracy=accuracy)))
+    lattice[0].append(Node(IdentityTensor(2, 4, accuracy=accuracy)))
+    lattice[-1].append(Node(IdentityTensor(2, 4, accuracy=accuracy)))
+
+    for i in range(1, nX - 1):
+        lattice[i].append(Node(IdentityTensor(2, 5, accuracy=accuracy)))
+        for j in range(1, nY - 1):
+            lattice[i].append(Node(IdentityTensor(2, 6, accuracy=accuracy)))
+        lattice[i].append(Node(IdentityTensor(2, 5, accuracy=accuracy)))
+
+
+    for j in range(len(lattice)):
+        for k in range(len(lattice[j])):
+            buckets[j].append(lattice[j][k].buckets[-1])
+
+    # Each on-site term has one index of width two, and returns exp(-h) or
+    # exp(h) for 0 or 1 respectively.
+    for i in range(nX):
+        for j in range(nY):
+            h = h0 * np.random.randn()
+            arr = np.zeros((2))
+            arr[0] = np.exp(-h)
+            arr[1] = np.exp(h)
+            onSite[i].append(Node(ArrayTensor(arr)))
+
+    # Each bond term has two indices of width two and returns
+    # exp(-J*(1+delta(index0,index1))/2).
+    for i in range(nX):
+        for j in range(nY):
+            J = J0 * np.random.randn()
+            arr = np.zeros((2, 2))
+            arr[0][0] = np.exp(-J)
+            arr[1][1] = np.exp(-J)
+            arr[0][1] = np.exp(J)
+            arr[1][0] = np.exp(J)
+            if j < nY - 1:
+                bondV[i].append(Node(ArrayTensor(arr)))
+
+            if i < nX - 1:
+                bondH[i].append(Node(ArrayTensor(arr)))
+
+    # Attach links
+    for i in range(nX):
+        for j in range(nY):
+            counters[i][j] += 1
+            Link(lattice[i][j].buckets[0], onSite[i][j].buckets[0])
+
+    for i in range(nX):
+        for j in range(nY):
+            print(len(bondH), len(bondV), len(bondV[0]), len(bondV[1]))
+            if j > 0:
+                Link(lattice[i][j].buckets[counters[i][j]],
+                     bondV[i][j - 1].buckets[0])
+                counters[i][j] += 1
+            if j < nY - 1:
+                print(counters[i][j])
+                Link(lattice[i][j].buckets[counters[i][j]],
+                     bondV[i][j].buckets[1])
+                counters[i][j] += 1
+            if i > 0:
+                print(counters[i][j])
+                Link(lattice[i][j].buckets[counters[i][j]],
+                     bondH[i - 1][j].buckets[0])
+                counters[i][j] += 1
+            if i < nX - 1:
+                print(counters[i][j])
+                Link(lattice[i][j].buckets[counters[i][j]],
+                     bondH[i][j].buckets[1])
+                counters[i][j] += 1
+
+    # Add to Network
+    for x in lattice:
+        for y in x:
+            network.addNode(y)
+    for x in onSite:
+        for y in x:
+            network.addNode(y)
+    for x in bondV:
+        for y in x:
+            network.addNode(y)
+    for x in bondH:
+        for y in x:
+            network.addNode(y)
+
+
+    return network, buckets
+
+
 def exactIsing2D(J):
     k = 1 / np.sinh(2 * J)**2
 
