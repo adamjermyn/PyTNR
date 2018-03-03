@@ -14,7 +14,6 @@ from TNR.Network.node import Node
 from TNR.Network.link import Link
 from TNR.Network.bucket import Bucket
 from TNR.Utilities.svd import entropy
-from TNR.TensorLoopOptimization.loopOpt import optimizeNorm as optimize
 from TNR.TensorLoopOptimization.optimizer import cut
 
 
@@ -218,7 +217,7 @@ class TreeTensor(Tensor):
         logger.debug('Cutting loop.')
         self.network.check()
 
-        prev = np.sum(self.array**2)
+        prev = self.array
         prevL = list([l.tensor.shape for l in loop])
 
         # Get tensors and transpose into correct form
@@ -251,14 +250,18 @@ class TreeTensor(Tensor):
 
             loop[i].tensor = ArrayTensor(arr)
 
-        new = np.sum(self.array**2)
+        new = self.array
 
-        if 1 - prev / new > self.accuracy:
+        err = np.sum(np.abs(prev - new) / np.abs(prev))
+
+        if err > self.accuracy:
 
             ### There's a bug in loop optimizing which occasionally produces
             # considerably larger-than-expected accuracy.
 
-            print(prev, new, (1 - prev / new) / self.accuracy)
+            print(prev)
+            print(new)
+            print(err / self.accuracy)
             print(prevL)
             print(list([l.tensor.shape for l in loop]))
             exit()
