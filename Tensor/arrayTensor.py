@@ -67,6 +67,15 @@ class ArrayTensor(Tensor):
                     (ind, otherInd)))
             return ArrayTensor(arr, logScalar=self.logScalar + other.logScalar)
 
+    def traceOut(self, ind):
+        '''
+        Sums over the specified index
+        '''
+
+        arr = self.array
+        arr = np.sum(arr, axis=ind)
+        return ArrayTensor(arr)
+
     def trace(self, ind0, ind1):
         '''
         Takes as input:
