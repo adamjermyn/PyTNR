@@ -218,9 +218,8 @@ class TreeTensor(Tensor):
         logger.debug('Cutting loop.')
         self.network.check()
 
-        print('----')
-        print(self)
-        print('--')
+        prev = np.sum(self.array**2)
+        prevL = list([l.tensor.shape for l in loop])
 
         # Get tensors and transpose into correct form
         tensors = []
@@ -252,6 +251,18 @@ class TreeTensor(Tensor):
 
             loop[i].tensor = ArrayTensor(arr)
 
+        new = np.sum(self.array**2)
+
+        if 1 - prev / new > self.accuracy:
+
+            ### There's a bug in loop optimizing which occasionally produces
+            # considerably larger-than-expected accuracy.
+
+            print(prev, new, (1 - prev / new) / self.accuracy)
+            print(prevL)
+            print(list([l.tensor.shape for l in loop]))
+            exit()
+
         for i,l in enumerate(loop):
             arrM1 = loop[i-1].tensor.array
             arr = loop[i].tensor.array
@@ -261,11 +272,10 @@ class TreeTensor(Tensor):
             assert arrM1.shape[inds[i-1][2]] == arr.shape[inds[i][0]]
             assert arr.shape[inds[i][2]] == arrP1.shape[inds[(i+1)%len(loop)][0]]
 
-        print(self)
-        print('----')
 
-        self.network.check()
+
         self.network.cutLinks()
+
         self.network.check()
 
         logger.debug('Cut.')
@@ -293,7 +303,8 @@ class TreeTensor(Tensor):
                             merged = True
                     if not merged:
                         done.add(n)
-                    print(len(done.intersection(self.network.nodes)), len(self.network.nodes), len(done))
+
+                ### There's a bug here somewhere that isn't in the cutter so... gotta fix that.
 
                 # See if done
                 todo = 0
@@ -303,11 +314,9 @@ class TreeTensor(Tensor):
                     for m in self.network.internalConnected(n):
                         if len(n.linksConnecting(m)) > 1:
                             todo += 1
-                print(todo)
 
             cycles = networkx.cycles.cycle_basis(self.network.toGraph())
             if len(cycles) > 0:
-                print(len(cycles))
                 c = cycles.pop()
                 self.cutLoop(c)
                 self.contractRank2()
