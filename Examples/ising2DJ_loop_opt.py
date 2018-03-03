@@ -27,7 +27,7 @@ J = float(sys.argv[1])
 
 h = 0
 accuracy = 1e-3
-size = [(12,12)]
+size = [(2,2)]
 
 res = []
 
