@@ -352,7 +352,6 @@ class TreeTensor(Tensor):
             b1 = t.externalBuckets[ind0[i]]
             b2 = t.externalBuckets[ind1[i]]
 
-            t.network.trace(b1, b2)
             n1 = b1.node
             n2 = b2.node
 
