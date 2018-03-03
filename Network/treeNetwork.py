@@ -108,38 +108,6 @@ class TreeNetwork(Network):
         self.externalBuckets.remove(b)
 
 
-    def trace(self, b1, b2):
-        '''
-        Links external buckets b1 and b2 and eliminates any loops which result.
-        '''
-        assert b1 in self.externalBuckets
-        assert b2 in self.externalBuckets
-        assert b1 != b2
-        n1 = b1.node
-        n2 = b2.node
-
-        if n1 == n2:
-            # So we're just tracing an arrayTensor.
-            n1.tensor = n1.tensor.trace([b1.index], [b2.index])
-            n1.buckets.remove(b1)
-            n1.buckets.remove(b2)
-            self.externalBuckets.remove(b1)
-            self.externalBuckets.remove(b2)
-        else:
-            # We may be introducing a loop
-            loop = self.pathBetween(n1, n2)
-            if len(loop) > 0:
-                if len(loop) == 2:
-                    # This special case is not possible when contracting in a new node.
-                    # The easy way to handle it is just to merge the two nodes and then
-                    # split them if the resulting rank is too high.
-                    _ = Link(b1, b2)
-                    n = self.mergeNodes(n1, n2)
-                    self.splitNode(n)
-                else:
-                    _ = Link(b1, b2)
-                    self.eliminateLoop(loop)
-
     def splitNode(self, node, ignore=None):
         '''
         Takes as input a Node and ensures that it is at most rank 3 by factoring rank 3 tensors
