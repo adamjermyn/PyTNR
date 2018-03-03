@@ -27,6 +27,7 @@ class optimizer:
 		self.norm = np.sqrt(norm(tensors))
 		tensors = list(np.array(t) for t in tensors)
 		tensors[0] /= self.norm
+		self.nanCount = 0
 
 		self.tensors = tensors
 		self.tolerance = tolerance
@@ -81,9 +82,10 @@ class optimizer:
 				t[0] *= self.norm
 				return t
 
-			print(n, err)
-			if np.isnan(err):
+			print(n, self.stored[previous][1], err)
+			if np.isnan(err) or err > 1.1 * self.stored[previous][1]:
 				self.stored[n] = (None, 1e100, 0, 0, 0)
+				self.nanCount += 1
 			else:
 				self.active.append(n)
 				derr = self.stored[previous][1] - err
@@ -101,4 +103,6 @@ def cut(tensors, tolerance):
 	ret = None
 	while ret is None:
 		ret = opt.makeNext()
+		if opt.nanCount > 20:
+			opt = optimizer(tensors, tolerance, cut=True)
 	return ret
