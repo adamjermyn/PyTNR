@@ -9,7 +9,7 @@ import networkx
 
 from TNR.Tensor.tensor import Tensor
 from TNR.Tensor.arrayTensor import ArrayTensor
-from TNR.Network.network import network
+from TNR.Network.network import Network
 from TNR.Network.node import Node
 from TNR.Network.link import Link
 from TNR.Network.bucket import Bucket
@@ -26,9 +26,8 @@ class NetworkTensor(Tensor):
 
     def __init__(self, accuracy):
         self.accuracy = accuracy
-        self.network = network(accuracy=accuracy)
+        self.network = Network()
         self.externalBuckets = []
-        self.optimized = set()
 
     def addTensor(self, tensor):
         n = Node(tensor, Buckets=[Bucket() for _ in range(tensor.rank)])
