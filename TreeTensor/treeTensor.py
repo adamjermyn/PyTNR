@@ -40,9 +40,9 @@ class TreeTensor(NetworkTensor):
 
     def contract(self, ind, other, otherInd, front=True):
         super().contract(ind, other, otherInd, front=front)
-        print('_____',np.sum(self.array**2), n.array)
+        print('_____',np.sum(self.array**2), self.array)
         self.eliminateLoops()
-        print('_____',np.sum(self.array**2), n.array)
+        print('_____',np.sum(self.array**2), self.array)
 
     def cutLoop(self, loop):
         logger.debug('Cutting loop.')
@@ -52,7 +52,8 @@ class TreeTensor(NetworkTensor):
         prevL = list([l.tensor.shape for l in loop])
 
 
-        loopNetwork = self.network.copySubset(looo)
+        loopNetwork = self.network.copySubset(loop)
+
 
 
         # Get tensors and transpose into correct form
