@@ -77,7 +77,7 @@ def prepareNW(t1, t2, index):
 
 	return arrN, arrW, n, w
 
-def optimizeTensor(t1, t2, index, eps=1e-5):
+def optimizeTensor(t1, t2, index):
 	'''
 	t1 and t2 are lists of rank-3 tensors set such that in each list the last index of
 	each contracts with the first index of the next, and the last index of the last tensor
