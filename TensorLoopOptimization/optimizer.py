@@ -30,6 +30,21 @@ class optimizer:
 			tensors[i] /= self.norm**(1./len(tensors))
 		self.nanCount = 0
 
+		### TODO: Add dictionary uniquely indexing the links in the loop
+		# and providing an ordering 'around the loop' for the nodes.
+		# This is better than re-indexing the external buckets because then we'd
+		# need to make sure that doing so would not re-index any external buckets
+		# of the full tensor...
+
+		'''
+		Erm actually that shouldn't be a problem. At the end of the day what we'll
+		do is read out the tensors in the loop by bucket index and slot them back into
+		the full network in place of the original tensors with the same bucket index.
+		As a result we can feel free to move around the buckets in externalBuckets so
+		long as the buckets themselves are unchanged. The key is that we never need to use
+		the loop network (which is a NetworkTensor) as a tensor proper.
+		'''		
+
 		self.tensors = tensors
 		self.tolerance = tolerance
 		self.cut = cut
