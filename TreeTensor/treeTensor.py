@@ -39,24 +39,6 @@ class TreeTensor(NetworkTensor):
         s = s + str(self.network)
         return s
 
-    @property
-    def array(self):
-
-        arr, logAcc, bdict = self.network.array
-
-        arr *= np.exp(logAcc)
-
-        perm = []
-        blist = [b.id for b in self.externalBuckets]
-
-        for b in blist:
-            perm.append(bdict[b])
-
-        arr = np.transpose(arr, axes=perm)
-
-        assert arr.shape == tuple(self.shape)
-        return arr
-
     def contract(self, ind, other, otherInd, front=True):
         # We copy the two networks first. If the other tensor is an ArrayTensor
         # we cast it to a TreeTensor first. If the other tensor is a NetworkTensor
