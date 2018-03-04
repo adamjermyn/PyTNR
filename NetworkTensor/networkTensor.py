@@ -39,8 +39,7 @@ class NetworkTensor(Tensor):
         return n
 
     def __str__(self):
-        s = ''
-        s = s + 'Network Tensor with Shape:' + str(self.shape) + ' and Network:\n'
+        s = 'Network Tensor with Shape:' + str(self.shape) + ' and Network:\n'
         s = s + str(self.network)
         return s
 

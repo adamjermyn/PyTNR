@@ -34,8 +34,7 @@ class TreeTensor(NetworkTensor):
         self.optimized = set()
 
     def __str__(self):
-        s = ''
-        s = s + 'Tree Tensor with Shape:' + str(self.shape) + ' and Network:\n'
+        s = 'Tree Tensor with Shape:' + str(self.shape) + ' and Network:\n'
         s = s + str(self.network)
         return s
 
