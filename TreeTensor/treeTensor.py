@@ -240,18 +240,6 @@ class TreeTensor(NetworkTensor):
 
         assert len(networkx.cycles.cycle_basis(self.network.toGraph())) == 0
 
-    def traceOut(self, ind):
-        '''
-        Traces out the component of the tensor associated with the bucket b.
-        '''
-
-        t = deepcopy(self)
-        b = t.externalBuckets[ind]
-        t.network.traceOut(b)
-        t.externalBuckets.remove(b)
-        return t
-
-
     def trace(self, ind0, ind1):
         '''
         Takes as input:

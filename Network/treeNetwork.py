@@ -95,19 +95,6 @@ class TreeNetwork(Network):
 
         return []
 
-    def traceOut(self, b):
-        '''
-        Traces out the component of the tensor associated with the bucket b.
-        '''
-
-        assert b in self.externalBuckets
-
-        n = b.node
-        n.tensor = n.tensor.traceOut(b.index)
-        n.buckets.remove(b)
-        self.externalBuckets.remove(b)
-
-
     def splitNode(self, node, ignore=None):
         '''
         Takes as input a Node and ensures that it is at most rank 3 by factoring rank 3 tensors

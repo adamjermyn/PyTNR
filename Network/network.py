@@ -218,6 +218,40 @@ class Network:
                 merged.append(n1)
         return merged
 
+    def traceOut(self, b):
+        '''
+        Traces out the component of the tensor associated with the bucket b.
+        '''
+
+        assert b in self.externalBuckets
+
+        n = b.node
+        n.tensor = n.tensor.traceOut(b.index)
+        n.buckets.remove(b)
+        self.externalBuckets.remove(b)
+
+    def internalConnected(self, node):
+        return self.nodes.intersection(set(node.connectedNodes))
+
+    def toGraph(self):
+        g = networkx.Graph()
+        g.add_nodes_from(self.nodes)
+        for n in self.nodes:
+            for m in self.internalConnected(n):
+                g.add_edge(n, m, weight=np.log(n.tensor.size * m.tensor.size))
+        return g
+
+    def copySubset(self, nodes):
+        net = deepcopy(self)
+
+        # Prune the network down to just the specified nodes
+        ids = list([n.id for n in nodes])
+        for n in net.nodes:
+            if n.id not in ids:
+                net.removeNode(n)
+
+        return net
+
     def mergeClosestLinks(self, n1, compress=False, accuracy=1e-4):
         best = [1e100, None, None, None, None]
 
@@ -257,25 +291,3 @@ class Network:
             return n2
 
         return None
-
-    def internalConnected(self, node):
-        return self.nodes.intersection(set(node.connectedNodes))
-
-    def toGraph(self):
-        g = networkx.Graph()
-        g.add_nodes_from(self.nodes)
-        for n in self.nodes:
-            for m in self.internalConnected(n):
-                g.add_edge(n, m, weight=np.log(n.tensor.size * m.tensor.size))
-        return g
-
-    def copySubset(self, nodes):
-        net = deepcopy(self)
-
-        # Prune the network down to just the specified nodes
-        ids = list([n.id for n in nodes])
-        for n in net.nodes:
-            if n.id not in ids:
-                net.removeNode(n)
-
-        return net
