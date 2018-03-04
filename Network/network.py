@@ -268,3 +268,14 @@ class Network:
             for m in self.internalConnected(n):
                 g.add_edge(n, m, weight=np.log(n.tensor.size * m.tensor.size))
         return g
+
+    def copySubset(self, nodes):
+        net = deepcopy(self)
+
+        # Prune the network down to just the specified nodes
+        ids = list([n.id for n in nodes])
+        for n in net.nodes:
+            if n.id not in ids:
+                net.removeNode(n)
+
+        return net
