@@ -8,6 +8,7 @@ import operator
 import networkx
 
 from TNR.Tensor.tensor import Tensor
+from TNR.NetworkTensor.networkTensor import NetworkTensor
 from TNR.Tensor.arrayTensor import ArrayTensor
 from TNR.Network.treeNetwork import TreeNetwork
 from TNR.Network.node import Node
@@ -24,21 +25,13 @@ from TNR import config
 logger = makeLogger(__name__, config.levels['treeTensor'])
 
 
-class TreeTensor(Tensor):
+class TreeTensor(NetworkTensor):
 
     def __init__(self, accuracy):
         self.accuracy = accuracy
         self.network = TreeNetwork(accuracy=accuracy)
         self.externalBuckets = []
         self.optimized = set()
-
-    def addTensor(self, tensor):
-        n = Node(tensor, Buckets=[Bucket() for _ in range(tensor.rank)])
-        self.network.addNode(n)
-        self.externalBuckets.extend(n.buckets)
-        if tensor.rank > 3:
-            self.network.splitNode(n)
-        return n
 
     def __str__(self):
         s = ''
@@ -64,42 +57,11 @@ class TreeTensor(Tensor):
         assert arr.shape == tuple(self.shape)
         return arr
 
-    @property
-    def shape(self):
-        return tuple([b.node.tensor.shape[b.index]
-                      for b in self.externalBuckets])
-
-    @property
-    def rank(self):
-        return len(self.externalBuckets)
-
-    @property
-    def size(self):
-        return np.product(self.shape)
-
-    @property
-    def compressedSize(self):
-        size = 0
-        for n in self.network.nodes:
-            size += n.tensor.size
-        return size
-
-    def distBetween(self, ind1, ind2):
-        n1 = self.externalBuckets[ind1].node
-        n2 = self.externalBuckets[ind2].node
-        return len(self.network.pathBetween(n1, n2))
-
-    def distBetweenBuckets(self, b1, b2):
-        n1 = b1.node
-        n2 = b2.node
-        return len(self.network.pathBetween(n1, n2))
-
     def contract(self, ind, other, otherInd, front=True):
-        # This method could be vastly simplified by defining a cycle basis
-        # class
+        # We copy the two networks first. If the other tensor is an ArrayTensor
+        # we cast it to a TreeTensor first. If the other tensor is a NetworkTensor
+        # there's no problem: we're going to eliminate all loops at the end anyway.
 
-        # We copy the two networks first. If the other is an ArrayTensor we
-        # cast it to a TreeTensor first.
         t1 = deepcopy(self)
         if hasattr(other, 'network'):
             t2 = deepcopy(other)
@@ -167,6 +129,10 @@ class TreeTensor(Tensor):
         prev = self.array
         prevL = list([l.tensor.shape for l in loop])
 
+
+        loopNetwork = self.network.copySubset(looo)
+
+
         # Get tensors and transpose into correct form
         tensors = []
         inds = []
@@ -199,15 +165,16 @@ class TreeTensor(Tensor):
 
         new = self.array
 
-        err = np.sum(np.abs(prev - new) / np.abs(prev))
+        err = np.sum((prev - new)**2) / np.sum(prev**2)
 
-        if err > self.accuracy:
+        if err > 3 * self.accuracy:
 
             ### There's a bug in loop optimizing which occasionally produces
             # considerably larger-than-expected accuracy.
 
             print(prev)
             print(new)
+            print(err)
             print(err / self.accuracy)
             print(prevL)
             print(list([l.tensor.shape for l in loop]))
@@ -298,85 +265,10 @@ class TreeTensor(Tensor):
 
         Returns a Tensor containing the trace over all of the pairs of indices.
         '''
-        arr = self.array
 
-        ind0 = list(ind0)
-        ind1 = list(ind1)
-
-        t = deepcopy(self)
-
-        for i in range(len(ind0)):
-            b1 = t.externalBuckets[ind0[i]]
-            b2 = t.externalBuckets[ind1[i]]
-
-            n1 = b1.node
-            n2 = b2.node
-
-            if n1 == n2:
-                # So we're just tracing an arrayTensor.
-                n1.tensor = n1.tensor.trace([b1.index], [b2.index])
-                n1.buckets.remove(b1)
-                n1.buckets.remove(b2)
-            else:
-                # We may be introducing a loop
-                _ = Link(b1, b2)
-                t.network.externalBuckets.remove(b1)
-                t.network.externalBuckets.remove(b2)
-                t.network.internalBuckets.add(b1)
-                t.network.internalBuckets.add(b2)
-                t.eliminateLoops()
-
-            t.externalBuckets.remove(b1)
-            t.externalBuckets.remove(b2)
-
-            for j in range(len(ind0)):
-                d0 = 0
-                d1 = 0
-
-                if ind0[j] > ind0[i]:
-                    d0 += 1
-                if ind0[j] > ind1[i]:
-                    d0 += 1
-
-                if ind1[j] > ind0[i]:
-                    d1 += 1
-                if ind1[j] > ind1[i]:
-                    d1 += 1
-
-                ind0[j] -= d0
-                ind1[j] -= d1
-
+        t = super().trace(ind0, ind1)
+        t.eliminateLoops()
         return t
-
-    def flatten(self, inds):
-        '''
-        This method merges the listed external indices using a tree tensor
-        by attaching the identity tensor to all of them and to a new
-        external bucket. It then returns the new tree tensor.
-        '''
-
-        buckets = [self.externalBuckets[i] for i in inds]
-        shape = [self.shape[i] for i in inds]
-
-        # Create identity array
-        shape.append(np.product(shape))
-        iden = np.identity(shape[-1])
-        iden = np.reshape(iden, shape)
-
-        # Create Tree Tensor holding the identity
-        tens = ArrayTensor(iden)
-        tn = TreeTensor(self.accuracy)
-        tn.addTensor(tens)
-
-        # Contract the identity
-        ttens = self.contract(inds, tn, list(range(len(buckets))))
-
-        shape2 = [self.shape[i] for i in range(self.rank) if i not in inds]
-        shape2.append(shape[-1])
-        for i in range(len(shape2)):
-            assert ttens.shape[i] == shape2[i]
-
-        return ttens
 
     def getIndexFactor(self, ind):
         return self.externalBuckets[ind].node.tensor.scaledArray, self.externalBuckets[ind].index
