@@ -226,75 +226,75 @@ def optimizeRank(tensors, ranks, start, stop=0.1):
 
 	return t2, err1
 
-def kronecker(dim):
-	x = np.zeros((dim, dim, dim))
-	for i in range(dim):
-		x[i,i,i] = 1
-	return x
+#def kronecker(dim):
+#	x = np.zeros((dim, dim, dim))
+#	for i in range(dim):
+#		x[i,i,i] = 1
+#	return x
 
-def test(dim):
-	x = 5 + np.random.randn(dim,dim,dim)
-	return x
+#def test(dim):
+#	x = 5 + np.random.randn(dim,dim,dim)
+#	return x
 
-def testTensors(dim, num):
+#def testTensors(dim, num):
 	# Put no correlations in while maintaining a non-trivial physical index
-	tens = np.random.randn(dim, dim, dim)
-	for i in range(dim-1):
-		tens[:,i,:] = np.random.randn()
+#	tens = np.random.randn(dim, dim, dim)
+#	for i in range(dim-1):
+#		tens[:,i,:] = np.random.randn()
 
 	# Apply random unitary operators.
-	from scipy.stats import ortho_group
-	tensors = [np.copy(tens) for _ in range(num)]
-	for i in range(num):
-		u = ortho_group.rvs(dim)
-		uinv = np.linalg.inv(u)
-		tensors[i] = np.einsum('ijk,kl->ijl', tensors[i], u)
-		tensors[(i+1)%num] = np.einsum('li,ijk->ljk', uinv, tensors[i])
+#	from scipy.stats import ortho_group
+#	tensors = [np.copy(tens) for _ in range(num)]
+#	for i in range(num):
+#		u = ortho_group.rvs(dim)
+#		uinv = np.linalg.inv(u)
+#		tensors[i] = np.einsum('ijk,kl->ijl', tensors[i], u)
+#		tensors[(i+1)%num] = np.einsum('li,ijk->ljk', uinv, tensors[i])
 
-	return tensors
+#	return tensors
 
-def test2(dimRoot):
+#def test2(dimRoot):
 	# Constructs a tensor list which, upon contraction, returns 0 when
 	# all indices are zero and 1 otherwise.
 
-	dim = dimRoot**2
+#	dim = dimRoot**2
 
-	t = np.ones((dim,dim,dim))
-	t[0,0,0] = 0
+#	t = np.ones((dim,dim,dim))
+#	t[0,0,0] = 0
 
 	# SVD
-	t = np.reshape(t, (dim**2, dim))
-	u, s, v = np.linalg.svd(t, full_matrices=False)
-	q = np.dot(u, np.diag(np.sqrt(s)))
-	r = np.dot(np.diag(np.sqrt(s)), v)
+#	t = np.reshape(t, (dim**2, dim))
+#	u, s, v = np.linalg.svd(t, full_matrices=False)
+#	q = np.dot(u, np.diag(np.sqrt(s)))
+#	r = np.dot(np.diag(np.sqrt(s)), v)
 
 	# Insert random unitary between q and r
-	from scipy.stats import ortho_group
-	u = ortho_group.rvs(dim)
-	uinv = np.linalg.inv(u)
-	q = np.dot(q, u)
-	r = np.dot(uinv, r)
+#	from scipy.stats import ortho_group
+#	u = ortho_group.rvs(dim)
+#	uinv = np.linalg.inv(u)
+#	q = np.dot(q, u)
+#	r = np.dot(uinv, r)
 
 	# Decompose bond
-	q = np.reshape(q,(dim, dim, dimRoot, dimRoot))
-	r = np.reshape(r,(dimRoot, dimRoot, dim))
+#	q = np.reshape(q,(dim, dim, dimRoot, dimRoot))
+#	r = np.reshape(r,(dimRoot, dimRoot, dim))
 
 	# Split q
-	q = np.swapaxes(q, 1, 2)
+#	q = np.swapaxes(q, 1, 2)
 
-	q = np.reshape(q, (dim*dimRoot, dim*dimRoot))
-	u, s, v = np.linalg.svd(q, full_matrices=False)
+#	q = np.reshape(q, (dim*dimRoot, dim*dimRoot))
+#	u, s, v = np.linalg.svd(q, full_matrices=False)
 
-	a = np.dot(u, np.diag(np.sqrt(s)))
-	b = np.dot(np.diag(np.sqrt(s)), v)
+#	a = np.dot(u, np.diag(np.sqrt(s)))
+#	b = np.dot(np.diag(np.sqrt(s)), v)
 
-	a = np.reshape(a, (dim, dimRoot, dim*dimRoot))
-	b = np.reshape(b, (dim*dimRoot, dim, dimRoot))
+#	a = np.reshape(a, (dim, dimRoot, dim*dimRoot))
+#	b = np.reshape(b, (dim*dimRoot, dim, dimRoot))
 
-	print(np.einsum('ijk,kml,jlw->imw',a,b,r))
+#	print(np.einsum('ijk,kml,jlw->imw',a,b,r))
 
 
-	return [a,b,r]
+#	return [a,b,r]
 
 #dimRoot = 5
 
