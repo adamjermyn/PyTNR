@@ -89,7 +89,6 @@ class optimizer:
 			t, err = optimizeRank(self.tensors, n, start)
 			print(n, self.stored[previous][1], err)
 			if err < self.tolerance:
-				# Refactor to work with NetworkTensor
 				temp = t.externalBuckets[0].node.tensor.array
 				temp *= self.norm
 				t.externalBuckets[0].node.tensor = ArrayTensor(temp)
