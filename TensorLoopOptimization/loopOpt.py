@@ -154,8 +154,11 @@ def optimizeRank(tensors, ranks, stop=0.1, start=None):
 
 	# Generate random starting point and normalize.
 	if start is not None:
-		t2 = start[::]	
+		t2 = start # bucket ID's in t2 must match those in t1.
 	else:
+		### TODO: Add means to generate random NetworkTensor with appropriate ranks
+		### and bucket ID's matching those on t1.
+
 		t2 = [np.random.rand(ranks[i-1],t.shape[1],ranks[i]) for i,t in enumerate(tensors)]
 		t2[0] /= np.sqrt(norm(t2))
 
