@@ -1,5 +1,6 @@
 import numpy as np
 
+from TNR.Tensor.arrayTensor import ArrayTensor
 from TNR.TensorLoopOptimization.loopOpt import optimizeRank, norm, expand
 
 def cost(tensors):
@@ -25,26 +26,28 @@ class optimizer:
 
 		# Normalize tensors
 		self.norm = np.sqrt(norm(tensors))
-		tensors = list(np.array(t) for t in tensors)
-		for i in range(len(tensors)):
-			tensors[i] /= self.norm**(1./len(tensors))
-		self.nanCount = 0
+		temp = tensors.externalBuckets[0].node.tensor.array
+		temp /= self.norm
+		tensors.externalBuckets[0].node.tensor = ArrayTensor(temp)
 
-		### TODO: Add dictionary uniquely indexing the links in the loop
-		# and providing an ordering 'around the loop' for the nodes.
-		# This is better than re-indexing the external buckets because then we'd
-		# need to make sure that doing so would not re-index any external buckets
-		# of the full tensor...
+		# Reorder externalBuckets to match the underlying ordering of nodes in the loop.
+		# At the end of the day what we'll do is read out the tensors in the loop by
+		# bucket index and slot them back into the full network in place of the
+		# original tensors with the same bucket index. As a result we can feel free
+		# to move around the buckets in externalBuckets so long as the buckets themselves
+		# are unchanged. The key is that we never need to use the loop network
+		# (which is a NetworkTensor) as a tensor proper.
 
-		'''
-		Erm actually that shouldn't be a problem. At the end of the day what we'll
-		do is read out the tensors in the loop by bucket index and slot them back into
-		the full network in place of the original tensors with the same bucket index.
-		As a result we can feel free to move around the buckets in externalBuckets so
-		long as the buckets themselves are unchanged. The key is that we never need to use
-		the loop network (which is a NetworkTensor) as a tensor proper.
-		'''		
+		buckets = [tensors.externalBuckets[0]]
+		n = buckets[0].node
+		while len(buckets) < len(tensors.externalBuckets):
+			prevN = n
+			n = tensors.network.internalConnected(n).difference(set(prevN)).pop()
+			exb = list(b for b in n.buckets if b in tensors.externalBuckets)[0]
+			buckets.append(exb)
+		tensors.externalBuckets = buckets
 
+		# Store inputs
 		self.tensors = tensors
 		self.tolerance = tolerance
 		self.cut = cut
@@ -52,6 +55,7 @@ class optimizer:
 		# Store past attempts
 		self.active = []
 		self.stored = {}
+		self.nanCount = 0
 
 		# First evaluation
 		x = tuple(1 for _ in range(len(tensors)))
@@ -85,8 +89,10 @@ class optimizer:
 			t, err = optimizeRank(self.tensors, n, start)
 			print(n, self.stored[previous][1], err)
 			if err < self.tolerance:
-				for i in range(len(t)):
-					t[i] *= self.norm**(1./len(t))
+				# Refactor to work with NetworkTensor
+				temp = t.externalBuckets[0].node.tensor.array
+				temp *= self.norm
+				t.externalBuckets[0].node.tensor = ArrayTensor(temp)
 				return t
 
 			if np.isnan(err) or err > 1.1 * self.stored[previous][1]:
