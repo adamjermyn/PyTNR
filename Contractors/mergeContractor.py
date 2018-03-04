@@ -57,10 +57,7 @@ def mergeContractor(
             counter += 1
 
         q, n1, n2 = heuristic(n)
-
         n3 = n.mergeNodes(n1, n2)
-
-        n3.eliminateLoops()
 
         if optimize:
             n3.tensor.optimize()

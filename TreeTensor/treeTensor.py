@@ -38,6 +38,12 @@ class TreeTensor(NetworkTensor):
         s = s + str(self.network)
         return s
 
+    def contract(self, ind, other, otherInd, front=True):
+        super().contract(ind, other, otherInd, front=front)
+        print('_____',np.sum(self.array**2), n.array)
+        self.eliminateLoops()
+        print('_____',np.sum(self.array**2), n.array)
+
     def cutLoop(self, loop):
         logger.debug('Cutting loop.')
         self.network.check()
