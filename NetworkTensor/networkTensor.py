@@ -92,16 +92,13 @@ class NetworkTensor(Tensor):
         return len(self.network.pathBetween(n1, n2))
 
     def contract(self, ind, other, otherInd, front=True):
-        # This method could be vastly simplified by defining a cycle basis
-        # class
-
         # We copy the two networks first. If the other is an ArrayTensor we
-        # cast it to a TreeTensor first.
+        # cast it to a NetworkTensor first.
         t1 = deepcopy(self)
         if hasattr(other, 'network'):
             t2 = deepcopy(other)
         else:
-            t2 = TreeTensor(self.accuracy)
+            t2 = NetworkTensor(self.accuracy)
             t2.addTensor(other)
 
         # If front == True then we contract t2 into t1, otherwise we contract t1 into t2.
