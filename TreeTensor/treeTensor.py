@@ -239,15 +239,6 @@ class TreeTensor(NetworkTensor):
         t.eliminateLoops()
         return t
 
-    def getIndexFactor(self, ind):
-        return self.externalBuckets[ind].node.tensor.scaledArray, self.externalBuckets[ind].index
-
-    def setIndexFactor(self, ind, arr):
-        tt = deepcopy(self)
-        tt.externalBuckets[ind].node.tensor = ArrayTensor(
-            arr, logScalar=tt.externalBuckets[ind].node.tensor.logScalar)
-        return tt
-
     def contractRank2(self):
         done = set()
         while len(
