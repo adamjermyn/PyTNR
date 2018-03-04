@@ -1,6 +1,6 @@
 import numpy as np
 
-from TNR.TensorLoopOptimization.loopOpt import optimizeRank, norm
+from TNR.TensorLoopOptimization.loopOpt import optimizeRank, norm, expand
 
 def cost(tensors):
 	return sum(t.size for t in tensors)
@@ -26,7 +26,8 @@ class optimizer:
 		# Normalize tensors
 		self.norm = np.sqrt(norm(tensors))
 		tensors = list(np.array(t) for t in tensors)
-		tensors[0] /= self.norm
+		for i in range(len(tensors)):
+			tensors[i] /= self.norm**(1./len(tensors))
 		self.nanCount = 0
 
 		self.tensors = tensors
@@ -61,28 +62,18 @@ class optimizer:
 		for i,n in options:
 			# Get starting point from previous
 			t = self.stored[previous][0]
-			start = t[::]
 
 			# Enlarge tensor to the left of the bond
-			sh = list(start[i])
-			sh = list(start[i].shape)
-			sh[2] += 1
-			start[i] = np.random.randn(*sh)
-			start[i][:,:,:-1] = t[i]
-
-			# Enlarge tensor to the right of the bond
-			sh = list(start[(i+1)%len(start)].shape)
-			sh[0] += 1
-			start[(i+1)%len(start)] = np.random.randn(*sh)
-			start[(i+1)%len(start)][:-1,:,:] = t[(i+1)%len(start)]
+			start = expand(t, i)
 
 			# Optimize
-			t, err = optimizeRank(self.tensors, n, start=start)
+			t, err = optimizeRank(self.tensors, n, start)
+			print(n, self.stored[previous][1], err)
 			if err < self.tolerance:
-				t[0] *= self.norm
+				for i in range(len(t)):
+					t[i] *= self.norm**(1./len(t))
 				return t
 
-			print(n, self.stored[previous][1], err)
 			if np.isnan(err) or err > 1.1 * self.stored[previous][1]:
 				self.stored[n] = (None, 1e100, 0, 0, 0)
 				self.nanCount += 1

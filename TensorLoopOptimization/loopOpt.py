@@ -36,7 +36,66 @@ def norm(t1):
 	return contract(t1, t1)
 
 def cost(t):
+	'''
+	A cost function for weighting options when optimizing loops.
+	'''
 	return t.compressedSize
+
+def expand(t, index, fill='random'):
+	'''
+	Assumes that the external indices are ordered such that neighbouring (in the periodic sense)
+	external indices are attached to neighbouring tensors in the network.
+
+	Expands the dimension of the bond between the tensors in t attached to
+	index and index+1 by one. The new matrix elements are filled as specified by fill:
+		'random' - Numbers drawn at random from a unit-variance zero-mean normal distribution.
+		'zero' - Zeros.
+	'''
+	# Copy the tensor
+	t = deepcopy(t)
+
+	# Get the nodes
+	n1 = t.externalBuckets[index].node
+	n2 = t.externalBuckets[index].node
+
+	# Get the tensors
+	t1 = t.externalBuckets[index].node.tensor
+	t2 = t.externalBuckets[(index + 1) % t.rank].node.tensor
+
+	# Identify the indices for expansion
+	i1 = n1.indexConnecting(n2)
+	i2 = n2.indexConnecting(n1)
+
+	# Expand the first tensor
+ 	sh = list(t1.shape)
+ 	sh2 = list(sh)
+ 	sh2[i1] += 1
+ 	if fill == 'random':
+ 		arr = np.random.randn(*sh)
+ 	elif fill == 'zeros':
+ 		arr = np.zeros(sh)
+ 	else:
+ 		raise ValueError('Invalid fill prescription specified.')
+ 	sl = [slice(0,sh[j]) for j in range(len(sh))]
+ 	arr[sl] = t1.array
+ 	t.externalBuckets[index].node.tensor = ArrayTensor(arr)
+
+ 	# Expand the second tensor
+  	sh = list(t2.shape)
+ 	sh2 = list(sh)
+ 	sh2[i2] += 1
+ 	if fill == 'random':
+ 		arr = np.random.randn(*sh)
+ 	elif fill == 'zeros':
+ 		arr = np.zeros(sh)
+ 	else:
+ 		raise ValueError('Invalid fill prescription specified.')
+ 	sl = [slice(0,sh[j]) for j in range(len(sh))]
+ 	arr[sl] = t2.array
+ 	t.externalBuckets[(index + 1) % t.rank].node.tensor = ArrayTensor(arr)
+
+ 	return t
+
 
 def prepareNW(t1, t2, index):
 	'''
@@ -79,13 +138,13 @@ def prepareNW(t1, t2, index):
 
 def optimizeTensor(t1, t2, index):
 	'''
-	t1 and t2 are lists of rank-3 tensors set such that in each list the last index of
-	each contracts with the first index of the next, and the last index of the last tensor
-	contracts with the first index of the first one.
+	t1 and t2 are tensors representing loops which are to be contracted against one another.
+	Their external buckets must have corresponding ID's (e.g. they must be formed from
+	copying the same original tensor).
 
 	The return value is a version of t2 which maximizes the inner product of t1 and t2, subject
-	to the constraint that the norm of t1 equals that of t2. In the optimization process only
-	the tensor at the specified index may be modified.
+	to the constraint norm(t1) == norm(t2) == 1. In the optimization process only
+	the tensor attached to the specified external index may be modified.
 
 	Following equation S10 in arXiv:1512.04938, we first compute two tensors: N and W.
 
@@ -101,8 +160,6 @@ def optimizeTensor(t1, t2, index):
 
 	and solve for t2[index]. This is readily phrased as a matrix problem by flattening N along all indices
 	other than that associated with t2[index], and doing the same for W.
-
-	Note that this method requires that norm(t1) == norm(t2) == 1.
 	'''
 
 	# Now we construct N and W.
@@ -135,7 +192,7 @@ def optimizeTensor(t1, t2, index):
 
 	return ret, err
 
-def optimizeRank(tensors, ranks, stop=0.1, start=None):
+def optimizeRank(tensors, ranks, start, stop=0.1):
 	'''
 	tensors is a list of rank-3 tensors set such that the last index of each contracts
 	with the first index of the next, and the last index of the last tensor contracts
@@ -153,14 +210,8 @@ def optimizeRank(tensors, ranks, stop=0.1, start=None):
 	'''
 
 	# Generate random starting point and normalize.
-	if start is not None:
-		t2 = start # bucket ID's in t2 must match those in t1.
-	else:
-		### TODO: Add means to generate random NetworkTensor with appropriate ranks
-		### and bucket ID's matching those on t1.
-
-		t2 = [np.random.rand(ranks[i-1],t.shape[1],ranks[i]) for i,t in enumerate(tensors)]
-		t2[0] /= np.sqrt(norm(t2))
+	t2 = deepcopy(start)
+	t2[0] /= np.sqrt(norm(t2))
 
 	# Optimization loop
 	dlnerr = 1
