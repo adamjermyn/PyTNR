@@ -37,6 +37,19 @@ class NetworkTensor(Tensor):
             self.network.splitNode(n)
         return n
 
+    def removeNode(self, node):
+        assert node in self.network.nodes
+
+        # The external buckets associated with the bonds broken by
+        # removing this node are added at the end of the list.
+        for b in node.buckets:
+            if b not in self.externalBuckets:
+                self.externalBuckets.append(b.otherBucket)
+            else:
+                self.externalBuckets.remove(b)
+
+        self.network.nodes.remove(node)
+
     def __str__(self):
         s = 'Network Tensor with Shape:' + str(self.shape) + ' and Network:\n'
         s = s + str(self.network)
