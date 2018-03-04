@@ -235,7 +235,7 @@ class NetworkTensor(Tensor):
 
     def traceOut(self, ind):
         '''
-        Traces out the component of the tensor associated with the bucket b.
+        Traces out the component of the tensor associated with the specified index (ind).
         '''
 
         t = deepcopy(self)
