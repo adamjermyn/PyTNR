@@ -238,22 +238,7 @@ class TreeTensor(NetworkTensor):
         t = super().trace(ind0, ind1)
         t.eliminateLoops()
         return t
-
-    def contractRank2(self):
-        done = set()
-        while len(
-            done.intersection(
-                self.network.nodes)) < len(
-                self.network.nodes):
-            n = next(iter(self.network.nodes.difference(done)))
-            if n.tensor.rank == 2:
-                nodes = self.network.internalConnected(n)
-                if len(nodes) > 0:
-                    self.network.mergeNodes(n, nodes.pop())
-                else:
-                    done.add(n)
-            else:
-                done.add(n)      
+  
 
     def optimize(self):
         '''
@@ -266,27 +251,10 @@ class TreeTensor(NetworkTensor):
         for n in self.network.nodes:
             s2 += n.tensor.size
 
-        logger.info('Stage 1: Contracting Rank-2 Tensors.')
+        logger.info('Stage 1: Contracting Rank-2 Tensors and Double Links.')
         self.contractRank2()
 
-
-
-        logger.info('Stage 2: Contracting Double Links.')
-        done = set()
-        while len(
-            done.intersection(
-                self.network.nodes)) < len(
-                self.network.nodes):
-            n = next(iter(self.network.nodes.difference(done)))
-            nodes = self.network.internalConnected(n)
-            merged = False
-            for n2 in nodes:
-                if len(n.findLinks(n2)) > 1:
-                    self.network.mergeNodes(n, n2)
-                    merged = True
-            if not merged:
-                done.add(n) 
-        logger.info('Stage 3: Optimizing Links.')
+        logger.info('Stage 2: Optimizing Links.')
 
         while len(
             self.optimized.intersection(

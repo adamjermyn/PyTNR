@@ -344,3 +344,24 @@ class NetworkTensor(Tensor):
             arr, logScalar=tt.externalBuckets[ind].node.tensor.logScalar)
         return tt
 
+
+    def contractRank2(self):
+        done = set()
+        while len(
+            done.intersection(
+                self.network.nodes)) < len(
+                self.network.nodes):
+            n = next(iter(self.network.nodes.difference(done)))
+
+            nodes = self.network.internalConnected(n)
+            if len(nodes) == 0:
+                done.add(n)
+            elif n.tensor.rank <= 2:
+                self.network.mergeNodes(n, nodes.pop())
+            elif len(nodes) == 1:
+                n2 = nodes.pop()
+                if len(n.findLinks(n2)) > 1:
+                    self.network.mergeNodes(n, n2)
+            else:
+                done.add(n)
+
