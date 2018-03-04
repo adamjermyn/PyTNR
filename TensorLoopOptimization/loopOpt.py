@@ -1,8 +1,8 @@
 import numpy as np
+from copy import deepcopy
 from scipy.sparse.linalg import LinearOperator, bicgstab, lsqr
 
-def cost(tensors):
-	return sum(t.size for t in tensors)
+from TNR.Tensor.arrayTensor import ArrayTensor
 
 def shift(l, n):
 	'''
@@ -12,130 +12,70 @@ def shift(l, n):
 	n = n % len(l)
 	return l[-n:] + l[:-n]
 
-def zipTensors(t1, t2):
-	'''
-	t1 and t2 are lists of equal length of rank-3 tensors. The second dimension in each tensor
-	in one list matches that of the corresponding tensor, such that they may be contracted.
-
-	The return value is the list of rank-4 tensors which results from contracting corresponding
-	tensors in these lists.
-	'''
-	return [np.tensordot(a,b, axes=((1,),(1,))) for a,b in zip(*(t1, t2))]
-
-def contractRank4(tens1, tens2):
-	'''
-	tens1 and tens2 are rank-4 tensors resulting from a zipTensors operation.
-	It is assumed that they are each wired in the following way:
-
-		0 -		  - 1
-			Tensor
-		2 - 	  - 3
-
-	The return value is their contraction (placed side by side in the orientation shown above).
-	This is given such that the indices not involved in the contraction are numbered in the same fashion
-	as before the contraction.
-	'''
-
-	# Contract tensors
-	x = np.tensordot(tens1, tens2, axes=((1,3),(0,2)))
-
-	# Now the result has the form
-	#
-	#	0 -		  - 2
-	#		Tensor
-	#	1 - 	  - 3
-	#
-	# So we swap axes 1 and 2 to restore it to the desired form.
-	x = np.swapaxes(x, 1, 2)
-
-	return x
-
 def contract(t1, t2):
 	'''
-	t1 and t2 are lists of rank-3 tensors set such that in each list the last index of
-	each contracts with the first index of the next, and the last index of the last tensor
-	contracts with the first index of the first one.
+	Contracts two NetworkTensors against one another along external buckets.
+	The networks must have matching external bucket ID's.
+	'''
+	bids1 = list(b.id for b in t1.externalBuckets)
+	bids2 = list(b.id for b in t2.externalBuckets)
+	assert set(bids1) == set(bids2)
 
-	The return value is the inner product of these tensors.
+	inds1 = list(range(len(bids1)))
+	inds2 = list(bids2.index(i) for i in bids1)
+
+	t = t1.contract(inds1, t2, inds2)
+
+	return t.array
+
+def norm(t1):
+	'''
+	Returns the L2 norm of the specified NetworkTensor.
 	'''
 
-	# Contract the connections between the two lists
-	cont = zipTensors(t1, t2)
+	return contract(t1, t1)
 
-	# Contract the two lists
-	x = cont[0]
-	for y in cont[1:]:
-		x = contractRank4(x, y)
+def cost(t):
+	return t.compressedSize
 
-	# Contract the periodic indices
-	n = np.einsum('iijj->',x)
-
-	return n
-
-def norm(tensors):
+def prepareNW(t1, t2, index):
 	'''
-	tensors is a list of rank-3 tensors set such that the last index of each contracts
-	with the first index of the next, and the last index of the last tensor contracts
-	with the first index of the first one.
 
-	The return value is the L2 norm of the tensor.
-	'''
-	return contract(tensors, tensors)
+	Following equation S10 in arXiv:1512.04938, we construct the operators N and W.
 
-def normMat(tensors, index):
-	'''
-	tensors is a list of rank-3 tensors set such that the last index of each contracts
-	with the first index of the next, and the last index of the last tensor contracts
-	with the first index of the first one.
+	N is given by removing the node at index from t2 and contracting it against itself.
+	W is given by removing the node at index from t2 and contracting it against t1.
+	'''	
 
-	The return value is a matrix which represents the action of the tensor
-	minus that at index contracted against itself minus that at index. This is the operator
-	N from equation S10 in arXiv:1512.04938.
-	'''
-	# Contract the connections between the two lists
-	cont = zipTensors(tensors, tensors)
-	
-	# Rotate cont so that index becomes len(cont)-1.
-	cont = shift(cont, len(cont) - 1 - index)
+	# Copy t2 and remove the node at index
+	t2new = deepcopy(t2)
+	t2new.removeNode(t2new.externalBuckets[index].node)
 
-	# Contract the two lists aside from index
-	x = cont[0]
-	for y in cont[1:len(cont)-1]:
-		x = contractRank4(x, y)
+	# Contract against t1 to generate W.
+	w = contract(t1, t2new)
 
-	# Now the result has the form
-	#
-	#	0 -		  - 1
-	#		Tensor
-	#	2 - 	  - 3
-	#
-	# We outer product with the identity
-	iden = np.identity(tensors[index].shape[1])
-	x = np.tensordot(x, iden, axes=(tuple(),tuple()))
-	# This gives
-	#
-	#	0 -		  - 1
-	#		Tensor
-	#	2 - 	  - 3
-	#
-	#	4 - Ident - 5
-	#
-	# Now we want to permute these indices so that upon flattening
-	# the first three and the last three we obtain a matrix which
-	# may be dotted against a vector formed by flattening a rank-3 tensor
-	# to produce a result which may be un-flattened into a rank-3 tensor.
-	# Indices 0, 1, and 5 dot against a rank-3 tensor, so these must become the last 3.
-	# The identity (5) touches the middle index, so it must be the second in this group.
-	# The first three must then be 2, 3, 4, with 4 in the middle.
-	# Thus we want to permute the indices to be (2, 4, 3), (0, 5, 1).
-	# This is not quite right, however, as the non-identity indices must match up with the convention
-	# that the first in each group is the one that touches the left-index of the rank-3 object
-	# and the final in each group is the one that touches the right-index. Thus we actually want
-	# (3, 4, 2), (1, 5, 0).
-	x = np.transpose(x, axes=(3,4,2,1,5,0))
-	x = np.reshape(x, (tensors[index].size, tensors[index].size))
+	# Contract t2 against itself to generate N.
+	n = contract(t2new, t2new)
 
-	return x
+	# Bolt on the identity
+	iden = np.identity(t2.externalBuckets[index].size)
+	n.addTensor(ArrayTensor(iden))
+
+	# Construct array versions of W and N
+	arrW = w.array
+	arrN = n.array
+
+	# Align indices in N to agree with those in W.
+	perm = list(0 for _ in range(6))
+	for j,b in enumerate(w.externalBuckets):
+		# Corresponding buckets in t1 and t2 have the same ID's.
+		indices = list(i for i,bb in enumerate(n.externalBuckets) if bb.id==b.id)
+		perm[j] = indices[0]
+		perm[j + 3] = indices[1]
+
+	arrN = np.transpose(arrN, axes=perm)
+
+	return arrN, arrW, n, w
 
 def optimizeTensor(t1, t2, index, eps=1e-5):
 	'''
@@ -165,44 +105,35 @@ def optimizeTensor(t1, t2, index, eps=1e-5):
 	Note that this method requires that norm(t1) == norm(t2) == 1.
 	'''
 
-	# Contract the connections between the two lists
-	cont = [np.tensordot(a,b, axes=((1,1))) for a,b in zip(*(t1, t2))]
-	
-	# Rotate cont so that index becomes len(cont)-1.
-	cont = shift(cont, len(cont) - 1 - index)
-
-	# Contract the two lists aside from index
-	x = cont[0]
-	x = np.swapaxes(x, 1, 2)
-	for y in cont[1:len(cont)-1]:
-		x = np.tensordot(x, y, axes=((2,3),(0,2)))
-
-
 	# Now we construct N and W.
 
-	# Contract with the tensor immediately opposing index. Flattening then yields W.
-	W = np.tensordot(x, t1[index], axes=((2,0),(0,2)))
-	W = np.swapaxes(W, 0, 1)
-	W = np.swapaxes(W, 1, 2)
+	N, W, n, w = prepareNW(t1, t2)
+
+	# Reshape into matrices
 	W = np.reshape(W, (-1,))
+	N = np.reshape(N, (len(W), len(W)))
 
-	ret = t2[::]
-
-	op = normMat(t2, index)
 	try:
-		res = np.linalg.solve(op, W).reshape(t2[index].shape)
+		res = np.linalg.solve(N, W)
 	except np.linalg.linalg.LinAlgError:
-		res = lsqr(op, W)[0].reshape(t2[index].shape)
+		res = lsqr(N, W)[0]
 
-	ret = t2[::]
-	ret[index] = res
+	ret = deepcopy(t2)
 
-	x = ret[index].reshape((-1,))
-	y = t2[index].reshape((-1,))
-	err0 = norm(t1) + np.dot(y, np.dot(op, y)) - 2 * np.dot(y, W)
-	err1 = norm(t1) + np.dot(x, np.dot(op, x)) - 2 * np.dot(x, W)
+	# Permute axes, un-flatten and put res into ret at the appropriate place.
 
-	return ret, err0, err1
+	perm = []
+	for b in t2.externalBuckets[index].node.buckets:
+		ind = list(bb.id for bb in w.externalBuckets).index(b.id)
+		perm.append(ind)
+
+	res = np.transpose(res, axes=perm)
+	res = np.reshape(res, t2.externalBuckets[index].node.tensor.shape)
+	ret.externalBuckets[index].node.tensor = res
+
+	err = 2 * (1 - contract(t1, ret))
+
+	return ret, err
 
 def optimizeRank(tensors, ranks, stop=0.1, start=None):
 	'''
