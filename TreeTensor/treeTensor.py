@@ -160,13 +160,6 @@ class TreeTensor(Tensor):
 
         return t1
 
-    def optimizeLoops(self):
-        cycles = networkx.cycles.cycle_basis(self.network.toGraph())
-
-        for c in cycles:
-            self.optimizeLoop(c)
-            self.network.cutLinks()
-
     def cutLoop(self, loop):
         logger.debug('Cutting loop.')
         self.network.check()
