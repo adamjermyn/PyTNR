@@ -1,10 +1,11 @@
 import numpy as np
+from copy import deepcopy
 
 from TNR.Tensor.arrayTensor import ArrayTensor
 from TNR.TensorLoopOptimization.loopOpt import optimizeRank, norm, expand
 
 def cost(tensors):
-	return sum(t.size for t in tensors)
+	return tensors.compressedSize
 
 def next(previous, cut):
 	options = []
@@ -40,11 +41,13 @@ class optimizer:
 
 		buckets = [tensors.externalBuckets[0]]
 		n = buckets[0].node
+		prevNodes = set()
+		prevNodes.add(n)
 		while len(buckets) < len(tensors.externalBuckets):
-			prevN = n
-			n = tensors.network.internalConnected(n).difference(set(prevN)).pop()
+			n = tensors.network.internalConnected(n).difference(prevNodes).pop()
 			exb = list(b for b in n.buckets if b in tensors.externalBuckets)[0]
 			buckets.append(exb)
+			prevNodes.add(n)
 		tensors.externalBuckets = buckets
 
 		# Store inputs
@@ -58,8 +61,18 @@ class optimizer:
 		self.nanCount = 0
 
 		# First evaluation
-		x = tuple(1 for _ in range(len(tensors)))
-		t, err = optimizeRank(tensors, x)
+		x = tuple(1 for _ in range(len(tensors.externalBuckets)))
+		start = deepcopy(tensors)
+		for n in start.network.nodes:
+			sh = []
+			for i,b in enumerate(n.buckets):
+				if b in start.externalBuckets:
+					sh.append(n.tensor.shape[i])
+				else:
+					sh.append(1)
+
+			n.tensor = ArrayTensor(np.random.randn(*sh))
+		t, err = optimizeRank(tensors, x, start)
 		derr = 1 - err
 		c = cost(t)
 		dc = c
