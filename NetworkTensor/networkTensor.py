@@ -29,6 +29,16 @@ class NetworkTensor(Tensor):
         self.network = Network()
         self.externalBuckets = []
 
+    def copy(self):
+        new = deepcopy(self)
+        for n in new.network.nodes:
+            n.id = Node.newid()
+        for b in new.network.buckets:
+            b.id = Bucket.newid()
+        for b in new.externalBuckets:
+            b.link = None
+        return new
+
     def addTensor(self, tensor):
         n = Node(tensor, Buckets=[Bucket() for _ in range(tensor.rank)])
         self.network.addNode(n)

@@ -1,3 +1,4 @@
+from TNR.Network.bucket import Bucket
 from TNR.Network.node import Node
 from TNR.Network.link import Link
 from TNR.Network.compress import compressLink
@@ -29,6 +30,16 @@ class Network:
         for n in self.nodes:
             s = s + str(n) + '\n'
         return s
+
+    def copy(self):
+        new = deepcopy(self)
+        for n in new.nodes:
+            n.id = Node.newid()
+        for b in new.buckets:
+            b.id = Bucket.newid()
+        for b in new.externalBuckets:
+            b.link = None
+        return new
 
     @property
     def array(self):
