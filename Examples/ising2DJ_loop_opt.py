@@ -17,7 +17,7 @@ def ising2DFreeEnergy(nX, nY, h, J, accuracy):
         n,
         accuracy,
         heuristic,
-        optimize=True,
+        optimize=False,
         merge=False,
         plot=False)
     return n.array[1] / (nX * nY)
