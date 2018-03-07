@@ -65,6 +65,14 @@ class NetworkTensor(Tensor):
         s = s + str(self.network)
         return s
 
+    def promote(self, other):
+        if not hasattr(other, 'network'):
+            t = NetworkTensor(self.accuracy)
+            t.addTensor(other)
+        else:
+            t = deepcopy(other)
+        return t
+
     @property
     def array(self):
 
@@ -117,11 +125,7 @@ class NetworkTensor(Tensor):
         # We copy the two networks first. If the other is an ArrayTensor we
         # cast it to a NetworkTensor first.
         t1 = deepcopy(self)
-        if hasattr(other, 'network'):
-            t2 = deepcopy(other)
-        else:
-            t2 = NetworkTensor(self.accuracy)
-            t2.addTensor(other)
+        t2 = self.promote(other)
 
         # If front == True then we contract t2 into t1, otherwise we contract t1 into t2.
         # This is so we get the index order correct. Thus
@@ -136,14 +140,12 @@ class NetworkTensor(Tensor):
             assert b1 in t1.network.buckets and b1 not in t2.network.buckets
             assert b2 in t2.network.buckets and b2 not in t1.network.buckets
             links.append(Link(b1, b2))
-
         # Determine new external buckets list
         for l in links:
             t1.externalBuckets.remove(l.bucket1)
             t2.externalBuckets.remove(l.bucket2)
 
         extB = t1.externalBuckets + t2.externalBuckets
-
         # Merge the networks
         toRemove = set(t2.network.nodes)
 

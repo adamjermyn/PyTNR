@@ -38,11 +38,19 @@ class TreeTensor(NetworkTensor):
         s = s + str(self.network)
         return s
 
-    def contract(self, ind, other, otherInd, front=True):
-        super().contract(ind, other, otherInd, front=front)
-        print('_____',np.sum(self.array**2), self.array)
-        self.eliminateLoops()
-        print('_____',np.sum(self.array**2), self.array)
+    def promote(self, other):
+        if not hasattr(other, 'network'):
+            t = TreeTensor(self.accuracy)
+            t.addTensor(other)
+        else:
+            t = deepcopy(other)
+        return t
+
+    def contract(self, ind, other, otherInd, front=True, elimLoops=True):
+        t = super().contract(ind, other, otherInd, front=front)
+        if elimLoops:
+            t.eliminateLoops()
+        return t
 
     def cutLoop(self, loop):
         logger.debug('Cutting loop.')
