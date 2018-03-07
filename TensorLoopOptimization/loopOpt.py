@@ -104,7 +104,9 @@ def prepareNW(t1, t2, index):
 
     # Copy t2 and remove the node at index
     t2new = t2.copy()
-    sh = t2new.externalBuckets[index].node.tensor.shape
+
+    n = t2new.externalBuckets[index].node
+    ind = n.buckets.index(t2new.externalBuckets[index])
     t2new.removeNode(t2new.externalBuckets[index].node)
 
     # Contract against t1 to generate W.
@@ -120,13 +122,25 @@ def prepareNW(t1, t2, index):
     iden = np.identity(t2.externalBuckets[index].size)
     n.addTensor(ArrayTensor(iden))
 
+    # Now we have an object of the form (ind0, ind1, ind0, ind1, iden0, iden1).
+    bs = n.externalBuckets
+    ws = w.externalBuckets
+    if ind == 0:
+        n.externalBuckets = [bs[4], bs[0], bs[1], bs[5], bs[2], bs[3]]
+        w.externalBuckets = [ws[0], ws[1], ws[2]]
+    elif ind == 1:
+        n.externalBuckets = [bs[0], bs[4], bs[1], bs[2], bs[5], bs[3]]
+        w.externalBuckets = [ws[1], ws[0], ws[2]]
+    elif ind == 2:
+        n.externalBuckets = [bs[0], bs[1], bs[4], bs[2], bs[3], bs[5]]
+        w.externalBuckets = [ws[1], ws[2], ws[0]]
+
     # Construct array versions of W and N
+    # The indices are automatically aligned correctly by construction.
     arrW = w.array
     arrN = n.array
 
-    # The indices are automatically aligned correctly by construction.
-
-    return arrN, arrW, n, w, sh
+    return arrN, arrW, n, w
 
 def optimizeTensor(t1, t2, index):
     '''
@@ -161,9 +175,10 @@ def optimizeTensor(t1, t2, index):
     for b in t2.externalBuckets:
         assert not b.linked
 
-    N, W, n, w, sh = prepareNW(t1, t2, index)
+    N, W, n, w = prepareNW(t1, t2, index)
 
     # Reshape into matrices
+    sh = W.shape
     W = np.reshape(W, (-1,))
     N = np.reshape(N, (len(W), len(W)))
 
@@ -172,13 +187,11 @@ def optimizeTensor(t1, t2, index):
     except np.linalg.linalg.LinAlgError:
         res = lsqr(N, W)[0]
 
-    ret = deepcopy(t2)
-
-    # Un-flatten and put res into ret at the appropriate place.
-
-    # For some reason the norm of the return loop is always exactly 0.5...
-
+    # Un-flatten
     res = np.reshape(res, sh)
+
+    # Put res into ret at the appropriate place.
+    ret = deepcopy(t2)
     ret.externalBuckets[index].node.tensor = ArrayTensor(res)
 
     err = 2 * (1 - contract(t1, range(t1.rank), ret, range(t1.rank)).array)
