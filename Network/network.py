@@ -74,7 +74,6 @@ class Network:
             arr2 = n.tensor.array
             logAcc += np.log(np.max(np.abs(arr2)))
             arr = np.tensordot(arr, arr2 / np.max(np.abs(arr2)), axes=0)
-            logger.debug('Computing array. Log is ' + str(logAcc) + '.')
             buckets.extend(n.buckets)
 
         bids = [b.id for b in buckets]
