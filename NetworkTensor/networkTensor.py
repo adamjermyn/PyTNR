@@ -288,6 +288,21 @@ class NetworkTensor(Tensor):
             arr, logScalar=tt.externalBuckets[ind].node.tensor.logScalar)
         return tt
 
+    def copySubset(self, nodes):
+        t = deepcopy(self)
+
+        # Prune the network down to just the specified nodes
+        ids = list([n.id for n in nodes])
+        nodes2 = list(t.network.nodes)
+
+        for n in nodes2:
+            if n.id not in ids:
+                t.removeNode(n)
+
+        for b in t.externalBuckets:
+            b.link = None
+
+        return t
 
     def contractRank2(self):
         done = set()
