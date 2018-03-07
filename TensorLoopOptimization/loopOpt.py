@@ -176,9 +176,9 @@ def optimizeTensor(t1, t2, index):
 
     # Un-flatten and put res into ret at the appropriate place.
 
-    # There's an indexing bug here...
+    # For some reason the norm of the return loop is always exactly 0.5...
 
-    res = np.reshape(res, sh)
+    res = np.sqrt(2)*np.reshape(res, sh)
     ret.externalBuckets[index].node.tensor = ArrayTensor(res)
 
     err = 2 * (1 - contract(t1, range(t1.rank), ret, range(t1.rank)).array)
