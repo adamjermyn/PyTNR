@@ -55,10 +55,11 @@ class NetworkTensor(Tensor):
         for b in node.buckets:
             if b not in self.externalBuckets:
                 self.externalBuckets.append(b.otherBucket)
+                b.otherBucket.link = None
             else:
                 self.externalBuckets.remove(b)
 
-        self.network.nodes.remove(node)
+        self.network.removeNode(node)
 
     def __str__(self):
         s = 'Network Tensor with Shape:' + str(self.shape) + ' and Network:\n'
@@ -312,17 +313,19 @@ class NetworkTensor(Tensor):
             done.intersection(
                 self.network.nodes)) < len(
                 self.network.nodes):
+
             n = next(iter(self.network.nodes.difference(done)))
 
             nodes = self.network.internalConnected(n)
+            if len(nodes) > 0:
+                n2 = next(iter(nodes))
+
             if len(nodes) == 0:
                 done.add(n)
             elif n.tensor.rank <= 2:
                 self.network.mergeNodes(n, nodes.pop())
-            elif len(nodes) == 1:
-                n2 = nodes.pop()
-                if len(n.findLinks(n2)) > 1:
-                    self.network.mergeNodes(n, n2)
+            elif len(nodes) == 1 and len(n.findLinks(n2)) > 1:
+                self.network.mergeNodes(n, n2)
             else:
                 done.add(n)
 
