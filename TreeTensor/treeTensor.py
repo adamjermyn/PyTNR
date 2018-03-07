@@ -59,41 +59,21 @@ class TreeTensor(NetworkTensor):
         prev = self.array
         prevL = list([l.tensor.shape for l in loop])
 
-
-        loopNetwork = self.network.copySubset(loop)
-
-
-
-        # Get tensors and transpose into correct form
-        tensors = []
-        inds = []
-        shs = []
-        for i,l in enumerate(loop):
-            arr = l.tensor.array
-            ind0 = l.indexConnecting(loop[i-1])
-            ind2 = l.indexConnecting(loop[(i+1)%len(loop)])
-            ind1 = set((0,1,2)).difference(set((ind0,ind2))).pop()
-            shs.append(arr.shape[ind1])
-            inds.append((ind0, ind1, ind2))
-            arr = np.transpose(arr, axes=(ind0, ind1, ind2))
-            tensors.append(arr)
+        # Form the loop network
+        net = self.copySubset(loop)
 
         # Optimize
-        arrs = cut(tensors, self.accuracy)
+        net = cut(net, self.accuracy)
 
-        # Now transpose back to the original shape
-        for i,arr in enumerate(arrs):
-            ind0, ind1, ind2 = inds[i]
+        # Throw the new tensors back in
+        for n in net.network.nodes:
+            for m in self.network.nodes:
+                bidsn = list(b.id for b in n.buckets)
+                bidsm = list(b.id for b in m.buckets)
+                if len(set(bidsn).intersection(bidsm)) > 0:
+                    m.tensor = n.tensor
 
-            ind0 = inds[i].index(0)
-            ind1 = inds[i].index(1)
-            ind2 = inds[i].index(2)
-
-            arr = np.transpose(arr, axes=(ind0, ind1, ind2))
-            assert arr.shape[inds[i][1]] == shs[i]
-
-            loop[i].tensor = ArrayTensor(arr)
-
+        # Verify error
         new = self.array
 
         err = np.sum((prev - new)**2) / np.sum(prev**2)
@@ -110,17 +90,6 @@ class TreeTensor(NetworkTensor):
             print(prevL)
             print(list([l.tensor.shape for l in loop]))
             exit()
-
-        for i,l in enumerate(loop):
-            arrM1 = loop[i-1].tensor.array
-            arr = loop[i].tensor.array
-            arrP1 = loop[(i+1)%len(loop)].tensor.array
-
-            assert arr.shape[inds[i][1]] == shs[i]
-            assert arrM1.shape[inds[i-1][2]] == arr.shape[inds[i][0]]
-            assert arr.shape[inds[i][2]] == arrP1.shape[inds[(i+1)%len(loop)][0]]
-
-
 
         self.network.cutLinks()
 
