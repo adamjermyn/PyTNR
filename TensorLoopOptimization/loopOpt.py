@@ -178,12 +178,12 @@ def optimizeTensor(t1, t2, index):
 
     # For some reason the norm of the return loop is always exactly 0.5...
 
-    res = np.sqrt(2)*np.reshape(res, sh)
+    res = np.reshape(res, sh)
     ret.externalBuckets[index].node.tensor = ArrayTensor(res)
 
     err = 2 * (1 - contract(t1, range(t1.rank), ret, range(t1.rank)).array)
 
-    print(np.sum(t1.array**2),norm(t1), np.sum(ret.array**2), norm(ret))
+    print(err, np.sum(t1.array**2),norm(t1), np.sum(ret.array**2), norm(ret))
 
 
     return ret, err
