@@ -78,12 +78,17 @@ class TreeTensor(NetworkTensor):
         net = cut(net, self.accuracy)
 
         # Throw the new tensors back in
+        num = 0
         for n in net.network.nodes:
             for m in self.network.nodes:
                 bidsn = list(b.id for b in n.buckets)
                 bidsm = list(b.id for b in m.buckets)
                 if len(set(bidsn).intersection(bidsm)) > 0:
+                    print(bidsn, bidsm)
                     m.tensor = n.tensor
+                    num += 1
+
+        assert num == len(loop)
 
         # Verify error
         new = self.array
