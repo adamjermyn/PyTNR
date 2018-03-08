@@ -205,38 +205,41 @@ class optTensor:
         i1 = n1.indexConnecting(n2)
         i2 = n2.indexConnecting(n1)
 
-        # Expand the first tensor
         sh = list(t1.shape)
-        sh2 = list(sh)
-        sh2[i1] += 1
-        if fill == 'random':
-            arr = np.random.randn(*sh2)
-        elif fill == 'zeros':
-            arr = np.zeros(sh2)
-        else:
-            raise ValueError('Invalid fill prescription specified.')
-        sl = [slice(0,sh[j]) for j in range(len(sh))]
-        arr[sl] = t1.array
-        self.guess.externalBuckets[index].node.tensor = ArrayTensor(arr)
+        shq = list(t2.shape)
 
-        # Expand the second tensor
-        sh = list(t2.shape)
-        sh2 = list(sh)
-        sh2[i2] += 1
-        if fill == 'random':
-            arr = np.random.randn(*sh2)
-        elif fill == 'zeros':
-            arr = np.zeros(sh2)
-        else:
-            raise ValueError('Invalid fill prescription specified.')
-        sl = [slice(0,sh[j]) for j in range(len(sh))]
-        arr[sl] = t2.array
-        self.guess.externalBuckets[(index + 1) % self.guess.rank].node.tensor = ArrayTensor(arr)
+        nor = 0
+        while abs(nor) < 1e-5: # Keep trying until the tensor isn't singular
+            # Expand the first tensor
+            sh2 = list(sh)
+            sh2[i1] += 1
+            if fill == 'random':
+                arr = np.random.randn(*sh2)
+            elif fill == 'zeros':
+                arr = np.zeros(sh2)
+            else:
+                raise ValueError('Invalid fill prescription specified.')
+            sl = [slice(0,sh[j]) for j in range(len(sh))]
+            arr[sl] = t1.array
+            self.guess.externalBuckets[index].node.tensor = ArrayTensor(arr)
 
-        nor = np.sqrt(norm(self.guess))
-        temp = self.guess.externalBuckets[0].node.tensor.array
-        temp /= nor
-        self.guess.externalBuckets[0].node.tensor = ArrayTensor(temp)
+            # Expand the second tensor
+            sh2 = list(shq)
+            sh2[i2] += 1
+            if fill == 'random':
+                arr = np.random.randn(*sh2)
+            elif fill == 'zeros':
+                arr = np.zeros(sh2)
+            else:
+                raise ValueError('Invalid fill prescription specified.')
+            sl = [slice(0,shq[j]) for j in range(len(shq))]
+            arr[sl] = t2.array
+            self.guess.externalBuckets[(index + 1) % self.guess.rank].node.tensor = ArrayTensor(arr)
+
+            nor = np.sqrt(norm(self.guess))
+            temp = self.guess.externalBuckets[0].node.tensor.array
+            temp /= nor
+            self.guess.externalBuckets[0].node.tensor = ArrayTensor(temp)
 
         self.ranks = list(self.ranks)
         self.ranks[index] += 1
