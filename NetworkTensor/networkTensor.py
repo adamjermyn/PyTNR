@@ -156,19 +156,6 @@ class NetworkTensor(Tensor):
         for n in toRemove:
             t1.network.addNode(n)
 
-        # Merge any rank-1 or rank-2 objects
-        done = set()
-        while len(done.intersection(t1.network.nodes)) < len(t1.network.nodes):
-            n = next(iter(t1.network.nodes.difference(done)))
-            if n.tensor.rank <= 2:
-                nodes = t1.network.internalConnected(n)
-                if len(nodes) > 0:
-                    t1.network.mergeNodes(n, nodes.pop())
-                else:
-                    done.add(n)
-            else:
-                done.add(n)
-
         t1.externalBuckets = extB
         assert t1.network.externalBuckets == set(t1.externalBuckets)
 

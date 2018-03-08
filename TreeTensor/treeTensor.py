@@ -49,6 +49,18 @@ class TreeTensor(NetworkTensor):
     def contract(self, ind, other, otherInd, front=True, elimLoops=True):
         t = super().contract(ind, other, otherInd, front=front)
         if elimLoops:
+            # Merge any rank-1 or rank-2 objects
+            done = set()
+            while len(done.intersection(t.network.nodes)) < len(t.network.nodes):
+                n = next(iter(t.network.nodes.difference(done)))
+                if n.tensor.rank <= 2:
+                    nodes = t.network.internalConnected(n)
+                    if len(nodes) > 0:
+                        t.network.mergeNodes(n, nodes.pop())
+                    else:
+                        done.add(n)
+                else:
+                    done.add(n)
             t.eliminateLoops()
         return t
 

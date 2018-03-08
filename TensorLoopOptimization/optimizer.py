@@ -2,25 +2,20 @@ import numpy as np
 from copy import deepcopy
 
 from TNR.Tensor.arrayTensor import ArrayTensor
-from TNR.TensorLoopOptimization.loopOpt import optimizeRank, norm, expand
+from TNR.TensorLoopOptimization.optTensor import optTensor
+
+
+def norm(t):
+    '''
+    Returns the L2 norm of the tensor.
+    '''
+    t1 = t.copy()
+    t2 = t.copy()
+
+    return t1.contract(range(t.rank), t2, range(t.rank), elimLoops=False).array
 
 def cost(tensors):
 	return tensors.compressedSize
-
-def next(previous, cut):
-	options = []
-
-	inds = list(range(len(previous)))
-
-	if cut and len([1 for r in previous if r == 1]) == 1:
-		inds.remove(previous.index(1))
-
-	for i in inds:
-		r = list(previous)
-		r[i] += 1
-		options.append((i, tuple(r)))
-
-	return options
 
 class optimizer:
 	def __init__(self, tensors, tolerance, cut=False):
@@ -61,18 +56,10 @@ class optimizer:
 		self.nanCount = 0
 
 		# First evaluation
-		x = tuple(1 for _ in range(len(tensors.externalBuckets)))
-		start = deepcopy(tensors)
-		for n in start.network.nodes:
-			sh = []
-			for i,b in enumerate(n.buckets):
-				if b in start.externalBuckets:
-					sh.append(n.tensor.shape[i])
-				else:
-					sh.append(1)
-
-			n.tensor = ArrayTensor(np.random.randn(*sh))
-		t, err = optimizeRank(tensors, x, start)
+		x = optTensor(self.tensors)
+		x.optimizeSweep()
+		t = deepcopy(x.guess)
+		err = x.error
 		derr = 1 - err
 		c = cost(t)
 		dc = c
@@ -89,18 +76,15 @@ class optimizer:
 	def makeNext(self):
 		# Choose an option to improve
 		previous = self.choose()
-		options = next(previous, self.cut)
 
-		for i,n in options:
-			# Get starting point from previous
-			t = self.stored[previous][0]
+		for i in range(len(previous)):
+			new = deepcopy(previous)
+			new.expand(i)
+			new.optimizeSweep()
+			err = new.error
+			t = new.guess
 
-			# Enlarge tensor to the left of the bond
-			start = expand(t, i)
-
-			# Optimize
-			t, err = optimizeRank(self.tensors, n, start)
-			print(n, self.stored[previous][1], err)
+			print(new, err)
 			if err < self.tolerance:
 				temp = t.externalBuckets[0].node.tensor.array
 				temp *= self.norm
@@ -108,14 +92,14 @@ class optimizer:
 				return t
 
 			if np.isnan(err) or err > 1.1 * self.stored[previous][1]:
-				self.stored[n] = (None, 1e100, 0, 0, 0)
+				self.stored[new] = (None, 1e100, 0, 0, 0)
 				self.nanCount += 1
 			else:
-				self.active.append(n)
+				self.active.append(new)
 				derr = self.stored[previous][1] - err
 				dc = cost(t) - self.stored[previous][3]
 				c = cost(t)
-				self.stored[n] = (t, err, derr, c, dc)
+				self.stored[new] = (t, err, derr, c, dc)
 
 		self.active.remove(previous)
 		self.active = sorted(self.active, key=lambda x: self.stored[x][1], reverse=True)
@@ -130,3 +114,97 @@ def cut(tensors, tolerance):
 		if opt.nanCount > 20:
 			opt = optimizer(tensors, tolerance, cut=True)
 	return ret
+
+
+
+#def kronecker(dim):
+#   x = np.zeros((dim, dim, dim))
+#   for i in range(dim):
+#       x[i,i,i] = 1
+#   return x
+
+#def test(dim):
+#   x = 5 + np.random.randn(dim,dim,dim)
+#   return x
+
+#def testTensors(dim, num):
+    # Put no correlations in while maintaining a non-trivial physical index
+#   tens = np.random.randn(dim, dim, dim)
+#   for i in range(dim-1):
+#       tens[:,i,:] = np.random.randn()
+
+    # Apply random unitary operators.
+#   from scipy.stats import ortho_group
+#   tensors = [np.copy(tens) for _ in range(num)]
+#   for i in range(num):
+#       u = ortho_group.rvs(dim)
+#       uinv = np.linalg.inv(u)
+#       tensors[i] = np.einsum('ijk,kl->ijl', tensors[i], u)
+#       tensors[(i+1)%num] = np.einsum('li,ijk->ljk', uinv, tensors[i])
+
+#   return tensors
+
+#def test2(dimRoot):
+    # Constructs a tensor list which, upon contraction, returns 0 when
+    # all indices are zero and 1 otherwise.
+
+#   dim = dimRoot**2
+
+#   t = np.ones((dim,dim,dim))
+#   t[0,0,0] = 0
+
+    # SVD
+#   t = np.reshape(t, (dim**2, dim))
+#   u, s, v = np.linalg.svd(t, full_matrices=False)
+#   q = np.dot(u, np.diag(np.sqrt(s)))
+#   r = np.dot(np.diag(np.sqrt(s)), v)
+
+    # Insert random unitary between q and r
+#   from scipy.stats import ortho_group
+#   u = ortho_group.rvs(dim)
+#   uinv = np.linalg.inv(u)
+#   q = np.dot(q, u)
+#   r = np.dot(uinv, r)
+
+    # Decompose bond
+#   q = np.reshape(q,(dim, dim, dimRoot, dimRoot))
+#   r = np.reshape(r,(dimRoot, dimRoot, dim))
+
+    # Split q
+#   q = np.swapaxes(q, 1, 2)
+
+#   q = np.reshape(q, (dim*dimRoot, dim*dimRoot))
+#   u, s, v = np.linalg.svd(q, full_matrices=False)
+
+#   a = np.dot(u, np.diag(np.sqrt(s)))
+#   b = np.dot(np.diag(np.sqrt(s)), v)
+
+#   a = np.reshape(a, (dim, dimRoot, dim*dimRoot))
+#   b = np.reshape(b, (dim*dimRoot, dim, dimRoot))
+
+#   print(np.einsum('ijk,kml,jlw->imw',a,b,r))
+
+
+#   return [a,b,r]
+
+#dimRoot = 5
+
+#dim = dimRoot**2
+#tensors = test2(dimRoot)
+
+#a,b,r = tensors
+
+#print(np.linalg.svd(np.einsum('ijk,kml->ijml',a,b).reshape((dim*dimRoot,dim*dimRoot)))[1])
+#print(np.linalg.svd(np.einsum('ijk,kml->ijml',b,r).reshape((dim**2*dimRoot,dim*dimRoot)))[1])
+#print(np.linalg.svd(np.einsum('ijk,kml->ijml',r,a).reshape((dimRoot**2,dim*dimRoot**2)))[1])
+
+#tensors = [test(5) for _ in range(5)]
+#tensors = testTensors(5, 5)
+#tensors[0] /= np.sqrt(norm(tensors))
+#print(optimize(tensors, 1e-5)[:2])
+    
+
+#print(np.linalg.svd(np.einsum('ijk,kml->ijml',a,b).reshape((dim*dimRoot,dim*dimRoot)))[1])
+#print(np.linalg.svd(np.einsum('ijk,kml->ijml',b,r).reshape((dim**2*dimRoot,dim*dimRoot)))[1])
+#print(np.linalg.svd(np.einsum('ijk,kml->ijml',r,a).reshape((dimRoot**2,dim*dimRoot**2)))[1])
+
