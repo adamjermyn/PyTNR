@@ -1,5 +1,6 @@
 import numpy as np
 from copy import deepcopy
+from scipy.sparse.linalg import lsqr
 
 from TNR.Tensor.arrayTensor import ArrayTensor
 
@@ -107,16 +108,9 @@ class optTensor:
         n = t2.externalBuckets[index].node
         t = t1.contract(range(t1.rank), t2, range(t1.rank), elimLoops=False)
         n = list(m for m in t.network.nodes if m.id == n.id)[0]
-#        print(n.id, list(b.id for b in n.buckets))
 
         t.removeNode(n)
         W = t
-
-        q = n.tensor.array
-        w = W.array
-        w = np.reshape(w, (-1,))
-        q = np.reshape(q, (-1,))
-#        print('Check that dot(W, tens) == dot(loop, guess):',np.dot(q, w), t1.contract(range(t1.rank), t2, range(t1.rank),elimLoops=False).array)
 
 
         # Make N
@@ -143,19 +137,10 @@ class optTensor:
         n1 = list(m for m in t.network.nodes if m.id == n1.id)[0]
         n2 = list(m for m in t.network.nodes if m.id == n2.id)[0]
 
-#        print(n1.id, list(b.id for b in n1.buckets))
-
         t.removeNode(n1)
         t.removeNode(n2)
 
         N = t
-
-
-        q = n1.tensor.array
-        nn = N.array
-#        print(nn.shape)
-#        print('Check that dot(tens, N, tens) == norm(t2):',np.einsum('ijklmn,ijk,lmn->',nn,q,q), norm(t2))
-
 
         # Because N is symmetric, the first three external Buckets correspond in order
         # to the last three. Because those in W are formed by removing the same node,
@@ -164,26 +149,20 @@ class optTensor:
         return N.array, W.array
 
     def optimizeIndex(self, index):
-#        print('Norms before:',norm(self.loop), norm(self.guess))
-
-  #      print(self.guess)
         N, W = self.prepareNW(index)
-        res = np.linalg.tensorsolve(N, W)
 
-#        print('Check linear solve:',np.sum((np.einsum('ijklmn,lmn->ijk',N,res) - W)**2))
+        # Flatten, solve, unflatten
 
-#        print(self.guess.externalBuckets[index].node.id,
-#            list(b.id for b in self.guess.externalBuckets[index].node.buckets))
+        sh = W.shape
+        W = np.reshape(W, (-1,))
+        N = np.reshape(N, (len(W), len(W)))
+        try:
+            res = np.linalg.solve(N, W)
+        except np.linalg.linalg.LinAlgError:
+            res = lsqr(N, W)[0]
+        res = np.reshape(res, sh)
 
-#        print(np.einsum('ijk,ijk->',W,W))
-
-        # Put res into guess at the appropriate place
         self.guess.externalBuckets[index].node.tensor = ArrayTensor(res)
-#        print('Check post-solve norm eq.:',np.einsum('ijklmn,ijk,lmn',N,res,res), norm(self.guess))
-
-#        print('Norms after:',norm(self.loop), norm(self.guess))
-
-#        print('\n\n\n\n')
 
 
     def optimizeSweep(self, stop=0.1):
