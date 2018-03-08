@@ -73,6 +73,7 @@ class TreeTensor(NetworkTensor):
 
         # Form the loop network
         net = self.copySubset(loop)
+ #       prevQ = net.array
 
         # Optimize
         net = cut(net, self.accuracy)
@@ -91,22 +92,28 @@ class TreeTensor(NetworkTensor):
         assert num == len(loop)
 
         # Verify error
-        new = self.array
+   #     new = self.array
+  #      newQ = net.array
+ #       print((newQ - prevQ) / prevQ)
 
-        err = np.sum((prev - new)**2) / np.sum(prev**2)
+#        print('---')
+ #       err = np.sum((prev - new)**2) / np.sum(prev**2)
 
-        if err > 3 * self.accuracy:
+  #      err2 = np.sum((prevQ - newQ)**2) / np.sum(prevQ**2)
+
+   #     if err > 3 * self.accuracy:
 
             ### There's a bug in loop optimizing which occasionally produces
             # considerably larger-than-expected accuracy.
 
-            print(prev)
-            print(new)
-            print(err)
-            print(err / self.accuracy)
-            print(prevL)
-            print(list([l.tensor.shape for l in loop]))
-            exit()
+    #        print(prev)
+     #       print(new)
+      #      print(err)
+       #     print(err / self.accuracy)
+        #    print(err2)
+         #   print(prevL)
+          #  print(list([l.tensor.shape for l in loop]))
+           # exit()
 
         self.network.cutLinks()
 
