@@ -78,28 +78,29 @@ class optimizer:
 		previous = self.choose()
 
 		for i in range(len(previous)):
-			new = deepcopy(previous)
-			new.expand(i)
-			new.optimizeSweep()
-			err = new.error
-			t = new.guess
+			if not cut or len(list(1 for x in previous.ranks if x == 1)):
+				new = deepcopy(previous)
+				new.expand(i)
+				new.optimizeSweep()
+				err = new.error
+				t = new.guess
 
-			print(new, err)
-			if err < self.tolerance:
-				temp = t.externalBuckets[0].node.tensor.array
-				temp *= self.norm
-				t.externalBuckets[0].node.tensor = ArrayTensor(temp)
-				return t
+				print(new, err)
+				if err < self.tolerance:
+					temp = t.externalBuckets[0].node.tensor.array
+					temp *= self.norm
+					t.externalBuckets[0].node.tensor = ArrayTensor(temp)
+					return t
 
-			if np.isnan(err) or err > 1.1 * self.stored[previous][1]:
-				self.stored[new] = (None, 1e100, 0, 0, 0)
-				self.nanCount += 1
-			else:
-				self.active.append(new)
-				derr = self.stored[previous][1] - err
-				dc = cost(t) - self.stored[previous][3]
-				c = cost(t)
-				self.stored[new] = (t, err, derr, c, dc)
+				if np.isnan(err) or err > 1.1 * self.stored[previous][1]:
+					self.stored[new] = (None, 1e100, 0, 0, 0)
+					self.nanCount += 1
+				else:
+					self.active.append(new)
+					derr = self.stored[previous][1] - err
+					dc = cost(t) - self.stored[previous][3]
+					c = cost(t)
+					self.stored[new] = (t, err, derr, c, dc)
 
 		self.active.remove(previous)
 		self.active = sorted(self.active, key=lambda x: self.stored[x][1], reverse=True)
