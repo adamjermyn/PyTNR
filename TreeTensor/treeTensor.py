@@ -73,7 +73,6 @@ class TreeTensor(NetworkTensor):
 
         # Form the loop network
         net = self.copySubset(loop)
- #       prevQ = net.array
 
         # Optimize
         net = cut(net, self.accuracy)
@@ -92,28 +91,37 @@ class TreeTensor(NetworkTensor):
         assert num == len(loop)
 
         # Verify error
-   #     new = self.array
-  #      newQ = net.array
- #       print((newQ - prevQ) / prevQ)
+        new = self.array
 
-#        print('---')
- #       err = np.sum((prev - new)**2) / np.sum(prev**2)
+        print('---')
+        err = np.sum((prev - new)**2) / np.sum(prev**2)
 
-  #      err2 = np.sum((prevQ - newQ)**2) / np.sum(prevQ**2)
-
-   #     if err > 3 * self.accuracy:
+        if err > 3 * self.accuracy:
 
             ### There's a bug in loop optimizing which occasionally produces
             # considerably larger-than-expected accuracy.
 
-    #        print(prev)
-     #       print(new)
-      #      print(err)
-       #     print(err / self.accuracy)
-        #    print(err2)
-         #   print(prevL)
-          #  print(list([l.tensor.shape for l in loop]))
-           # exit()
+            # Actually this might not be a bug, but rather a side effect
+            # of the fact that in our procedure different links can end up
+            # with very different sizes of terms on either side. One way
+            # to address this is to apply a matrix and it's inverse between
+            # each pair of in-loop and out-of-loop tensors such that each
+            # link has comparable magnitude on the in-loop side. That is, we want
+            # the matrix formed by contracting the loop against itself on all but
+            # some given index to have norm comparable to that formed for any such index.
+            # There's even more freedom, in fact, and in principle the transformation could
+            # turn each such density matrix into the identity, though that'd be fiddly and
+            # there's no reason to go so far. Instead we pick the matrix that first permutes
+            # the matrix to have the largest elements on-diagonal and then normalise them
+            # to unity.
+
+            print(prev)
+            print(new)
+            print('___',err)
+            print('___',err / self.accuracy)
+            print(prevL)
+            print(list([l.tensor.shape for l in loop]))
+ #           exit()
 
         self.network.cutLinks()
 
