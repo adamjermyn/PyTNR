@@ -34,6 +34,7 @@ class optimizer:
 		# are unchanged. The key is that we never need to use the loop network
 		# (which is a NetworkTensor) as a tensor proper.
 
+		self.inds = list([0 for _ in range(tensors.rank)])
 		buckets = [tensors.externalBuckets[0]]
 		n = buckets[0].node
 		prevNodes = set()
@@ -42,6 +43,7 @@ class optimizer:
 			n = tensors.network.internalConnected(n).difference(prevNodes).pop()
 			exb = list(b for b in n.buckets if b in tensors.externalBuckets)[0]
 			buckets.append(exb)
+			self.inds[tensors.externalBuckets.index(exb)] = len(prevNodes)
 			prevNodes.add(n)
 		tensors.externalBuckets = buckets
 
@@ -78,7 +80,7 @@ class optimizer:
 		previous = self.choose()
 
 		for i in range(len(previous)):
-			if not cut or len(list(1 for x in previous.ranks if x == 1)):
+			if not cut or len(list(1 for x in previous.ranks if x == 1)) > 1 or previous.ranks[i] != 1:
 				new = deepcopy(previous)
 				new.expand(i)
 				new.optimizeSweep()
@@ -114,7 +116,7 @@ def cut(tensors, tolerance):
 		ret = opt.makeNext()
 		if opt.nanCount > 20:
 			opt = optimizer(tensors, tolerance, cut=True)
-	return ret
+	return ret, opt.inds
 
 
 
