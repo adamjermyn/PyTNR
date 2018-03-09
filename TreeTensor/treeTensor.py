@@ -75,7 +75,7 @@ class TreeTensor(NetworkTensor):
         net = self.copySubset(loop)
 
         # Optimize
-        net = cut(net, self.accuracy)
+        net, inds = cut(net, self.accuracy)
 
         # Throw the new tensors back in
         num = 0
