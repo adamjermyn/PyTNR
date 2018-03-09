@@ -81,6 +81,16 @@ class optTensor:
     def __len__(self):
         return self.loop.rank
 
+
+    def densityMatrix(self, index):
+        t1 = self.loop.copy()
+        t2 = self.loop.copy()
+
+        ax = list(range(t1.rank))
+        ax.remove(index)
+
+        return t1.contract(ax, t2, ax, elimLoops=False).array
+
     def prepareNW(self, index):
         '''
         Following equation S10 in arXiv:1512.04938, we first compute two tensors: N and W.
