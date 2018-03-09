@@ -99,12 +99,9 @@ class optTensor:
         other than that associated with t2[index], and doing the same for W.
         '''
 
-        loop = deepcopy(self.loop)
-        guess = deepcopy(self.guess)
-
         # Make W
-        t1 = loop.copy()
-        t2 = deepcopy(guess)
+        t1 = self.loop.copy()
+        t2 = deepcopy(self.guess)
         n = t2.externalBuckets[index].node
         t = t1.contract(range(t1.rank), t2, range(t1.rank), elimLoops=False)
         n = list(m for m in t.network.nodes if m.id == n.id)[0]
@@ -114,8 +111,8 @@ class optTensor:
 
 
         # Make N
-        t1 = deepcopy(guess)
-        t2 = guess.copy()
+        t1 = deepcopy(self.guess)
+        t2 = self.guess.copy()
 
         # Get nodes
         n1 = t1.externalBuckets[index].node
