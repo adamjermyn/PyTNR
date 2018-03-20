@@ -1,4 +1,8 @@
 
+# Requirements
+
+PyTNR requires Python v3.3 or above and NumPy.
+
 # Using PyTNR
 
 Programs using PyTNR typically consist of two phases.
