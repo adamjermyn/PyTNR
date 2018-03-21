@@ -27,7 +27,6 @@ setup(
 	'TNR.Test',
 	'TNR.Models',
 	'TNR.Network',
-	'TNR.NetworkTensor',
 	'TNR.Tensor',
 	'TNR.Test',
 	'TNR.Utilities',
