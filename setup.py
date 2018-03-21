@@ -2,6 +2,9 @@
 
 from setuptools import setup, find_packages
 
+print(find_packages())
+
+
 setup(
 	name = 'TNR',
 	version = '1.1',
@@ -17,7 +20,20 @@ setup(
 	'Operating System :: Unix',
 	'Operating System :: MacOS'
 	],
-	packages=find_packages(exclude=['tests','TensorNetwork_obsolete']),
+	packages = [
+	'TNR',
+	'TNR.Contractors',
+	'TNR.Examples',
+	'TNR.Test',
+	'TNR.Models',
+	'TNR.Network',
+	'TNR.NetworkTensor',
+	'TNR.Tensor',
+	'TNR.Test',
+	'TNR.Utilities',
+	'TNR.TreeTensor',
+	'TNR.TensorLoopOptimization'
+	],
 	install_requires=['numpy']
 )
 
