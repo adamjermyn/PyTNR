@@ -21,8 +21,6 @@ class IdentityTensor(TreeTensor):
 
         numLayers = layer(dimension)
 
-        assert rank > 0
-
         if rank == 0:
             self.addTensor(ArrayTensor(np.array(1.)))
         if rank == 1:
