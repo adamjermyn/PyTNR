@@ -1,3 +1,7 @@
+files.txt
 *.pyc
 error
 log
+build/*
+dist/*
+TNR.egg*
