@@ -36,7 +36,7 @@ def mergeContractor(
         pos = None
         counter = 0
 
-    while len(n.nodes) > 1:
+    while len(n.internalBuckets) > 0:
 
         if plot:
             g = n.toGraph()
