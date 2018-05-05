@@ -60,6 +60,8 @@ class optTensor:
         self.loop = loop
         self.guess = rank1guess(loop)
         self.ranks = tuple([1 for _ in range(len(self.loop.externalBuckets))])
+        self.rands = list([self.random() for _ in range(20)])
+
 
     @property
     def loopNorm(self):
@@ -76,6 +78,17 @@ class optTensor:
         c = t1.contract(range(t1.rank), t2, range(t1.rank), elimLoops=False).array
         return norm(t1) + norm(t2) - 2*c
 
+    @property
+    def fullError(self):
+        t1 = self.loop.copy()
+        t2 = self.guess.copy()
+        c = t1.contract(range(t1.rank), t2, range(t1.rank), elimLoops=False).array
+
+        randsP = list([abs(t1.contract(range(t1.rank), r, range(t1.rank), elimLoops=False).array
+         - t2.contract(range(t1.rank), r, range(t1.rank), elimLoops=False).array)/(1 + np.sqrt(norm(r))) for r in self.rands])
+
+        return self.error + sum(randsP)
+
     def __hash__(self):
         return hash(self.ranks)
 
@@ -85,6 +98,11 @@ class optTensor:
     def __len__(self):
         return self.loop.rank
 
+    def random(self):
+        t = self.loop.copy()
+        for n in t.network.nodes:
+            n.tensor = ArrayTensor(np.random.randn(*n.tensor.shape))
+        return t
 
     def densityMatrix(self, index):
         t1 = self.loop.copy()
