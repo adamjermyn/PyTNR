@@ -4,6 +4,10 @@ from scipy.sparse.linalg import lsqr
 
 from TNR.Tensor.arrayTensor import ArrayTensor
 
+from TNR.Utilities.logger import makeLogger
+from TNR import config
+logger = makeLogger(__name__, config.levels['treeTensor'])
+
 def norm(t):
     '''
     Returns the L2 norm of the tensor.
