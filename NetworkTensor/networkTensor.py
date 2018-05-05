@@ -1,6 +1,7 @@
 from operator import mul
 from copy import deepcopy
 from collections import defaultdict
+from scipy.stats import ortho_group
 
 import itertools as it
 import numpy as np
@@ -121,6 +122,30 @@ class NetworkTensor(Tensor):
         n1 = b1.node
         n2 = b2.node
         return len(self.network.pathBetween(n1, n2))
+
+    def insertRandomUnitary(self):
+        arr0 = self.array
+
+        for n1 in self.network.nodes:
+            for n2 in self.network.internalConnected(n1):
+                for l in n1.linksConnecting(n2):
+                    b1, b2 = l.bucket1, l.bucket2
+                    if b1 not in n1.buckets:
+                        b1, b2 = b2, b1
+                    size = b1.size
+                    u = ortho_group.rvs(size)
+                    v = np.transpose(u)
+                    n1.tensor = n1.tensor.contract(b1.index, ArrayTensor(u), 0)
+                    n1.buckets.remove(b1)
+                    n1.buckets.append(b1)
+                    n2.tensor = n2.tensor.contract(b2.index, ArrayTensor(v), 1)
+                    n2.buckets.remove(b2)
+                    n2.buckets.append(b2)
+
+        arr1 = self.array
+
+        assert np.sum((arr0 - arr1)**2) / np.sum(arr0**2) < 1e-10
+
 
     def contract(self, ind, other, otherInd, front=True):
         # We copy the two networks first. If the other is an ArrayTensor we
