@@ -193,8 +193,7 @@ class optTensor:
 
         self.guess.externalBuckets[index].node.tensor = ArrayTensor(res)
 
-
-    def optimizeSweep(self, stop=0.1):
+    def optimizeSweep(self, stop=0.01):
         # Optimization loop
         dlnerr = 1
         err1 = 1e100
