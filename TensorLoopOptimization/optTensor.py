@@ -249,7 +249,8 @@ class optTensor:
 
             nor = np.sqrt(norm(self.guess))
             temp = self.guess.externalBuckets[0].node.tensor.array
-            temp /= nor
+            if np.isfinite(nor) and nor > 1e-5:
+                temp /= nor
             self.guess.externalBuckets[0].node.tensor = ArrayTensor(temp)
 
         self.ranks = list(self.ranks)
