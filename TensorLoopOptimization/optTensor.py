@@ -74,7 +74,7 @@ class optTensor:
         t1 = self.loop.copy()
         t2 = self.guess.copy()
         c = t1.contract(range(t1.rank), t2, range(t1.rank), elimLoops=False).array
-        return 2*(1 - c)
+        return norm(t1) + norm(t2) - 2*c
 
     def __hash__(self):
         return hash(self.ranks)
