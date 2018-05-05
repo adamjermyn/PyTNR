@@ -73,10 +73,45 @@ class TreeTensor(NetworkTensor):
 
         # Form the loop network
         net = self.copySubset(loop)
+        bids = list([b.id for b in net.externalBuckets])
+
+        netArr = net.array
+        netA = np.sum(net.array**2)
 
         # Optimize
-        net, inds = cut(net, self.accuracy)
+        print('HMMM')
+        net, inds, err_l2 = cut(net, self.accuracy)
+        print('HMMM')
+        logger.debug('HGMMMM')
 
+        netArr2 = net.array
+        netA2 = np.sum(net.array**2)
+        bids2 = list([b.id for b in net.externalBuckets])
+
+        trans = list(bids.index(b) for b in bids2)
+        netArr = np.transpose(netArr, axes=trans)
+
+        err_frob = np.sum((netArr - netArr2)**2)/np.sum(netArr**2)
+
+        if err_frob > 3 * abs(err_l2):
+            ### Ok so the loop cutter is not putting things back the way they began.
+
+            print('__________')
+            print(netArr)
+            print(netArr2)
+            print(bids)
+            print(bids2)
+            print(netA, netA2, np.dot(np.reshape(netArr,(-1,)), np.reshape(netArr2,(-1,))))
+            print(err_frob)
+            print(err_l2)
+            import matplotlib.pyplot as plt
+            plt.plot(np.reshape(netArr,(-1,)),label='Original')
+            plt.plot(np.reshape(netArr2,(-1,)),label='New')
+            plt.yscale('symlog',linthreshy=0.01)
+            plt.legend()
+            plt.show()
+            exit()
+	
         # Throw the new tensors back in
         num = 0
         for n in net.network.nodes:
@@ -95,6 +130,7 @@ class TreeTensor(NetworkTensor):
 
         print('---')
         err = np.sum((prev - new)**2) / np.sum(prev**2)
+
 
         if err > 3 * self.accuracy:
 
@@ -121,7 +157,32 @@ class TreeTensor(NetworkTensor):
             print('___',err / self.accuracy)
             print(prevL)
             print(list([l.tensor.shape for l in loop]))
- #           exit()
+            import matplotlib.pyplot as plt
+            plt.subplot(321)
+            plt.plot(np.reshape(netArr,(-1,)),label='Original')
+            plt.plot(np.reshape(netArr2,(-1,)),label='New')
+            plt.yscale('symlog',linthreshy=0.01)
+            plt.legend()
+            plt.subplot(322)
+            plt.plot(np.reshape((netArr-netArr2)/netArr,(-1,)),label='Residuals')
+            plt.yscale('symlog',linthreshy=0.01)
+            plt.subplot(323)
+            plt.plot(np.reshape((netArr-netArr2)**2/np.sum(netArr**2),(-1,)),label='Error Contribution')
+            plt.yscale('symlog',linthreshy=0.01)
+            plt.subplot(324)
+            plt.plot(np.reshape(prev,(-1,)),label='Original full')
+            plt.plot(np.reshape(new,(-1,)),label='New full')
+            plt.yscale('symlog',linthreshy=0.01)
+            plt.legend()
+            plt.subplot(325)
+            plt.plot(np.reshape((prev-new)/prev,(-1,)),label='Residuals full')
+            plt.yscale('symlog',linthreshy=0.01)
+            plt.subplot(326)
+            plt.plot(np.reshape((prev - new)**2/np.sum(prev**2),(-1,)),label='Error Contribution full')
+            plt.yscale('symlog',linthreshy=0.01)
+            plt.legend()
+            plt.show()
+            exit()
 
         self.network.cutLinks()
 
@@ -132,6 +193,7 @@ class TreeTensor(NetworkTensor):
 
     def eliminateLoops(self):
         while len(networkx.cycles.cycle_basis(self.network.toGraph())) > 0:
+            self.insertRandomUnitary()
             todo = 1
             while todo > 0:
                 # Contract rank 2 objects

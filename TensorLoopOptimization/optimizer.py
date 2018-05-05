@@ -87,14 +87,15 @@ class optimizer:
 				err = new.error
 				t = new.guess
 
-				print(new, err)
-				if err < self.tolerance:
+				print(new, new.fullError, err, norm(t), self.norm)
+				if new.fullError < self.tolerance:
 					temp = t.externalBuckets[0].node.tensor.array
 					temp *= self.norm
 					t.externalBuckets[0].node.tensor = ArrayTensor(temp)
-					return t
+					print(norm(t))
+					return t, err
 
-				if np.isnan(err) or err > 1.1 * self.stored[previous][1]:
+				if np.isnan(err):# or err > 1.1 * self.stored[previous][1]:
 					self.stored[new] = (None, 1e100, 0, 0, 0)
 					self.nanCount += 1
 				else:
@@ -114,9 +115,11 @@ def cut(tensors, tolerance):
 	ret = None
 	while ret is None:
 		ret = opt.makeNext()
-		if opt.nanCount > 20:
-			opt = optimizer(tensors, tolerance, cut=True)
-	return ret, opt.inds
+		if ret is not None:
+			ret, err = ret
+#		if opt.nanCount > 20:
+#			opt = optimizer(tensors, tolerance, cut=True)
+	return ret, opt.inds, err
 
 
 
