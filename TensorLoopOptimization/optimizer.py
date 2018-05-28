@@ -52,7 +52,9 @@ class optimizer:
 		for i in range(environment.rank):
 			if environment.externalBuckets[i].id not in otherbids:
 				inds.append(i)
-		environment = environment.contract(inds, environment, inds, elimLoops=False)
+
+		newEnv = environment.copy()
+		environment = environment.contract(inds, newEnv, inds, elimLoops=False)
 
 		# There are two external buckets for each external on loop (one in, one out),
 		# and these are now ordered in two sets which correspond, as in
@@ -112,8 +114,10 @@ class optimizer:
 				err = new.error
 				t = new.guess
 
-				print(new, new.fullError, err, norm(t), self.norm)
-				if new.fullError < self.tolerance:
+#				print(new, new.fullError, err, norm(t), self.norm)
+#				if new.fullError < self.tolerance:
+				print(new, err, norm(t))
+				if err < self.tolerance:
 					temp = t.externalBuckets[0].node.tensor.array
 					temp *= self.norm
 					t.externalBuckets[0].node.tensor = ArrayTensor(temp)
