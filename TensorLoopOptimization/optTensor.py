@@ -110,36 +110,34 @@ class optTensor:
         return t
 
     def prepareEnv(self, index):
-
-
-    def prepareNW(self, index):
         '''
-        Following equation S10 in arXiv:1512.04938, we first compute two tensors: N and W.
+        We define two tensors, N and W.
 
-        N is given by contracting all of t2 against itself except for the tensors at the specified index.
-        This yields a rank-6 object, where two indices arise from the implicit identity present in the bond
-        between the two copies of t2[index].
-        
-        W is given by contracting all of t2 (other than t2[index]) against t1. This yields a rank-3 object.
+        N is given by contracting t2 against itself except for the tensors at the specified
+        index. The full environment tensor is used. 
+        This yields a rank-6 object, where two indices arise from the environment.
+
+        W is then given by contracting all of t2 (other than t2[index]) against t1 with
+        the full environment in between. This yields a rank-3 object.
 
         We then let
-        
+
         N . t2[index] = W
 
-        and solve for t2[index]. This is readily phrased as a matrix problem by flattening N along all indices
-        other than that associated with t2[index], and doing the same for W.
+        and solve for t2[index]. This is readily phrased as a matrix problem by
+        flattening N along all indices other than that associated with t2[index],
+        and doing the same for W.
         '''
 
         # Make W
         t1 = self.loop.copy()
         t2 = deepcopy(self.guess)
         n = t2.externalBuckets[index].node
-        t = t1.contract(range(t1.rank), t2, range(t1.rank), elimLoops=False)
+        t = t1.contract(range(t1.rank), self.environment, range(t1.rank), elimLoops=False)
+        t = t.contract(range(t1.rank), t2, range(t1.rank), elimLoops=False)
         n = list(m for m in t.network.nodes if m.id == n.id)[0]
-
         t.removeNode(n)
         W = t
-
 
         # Make N
         t1 = deepcopy(self.guess)
@@ -149,9 +147,8 @@ class optTensor:
         n1 = t1.externalBuckets[index].node
         n2 = t2.externalBuckets[index].node
 
-        # Contract identity onto t2
-        iden = ArrayTensor(np.identity(self.loop.externalBuckets[index].size))
-        t2 = t2.contract([index], iden, [0], elimLoops=False)
+        # Contract environment onto t2
+        t2 = t2.contract(range(t2.rank), self.environment, range(t2.rank), elimLoops=False)
 
         # Restore index
         bs = t2.externalBuckets[::]
@@ -177,7 +174,7 @@ class optTensor:
         return N.array, W.array
 
     def optimizeIndex(self, index):
-        N, W = self.prepareNW(index)
+        N, W = self.prepareEnv(index)
 
         # Flatten, solve, unflatten
 

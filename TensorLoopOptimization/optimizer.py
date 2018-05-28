@@ -18,7 +18,7 @@ def cost(tensors):
 	return tensors.compressedSize
 
 class optimizer:
-	def __init__(self, tensors, tolerance, cut=False):
+	def __init__(self, tensors, tolerance, environment, bids, otherbids, cut=False):
 
 		# Normalize tensors
 		self.norm = np.sqrt(norm(tensors))
@@ -47,8 +47,19 @@ class optimizer:
 			prevNodes.add(n)
 		tensors.externalBuckets = buckets
 
+		# Reorder environment externalBuckets to match the order of nodes in the loop.
+		buckets = []
+		extbids = list(b.id for b in environment.externalBuckets)
+		for b in tensors.externalBuckets:
+			ind = bids.index(b.id)
+			other = otherbids[ind]
+			ind = extbids.index(other)
+			buckets.append(environment.externalBuckets[ind])
+		environment.externalBuckets = buckets
+
 		# Store inputs
 		self.tensors = tensors
+		self.environment = environment
 		self.tolerance = tolerance
 		self.cut = cut
 
@@ -58,7 +69,7 @@ class optimizer:
 		self.nanCount = 0
 
 		# First evaluation
-		x = optTensor(self.tensors)
+		x = optTensor(self.tensors, self.environment)
 		x.optimizeSweep()
 		t = deepcopy(x.guess)
 		err = x.error
