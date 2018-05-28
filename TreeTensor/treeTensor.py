@@ -224,7 +224,6 @@ class TreeTensor(NetworkTensor):
 
     def eliminateLoops(self):
         while len(networkx.cycles.cycle_basis(self.network.toGraph())) > 0:
-            self.insertRandomUnitary()
             todo = 1
             while todo > 0:
                 # Contract rank 2 objects
