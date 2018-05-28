@@ -55,13 +55,18 @@ def rank1guess(base):
     return start
 
 class optTensor:
-    def __init__(self, loop):
+    def __init__(self, loop, environment):
         # Loop and guess must have the same bucket ID's.
+        # Environment specifies a tensor against whose contraction guess should be optimised.
+        # That is, if E is the environment, T is the loop and G is the guess, we're minimising
+        # |T.E - G.E|^2 = (T.E)^2 + (G.E)^2 - 2(T.E).(G.E)
+        # Taking the gradient with respect to G yields
+        # Grad = E (G.E) - 2 (T.E)._.E
+        self.environment = environment
         self.loop = loop
         self.guess = rank1guess(loop)
         self.ranks = tuple([1 for _ in range(len(self.loop.externalBuckets))])
         self.rands = list([self.random() for _ in range(20)])
-
 
     @property
     def loopNorm(self):
