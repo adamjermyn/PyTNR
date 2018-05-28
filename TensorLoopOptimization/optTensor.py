@@ -109,14 +109,8 @@ class optTensor:
             n.tensor = ArrayTensor(np.random.randn(*n.tensor.shape))
         return t
 
-    def densityMatrix(self, index):
-        t1 = self.loop.copy()
-        t2 = self.loop.copy()
+    def prepareEnv(self, index):
 
-        ax = list(range(t1.rank))
-        ax.remove(index)
-
-        return t1.contract(ax, t2, ax, elimLoops=False).array
 
     def prepareNW(self, index):
         '''
