@@ -46,6 +46,24 @@ class TreeTensor(NetworkTensor):
             t = deepcopy(other)
         return t
 
+    def artificialCut(self, exclude):
+        '''
+        Copies the network without the excluded nodes and cuts a bond in each loop.
+        '''
+
+        t = self.copySubset(set(self.network.nodes).difference(exclude))
+        g = t.network.toGraph()
+        basis = networkx.cycles.cycle_basis(self.network.toGraph())
+        excludeIDs = list(n.id for n in exclude)
+        for cycle in basis:
+            for i in range(len(cycle)):
+                if cycle[i-1].id not in excludeIDs and cycle[i].id not in excludeIDs:
+                    link = cycle[i-1].findLinks(cycle[i])
+                    t.network.removeLink(link)
+                    break
+        return t
+
+
     def contract(self, ind, other, otherInd, front=True, elimLoops=True):
         t = super().contract(ind, other, otherInd, front=front)
         if elimLoops:
@@ -74,13 +92,19 @@ class TreeTensor(NetworkTensor):
         # Form the loop network
         net = self.copySubset(loop)
         bids = list([b.id for b in net.externalBuckets])
+        otherBids = list([b.otherBucket.id for b in net.externalBuckets])
+
+        # Form the environment network
+        environment = self.artificialCut(loop)
+
+        
 
         netArr = net.array
         netA = np.sum(net.array**2)
 
         # Optimize
         print('HMMM')
-        net, inds, err_l2 = cut(net, self.accuracy)
+        net, inds, err_l2 = cut(net, self.accuracy, environment=rest)
         print('HMMM')
         logger.debug('HGMMMM')
 
