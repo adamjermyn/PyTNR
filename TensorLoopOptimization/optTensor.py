@@ -80,8 +80,14 @@ class optTensor:
     def error(self):
         t1 = self.loop.copy()
         t2 = self.guess.copy()
-        c = t1.contract(range(t1.rank), t2, range(t1.rank), elimLoops=False).array
-        return norm(t1) + norm(t2) - 2*c
+
+
+        c1 = t1.contract(range(t1.rank), self.environment, range(t1.rank), elimLoops=False)
+        c2 = t2.contract(range(t1.rank), self.environment, range(t1.rank), elimLoops=False)
+
+        c = c1.contract(range(c1.rank), c2, range(c1.rank), elimLoops=False)
+
+        return norm(c1) + norm(c2) - 2*c
 
     @property
     def fullError(self):
@@ -171,6 +177,9 @@ class optTensor:
         # to the last three. Because those in W are formed by removing the same node,
         # those are in the same order.
 
+#        for n in N.network.nodes:
+#            print(n.tensor.array)
+
         return N.array, W.array
 
     def optimizeIndex(self, index):
@@ -185,6 +194,7 @@ class optTensor:
             res = np.linalg.solve(N, W)
         except np.linalg.linalg.LinAlgError:
             res = lsqr(N, W)[0]
+            print('Exact linear solve failed. Falling back on least squares solve.')
         res = np.reshape(res, sh)
 
         self.guess.externalBuckets[index].node.tensor = ArrayTensor(res)
