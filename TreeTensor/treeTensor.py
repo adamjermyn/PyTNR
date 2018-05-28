@@ -92,19 +92,26 @@ class TreeTensor(NetworkTensor):
         # Form the loop network
         net = self.copySubset(loop)
         bids = list([b.id for b in net.externalBuckets])
-        otherBids = list([b.otherBucket.id for b in net.externalBuckets])
+        otherBids = list([b.otherBucket.id if b.linked else None for b in net.externalBuckets])
 
         # Form the environment network
         environment = self.artificialCut(loop)
-
-        
+        for i in range(len(bids)):
+            if otherBids[i] is None: # If a loop tensor had an external bucket
+                n = Node(ArrayTensor(np.identity(net.externalBuckets[i].size)))
+                environment.network.addNode(n)
+                environment.externalBuckets.append(n.buckets[0])
+                environment.externalBuckets.append(n.buckets[1])
+                # We've just added two buckets, so we associate one with the loop
+                # and one with the environment
+                otherBids[i] = n.buckets[0].id
 
         netArr = net.array
         netA = np.sum(net.array**2)
 
         # Optimize
         print('HMMM')
-        net, inds, err_l2 = cut(net, self.accuracy, environment=rest)
+        net, inds, err_l2 = cut(net, self.accuracy, environment, bids, otherBids)
         print('HMMM')
         logger.debug('HGMMMM')
 

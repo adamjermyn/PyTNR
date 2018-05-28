@@ -47,15 +47,29 @@ class optimizer:
 			prevNodes.add(n)
 		tensors.externalBuckets = buckets
 
-		# Reorder environment externalBuckets to match the order of nodes in the loop.
-		buckets = []
+		# Contract the environment against itself
+		inds = []
+		for i in range(environment.rank):
+			if environment.externalBuckets[i].id not in otherbids:
+				inds.append(i)
+		environment = environment.contract(inds, environment, inds, elimLoops=False)
+
+		# There are two external buckets for each external on loop (one in, one out),
+		# and these are now ordered in two sets which correspond, as in
+		# [p,q,r,..., p,q,r,...]
+		# Now we reorder these to match the order of nodes in the loop.
+		buckets1 = []
+		buckets2 = []
 		extbids = list(b.id for b in environment.externalBuckets)
 		for b in tensors.externalBuckets:
 			ind = bids.index(b.id)
+
 			other = otherbids[ind]
 			ind = extbids.index(other)
-			buckets.append(environment.externalBuckets[ind])
-		environment.externalBuckets = buckets
+			buckets1.append(environment.externalBuckets[ind])
+			buckets2.append(environment.externalBuckets[ind + tensors.rank])
+
+		environment.externalBuckets = buckets1 + buckets2
 
 		# Store inputs
 		self.tensors = tensors
@@ -121,8 +135,8 @@ class optimizer:
 		if self.stored[self.active[-1]][1] > self.tolerance:
 			return None
 
-def cut(tensors, tolerance):
-	opt = optimizer(tensors, tolerance, cut=True)
+def cut(tensors, tolerance, environment, bids, otherbids):
+	opt = optimizer(tensors, tolerance, environment, bids, otherbids, cut=True)
 	ret = None
 	while ret is None:
 		ret = opt.makeNext()
