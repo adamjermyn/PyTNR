@@ -141,6 +141,25 @@ class Network:
             if b in self.externalBuckets:
                 self.externalBuckets.remove(b)
 
+    def removeLink(self, link):
+        '''
+        Deletes a link between two internal nodes.
+        Updates registration of internal and external buckets accordingly.
+        '''
+
+        b1, b1 = link.bucket1, link.bucket2
+        n1, n2 = b1.node, b2.node
+
+        b1.link = None
+        b2.link = None
+
+        self.internalBuckets.remove(b1)
+        self.internalBuckets.remove(b2)
+
+        self.externalBuckets.add(b1)
+        self.externalBuckets.add(b2)
+
+
     def check(self):
         '''
         Checks that all links in the network are valid.
