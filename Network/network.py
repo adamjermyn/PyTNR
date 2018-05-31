@@ -47,43 +47,55 @@ class Network:
         Contracts the network down to an array object.
         Indices are ordered by ascending bucket ID.
         Returns the array, the log of a prefactor, and a bucket dictionary.
+        Uses numpy's einsum feature, with order optimization.
         '''
+
         net = deepcopy(self)
+
+        net.cutLinks()
 
         net.contractRank2()
 
-        isolated = set()
+        # Fix node order
+        nodes = list(net.nodes)
 
-        ret = []
-        while len(net.nodes) > 0:
-            n = net.nodes.pop()
-            net.nodes.add(n)
+        # Setup subscript arrays
+        subs = list([-1 for _ in range(len(n.buckets))] for n in nodes)
+        out = []
+        bids = []
 
-            c = net.internalConnected(n)
-            if len(c) > 0:
-                c = c.pop()
-                net.mergeNodes(n, c)
-            else:
-                # Means that n is an isolated node
-                isolated.add(n)
-                net.nodes.remove(n)
+        # Construct lists
+        counter = 0
+        for i in range(len(nodes)):
+            n = nodes[i]
 
-        arr = 1
-        logAcc = 0
-        buckets = []
-        while len(isolated) > 0:
-            n = isolated.pop()
-            arr2 = n.tensor.array
-            logAcc += np.log(np.max(np.abs(arr2)))
-            arr = np.tensordot(arr, arr2 / np.max(np.abs(arr2)), axes=0)
-            buckets.extend(n.buckets)
+            for j,b in enumerate(n.buckets):
+                if subs[i][j] == -1:
+                    subs[i][j] = counter
+                    if b.linked:
+                        ind = nodes.index(b.otherBucket.node)
+                        ind2 = nodes[ind].buckets.index(b.otherBucket)
+                        subs[ind][ind2] = counter
+                    else:
+                        out.append(counter)
+                        bids.append(b.id)
+                    counter += 1
+    
+        args = []
+        for i in range(len(nodes)):
+            args.append(nodes[i].tensor.scaledArray)
+            args.append(subs[i])
+        args.append(out)
 
-        bids = [b.id for b in buckets]
-        bids = sorted(bids)
+        arr = np.einsum(*args, optimize='greedy')
+
+        logAcc = sum(n.tensor.logScalar for n in nodes)
 
         bdict = {}
-        for i in range(len(buckets)):
-            bdict[buckets[i].id] = i
+        for i in range(len(bids)):
+            bdict[bids[i]] = i
+
+        bids = sorted(bids)
 
         perm = []
         for b in bids:
@@ -92,8 +104,9 @@ class Network:
         if len(perm) > 0:
             arr = np.transpose(arr, axes=perm)
 
+
         bdict = {}
-        for i in range(len(buckets)):
+        for i in range(len(bids)):
             bdict[bids[i]] = i
 
         return arr, logAcc, bdict
