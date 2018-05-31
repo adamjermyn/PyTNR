@@ -58,13 +58,11 @@ class optimizer:
 
 		newEnv = environment.copy()
 		environment = environment.contract(inds, newEnv, inds, elimLoops=False)
+		environment.contractRank2()
 
 		# Normalise environment
 		envn = norm(environment)
 		environment.externalBuckets[0].node.tensor = ArrayTensor(environment.externalBuckets[0].node.tensor.array / np.sqrt(envn))
-
-		# Partially contract environment
-		environment.contractRank2()
 
 		# There are two external buckets for each external on loop (one in, one out),
 		# and these are now ordered in two sets which correspond, as in

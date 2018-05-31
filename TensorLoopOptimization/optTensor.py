@@ -24,6 +24,8 @@ def envNorm(t, env):
     c = t1.contract(range(t.rank), env, range(t.rank), elimLoops=False)
     c = c.contract(range(t.rank), t2, range(t.rank), elimLoops=False)
 
+    c.contractRank2()
+
     return c.array
 
 def remove(t, index):
@@ -153,7 +155,7 @@ class optTensor:
 
         # Contract environment onto t2
         t2 = t2.contract(range(t2.rank), self.environment, range(t2.rank), elimLoops=False)
-        
+
         # Contract
         t = t1.contract(range(t1.rank), t2, range(t1.rank), elimLoops=False)
 
