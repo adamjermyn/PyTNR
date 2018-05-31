@@ -147,7 +147,7 @@ class Network:
         Updates registration of internal and external buckets accordingly.
         '''
 
-        b1, b1 = link.bucket1, link.bucket2
+        b1, b2 = link.bucket1, link.bucket2
         n1, n2 = b1.node, b2.node
 
         b1.link = None
