@@ -296,24 +296,5 @@ class NetworkTensor(Tensor):
         return t
 
     def contractRank2(self):
-        done = set()
-        while len(
-            done.intersection(
-                self.network.nodes)) < len(
-                self.network.nodes):
-
-            n = next(iter(self.network.nodes.difference(done)))
-
-            nodes = self.network.internalConnected(n)
-            if len(nodes) > 0:
-                n2 = next(iter(nodes))
-
-            if len(nodes) == 0:
-                done.add(n)
-            elif n.tensor.rank <= 2:
-                self.network.mergeNodes(n, nodes.pop())
-            elif len(nodes) == 1 and len(n.findLinks(n2)) > 1:
-                self.network.mergeNodes(n, n2)
-            else:
-                done.add(n)
+        self.network.contractRank2()
 

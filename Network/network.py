@@ -50,6 +50,8 @@ class Network:
         '''
         net = deepcopy(self)
 
+        net.contractRank2()
+
         isolated = set()
 
         ret = []
@@ -269,6 +271,29 @@ class Network:
             for m in self.internalConnected(n):
                 g.add_edge(n, m, weight=np.log(n.tensor.size * m.tensor.size))
         return g
+
+    def contractRank2(self):
+        done = set()
+        while len(
+            done.intersection(
+                self.nodes)) < len(
+                self.nodes):
+
+            n = next(iter(self.nodes.difference(done)))
+
+            nodes = self.internalConnected(n)
+            if len(nodes) > 0:
+                n2 = next(iter(nodes))
+
+            if len(nodes) == 0:
+                done.add(n)
+            elif n.tensor.rank <= 2:
+                self.mergeNodes(n, nodes.pop())
+            elif len(nodes) == 1 and len(n.findLinks(n2)) > 1:
+                self.mergeNodes(n, n2)
+            else:
+                done.add(n)
+
 
     def mergeClosestLinks(self, n1, compress=False, accuracy=1e-4):
         best = [1e100, None, None, None, None]
