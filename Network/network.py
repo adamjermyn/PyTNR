@@ -282,17 +282,19 @@ class Network:
             n = next(iter(self.nodes.difference(done)))
 
             nodes = self.internalConnected(n)
-            if len(nodes) > 0:
-                n2 = next(iter(nodes))
-
             if len(nodes) == 0:
                 done.add(n)
             elif n.tensor.rank <= 2:
                 self.mergeNodes(n, nodes.pop())
-            elif len(nodes) == 1 and len(n.findLinks(n2)) > 1:
-                self.mergeNodes(n, n2)
             else:
-                done.add(n)
+                merged = False
+                for n2 in nodes:
+                    if n.tensor.rank + n2.tensor.rank - 2*len(n.findLinks(n2)) <= 3:
+                        self.mergeNodes(n, n2)
+                        merged = True
+                        break
+                if not merged:
+                    done.add(n)
 
 
     def cutLinks(self):
