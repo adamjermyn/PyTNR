@@ -17,6 +17,15 @@ def norm(t):
 
     return t1.contract(range(t.rank), t2, range(t.rank), elimLoops=False).array
 
+def envNorm(t, env):
+    t1 = t.copy()
+    t2 = t.copy()
+
+    c = t1.contract(range(t.rank), env, range(t.rank), elimLoops=False)
+    c = c.contract(range(t.rank), t2, range(t.rank), elimLoops=False)
+
+    return c.array
+
 def remove(t, index):
     '''
     Returns a copy of the tensor with new bucket ID's and node ID's with
@@ -36,7 +45,7 @@ def remove(t, index):
     tNew.removeNode(nNew)
     return tNew, d
 
-def rank1guess(base):
+def rank1guess(base, env):
     x = tuple(1 for _ in range(len(base.externalBuckets)))
     start = deepcopy(base)
     for n in start.network.nodes:
@@ -50,7 +59,7 @@ def rank1guess(base):
         n.tensor = ArrayTensor(np.random.randn(*sh))
 
     n = next(iter(start.network.nodes))
-    n.tensor = ArrayTensor(n.tensor.array / np.sqrt(norm(start)))
+    n.tensor = ArrayTensor(n.tensor.array / np.sqrt(envNorm(start, env)))
 
     return start
 
@@ -64,17 +73,17 @@ class optTensor:
         # Grad = E (G.E) - 2 (T.E)._.E
         self.environment = environment
         self.loop = loop
-        self.guess = rank1guess(loop)
+        self.guess = rank1guess(loop, self.environment)
         self.ranks = tuple([1 for _ in range(len(self.loop.externalBuckets))])
         self.rands = list([self.random() for _ in range(20)])
 
     @property
     def loopNorm(self):
-        return norm(self.loop)
+        return envNorm(self.loop, self.environment)
 
     @property
     def guessNorm(self):
-        return norm(self.guess)
+        return envNorm(self.guess, self.environment)
 
     @property
     def error(self):
@@ -85,20 +94,9 @@ class optTensor:
         c1 = t1.contract(range(t1.rank), self.environment, range(t1.rank), elimLoops=False)
         c2 = t2.contract(range(t1.rank), self.environment, range(t1.rank), elimLoops=False)
 
-        c = c1.contract(range(c1.rank), c2, range(c1.rank), elimLoops=False)
+        c = c1.contract(range(c1.rank), t2, range(c1.rank), elimLoops=False)
 
-        return norm(c1) + norm(c2) - 2*c
-
-    @property
-    def fullError(self):
-        t1 = self.loop.copy()
-        t2 = self.guess.copy()
-        c = t1.contract(range(t1.rank), t2, range(t1.rank), elimLoops=False).array
-
-        randsP = list([abs(t1.contract(range(t1.rank), r, range(t1.rank), elimLoops=False).array
-         - t2.contract(range(t1.rank), r, range(t1.rank), elimLoops=False).array)/(1 + np.sqrt(norm(r))) for r in self.rands])
-
-        return self.error + sum(randsP)
+        return envNorm(t1, self.environment) + envNorm(t2, self.environment) - 2 * c.array
 
     def __hash__(self):
         return hash(self.ranks)
@@ -155,12 +153,7 @@ class optTensor:
 
         # Contract environment onto t2
         t2 = t2.contract(range(t2.rank), self.environment, range(t2.rank), elimLoops=False)
-
-        # Restore index
-        bs = t2.externalBuckets[::]
-        bs = bs[:index] + [bs[-1]] + bs[index:-1]
-        t2.externalBuckets = bs
-
+        
         # Contract
         t = t1.contract(range(t1.rank), t2, range(t1.rank), elimLoops=False)
 
@@ -177,9 +170,6 @@ class optTensor:
         # to the last three. Because those in W are formed by removing the same node,
         # those are in the same order.
 
-#        for n in N.network.nodes:
-#            print(n.tensor.array)
-
         return N.array, W.array
 
     def optimizeIndex(self, index):
@@ -190,14 +180,20 @@ class optTensor:
         sh = W.shape
         W = np.reshape(W, (-1,))
         N = np.reshape(N, (len(W), len(W)))
-        try:
-            res = np.linalg.solve(N, W)
-        except np.linalg.linalg.LinAlgError:
-            res = lsqr(N, W)[0]
-            print('Exact linear solve failed. Falling back on least squares solve.')
+        res = lsqr(N, W)[0]
         res = np.reshape(res, sh)
 
-        self.guess.externalBuckets[index].node.tensor = ArrayTensor(res)
+        if np.max(np.abs(res)) == 0:
+            res += 1e-5
+
+        try:
+            self.guess.externalBuckets[index].node.tensor = ArrayTensor(res)
+        except:
+            print(norm(self.environment))
+            print(N)
+            print(W)
+            print(res)
+            exit()
 
     def optimizeSweep(self, stop=0.01):
         # Optimization loop
