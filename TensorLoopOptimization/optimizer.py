@@ -14,17 +14,20 @@ def norm(t):
 
     return t1.contract(range(t.rank), t2, range(t.rank), elimLoops=False).array
 
+def envNorm(t, env):
+	t1 = t.copy()
+	t2 = t.copy()
+
+	c = t1.contract(range(t.rank), env, range(t.rank), elimLoops=False)
+	c = c.contract(range(t.rank), t2, range(t.rank), elimLoops=False)
+
+	return c.array
+
 def cost(tensors):
-	return tensors.compressedSize
+	return max(n.tensor.size for n in tensors.network.nodes)
 
 class optimizer:
 	def __init__(self, tensors, tolerance, environment, bids, otherbids, cut=False):
-
-		# Normalize tensors
-		self.norm = np.sqrt(norm(tensors))
-		temp = tensors.externalBuckets[0].node.tensor.array
-		temp /= self.norm
-		tensors.externalBuckets[0].node.tensor = ArrayTensor(temp)
 
 		# Reorder externalBuckets to match the underlying ordering of nodes in the loop.
 		# At the end of the day what we'll do is read out the tensors in the loop by
@@ -56,6 +59,13 @@ class optimizer:
 		newEnv = environment.copy()
 		environment = environment.contract(inds, newEnv, inds, elimLoops=False)
 
+		# Normalise environment
+		envn = norm(environment)
+		environment.externalBuckets[0].node.tensor = ArrayTensor(environment.externalBuckets[0].node.tensor.array / np.sqrt(envn))
+
+		# Partially contract environment
+		environment.contractRank2()
+
 		# There are two external buckets for each external on loop (one in, one out),
 		# and these are now ordered in two sets which correspond, as in
 		# [p,q,r,..., p,q,r,...]
@@ -72,6 +82,12 @@ class optimizer:
 			buckets2.append(environment.externalBuckets[ind + tensors.rank])
 
 		environment.externalBuckets = buckets1 + buckets2
+
+		# Normalize tensors
+		self.norm = np.sqrt(envNorm(tensors, environment))
+		temp = tensors.externalBuckets[0].node.tensor.array
+		temp /= self.norm
+		tensors.externalBuckets[0].node.tensor = ArrayTensor(temp)
 
 		# Store inputs
 		self.tensors = tensors
@@ -116,7 +132,7 @@ class optimizer:
 
 #				print(new, new.fullError, err, norm(t), self.norm)
 #				if new.fullError < self.tolerance:
-				print(new, err, norm(t))
+				print(new, previous, err, envNorm(t, self.environment))
 				if err < self.tolerance:
 					temp = t.externalBuckets[0].node.tensor.array
 					temp *= self.norm
@@ -135,7 +151,7 @@ class optimizer:
 					self.stored[new] = (t, err, derr, c, dc)
 
 		self.active.remove(previous)
-		self.active = sorted(self.active, key=lambda x: self.stored[x][1], reverse=True)
+		self.active = sorted(self.active, key=lambda x: self.stored[x][1] + np.log(self.stored[x][3]), reverse=True)
 		if self.stored[self.active[-1]][1] > self.tolerance:
 			return None
 
