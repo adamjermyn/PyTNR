@@ -53,15 +53,18 @@ class TreeTensor(NetworkTensor):
 
         t = self.copySubset(set(self.network.nodes).difference(exclude))
         g = t.network.toGraph()
-        basis = networkx.cycles.cycle_basis(self.network.toGraph())
+        basis = networkx.cycles.cycle_basis(t.network.toGraph())
         excludeIDs = list(n.id for n in exclude)
+        correction = 1.
+        print(len(basis))
         for cycle in basis:
             for i in range(len(cycle)):
                 if cycle[i-1].id not in excludeIDs and cycle[i].id not in excludeIDs:
-                    link = cycle[i-1].findLinks(cycle[i])
+                    link = cycle[i-1].findLink(cycle[i])
+                    correction *= link.bucket1.size
                     t.network.removeLink(link)
                     break
-        return t
+        return t, correction
 
 
     def contract(self, ind, other, otherInd, front=True, elimLoops=True):
@@ -86,16 +89,21 @@ class TreeTensor(NetworkTensor):
         logger.debug('Cutting loop.')
         self.network.check()
 
-        prev = self.array
-        prevL = list([l.tensor.shape for l in loop])
-
         # Form the loop network
         net = self.copySubset(loop)
         bids = list([b.id for b in net.externalBuckets])
-        otherBids = list([b.otherBucket.id if b.linked else None for b in net.externalBuckets])
+
+        otherBids = []
+        for b in net.externalBuckets:
+            ind = list(l.id for l in loop).index(b.node.id)
+            ind2 = list(b2.id for b2 in loop[ind].buckets).index(b.id)
+            if loop[ind].buckets[ind2].linked:
+                otherBids.append(loop[ind].buckets[ind2].otherBucket.id)
+            else:
+                otherBids.append(None)
 
         # Form the environment network
-        environment = self.artificialCut(loop)
+        environment, correction = self.artificialCut(loop)
         for i in range(len(bids)):
             if otherBids[i] is None: # If a loop tensor had an external bucket
                 n = Node(ArrayTensor(np.identity(net.externalBuckets[i].size)))
@@ -106,43 +114,11 @@ class TreeTensor(NetworkTensor):
                 # and one with the environment
                 otherBids[i] = n.buckets[0].id
 
-        netArr = net.array
-        netA = np.sum(net.array**2)
-
         # Optimize
-        print('HMMM')
-        net, inds, err_l2 = cut(net, self.accuracy, environment, bids, otherBids)
-        print('HMMM')
-        logger.debug('HGMMMM')
+        logger.debug('Correction factor:' + str(correction))
+        net, inds, err_l2 = cut(net, self.accuracy / correction, environment, bids, otherBids)
+        logger.debug('Correction factor:' + str(correction))
 
-        netArr2 = net.array
-        netA2 = np.sum(net.array**2)
-        bids2 = list([b.id for b in net.externalBuckets])
-
-        trans = list(bids.index(b) for b in bids2)
-        netArr = np.transpose(netArr, axes=trans)
-
-        err_frob = np.sum((netArr - netArr2)**2)/np.sum(netArr**2)
-
-        if err_frob > 3 * abs(err_l2):
-            ### Ok so the loop cutter is not putting things back the way they began.
-
-            print('__________')
-            print(netArr)
-            print(netArr2)
-            print(bids)
-            print(bids2)
-            print(netA, netA2, np.dot(np.reshape(netArr,(-1,)), np.reshape(netArr2,(-1,))))
-            print(err_frob)
-            print(err_l2)
-            import matplotlib.pyplot as plt
-            plt.plot(np.reshape(netArr,(-1,)),label='Original')
-            plt.plot(np.reshape(netArr2,(-1,)),label='New')
-            plt.yscale('symlog',linthreshy=0.01)
-            plt.legend()
-            plt.show()
-            exit()
-	
         # Throw the new tensors back in
         num = 0
         for n in net.network.nodes:
@@ -155,65 +131,6 @@ class TreeTensor(NetworkTensor):
                     num += 1
 
         assert num == len(loop)
-
-        # Verify error
-        new = self.array
-
-        print('---')
-        err = np.sum((prev - new)**2) / np.sum(prev**2)
-
-
-        if err > 3 * self.accuracy:
-
-            ### There's a bug in loop optimizing which occasionally produces
-            # considerably larger-than-expected accuracy.
-
-            # Actually this might not be a bug, but rather a side effect
-            # of the fact that in our procedure different links can end up
-            # with very different sizes of terms on either side. One way
-            # to address this is to apply a matrix and it's inverse between
-            # each pair of in-loop and out-of-loop tensors such that each
-            # link has comparable magnitude on the in-loop side. That is, we want
-            # the matrix formed by contracting the loop against itself on all but
-            # some given index to have norm comparable to that formed for any such index.
-            # There's even more freedom, in fact, and in principle the transformation could
-            # turn each such density matrix into the identity, though that'd be fiddly and
-            # there's no reason to go so far. Instead we pick the matrix that first permutes
-            # the matrix to have the largest elements on-diagonal and then normalise them
-            # to unity.
-
-            print(prev)
-            print(new)
-            print('___',err)
-            print('___',err / self.accuracy)
-            print(prevL)
-            print(list([l.tensor.shape for l in loop]))
-            import matplotlib.pyplot as plt
-            plt.subplot(321)
-            plt.plot(np.reshape(netArr,(-1,)),label='Original')
-            plt.plot(np.reshape(netArr2,(-1,)),label='New')
-            plt.yscale('symlog',linthreshy=0.01)
-            plt.legend()
-            plt.subplot(322)
-            plt.plot(np.reshape((netArr-netArr2)/netArr,(-1,)),label='Residuals')
-            plt.yscale('symlog',linthreshy=0.01)
-            plt.subplot(323)
-            plt.plot(np.reshape((netArr-netArr2)**2/np.sum(netArr**2),(-1,)),label='Error Contribution')
-            plt.yscale('symlog',linthreshy=0.01)
-            plt.subplot(324)
-            plt.plot(np.reshape(prev,(-1,)),label='Original full')
-            plt.plot(np.reshape(new,(-1,)),label='New full')
-            plt.yscale('symlog',linthreshy=0.01)
-            plt.legend()
-            plt.subplot(325)
-            plt.plot(np.reshape((prev-new)/prev,(-1,)),label='Residuals full')
-            plt.yscale('symlog',linthreshy=0.01)
-            plt.subplot(326)
-            plt.plot(np.reshape((prev - new)**2/np.sum(prev**2),(-1,)),label='Error Contribution full')
-            plt.yscale('symlog',linthreshy=0.01)
-            plt.legend()
-            plt.show()
-            exit()
 
         self.network.cutLinks()
 
