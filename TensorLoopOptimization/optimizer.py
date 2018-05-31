@@ -104,7 +104,7 @@ class optimizer:
 		t = deepcopy(x.guess)
 		err = x.error
 		derr = 1 - err
-		c = cost(t)
+		c = 1
 		dc = c
 		self.stored[x] = (t, err, derr, c, dc)
 		self.active.append(x)
@@ -144,8 +144,10 @@ class optimizer:
 				else:
 					self.active.append(new)
 					derr = self.stored[previous][1] - err
-					dc = cost(t) - self.stored[previous][3]
-					c = cost(t)
+					c = max(new.ranks)
+					dc = 0
+#					dc = cost(t) - self.stored[previous][3]
+#					c = cost(t)
 					self.stored[new] = (t, err, derr, c, dc)
 
 		self.active.remove(previous)
