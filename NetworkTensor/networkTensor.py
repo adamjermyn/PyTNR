@@ -94,6 +94,27 @@ class NetworkTensor(Tensor):
         return arr
 
     @property
+    def scaledArray(self):
+
+        arr, logAcc, bdict = self.network.array
+
+        perm = []
+        blist = [b.id for b in self.externalBuckets]
+
+        for b in blist:
+            perm.append(bdict[b])
+
+        arr = np.transpose(arr, axes=perm)
+
+        assert arr.shape == tuple(self.shape)
+        return arr
+
+    @property
+    def logScalar(self):
+        return np.sum(n.tensor.logScalar for n in self.network.nodes)
+
+
+    @property
     def shape(self):
         return tuple([b.node.tensor.shape[b.index]
                       for b in self.externalBuckets])
