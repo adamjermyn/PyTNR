@@ -65,6 +65,7 @@ def rank1guess(base, env):
 
     return start
 
+
 class optTensor:
     def __init__(self, loop, environment):
         # Loop and guess must have the same bucket ID's.
@@ -86,6 +87,7 @@ class optTensor:
     @property
     def guessNorm(self):
         return envNorm(self.guess, self.environment)
+
 
     @property
     def error(self):

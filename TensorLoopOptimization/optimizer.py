@@ -6,13 +6,13 @@ from TNR.TensorLoopOptimization.optTensor import optTensor
 
 
 def norm(t):
-    '''
-    Returns the L2 norm of the tensor.
-    '''
-    t1 = t.copy()
-    t2 = t.copy()
+	'''
+	Returns the L2 norm of the tensor.
+	'''
+	t1 = t.copy()
+	t2 = t.copy()
 
-    return t1.contract(range(t.rank), t2, range(t.rank), elimLoops=False).array
+	return t1.contract(range(t.rank), t2, range(t.rank), elimLoops=False).array
 
 def envNorm(t, env):
 	t1 = t.copy()
@@ -25,6 +25,27 @@ def envNorm(t, env):
 
 def cost(tensors):
 	return max(n.tensor.size for n in tensors.network.nodes)
+
+def densityMatrix(loop, indices):
+	t1 = loop.copy()
+	t2 = loop.copy()
+	inds = list(set(range(t1.rank)).difference(set(indices)))
+	c = t1.contract(inds, t2, inds, elimLoops=False)
+	return c.array
+
+def between(i,j,ind,cut):
+    # True if ind lies between i and j after the bond at cut has been removed.
+    # Assumes i < j.
+    if i <= cut and cut < j:
+        if ind >= j or ind < i:
+            return True
+        else:
+            return False
+    else:
+        if ind >= j or ind < i:
+            return False
+        else:
+            return True
 
 class optimizer:
 	def __init__(self, tensors, tolerance, environment, bids, otherbids, cut=False):
@@ -98,8 +119,47 @@ class optimizer:
 		self.stored = {}
 		self.nanCount = 0
 
+		# Figure out which link to cut
+
+		acc = tolerance
+		dims = {}
+
+		for i in range(tensors.rank):
+			for j in range(i):
+				rho = densityMatrix(self.tensors, (i,j)) # Change to use environment
+				rho = np.reshape(rho, (rho.shape[0]*rho.shape[1], rho.shape[0]*rho.shape[1]))
+				u, s, v = np.linalg.svd(rho)
+				s /= np.sum(s)
+				p = np.cumsum(s)
+				p = 1 - p
+				p = p[::-1]
+				dims[(i,j)] = len(p) - np.searchsorted(p,acc)
+				dims[(j,i)] = len(p) - np.searchsorted(p,acc)
+
+		best = [1e100, 1e100, None, None, None]
+		for i in range(tensors.rank):
+			# So we cut the bond to the right of i
+			mins = [1 for _ in range(tensors.rank)]
+			maxs = [0 for _ in range(tensors.rank)]
+			for j in range(tensors.rank):
+				for k in range(j):
+					for q in range(len(mins)):
+						if between(k,j,q,i):
+							if mins[q] < dims[(j,k)]:
+								mins[q] = dims[(j,k)]
+							maxs[q] += dims[(j,k)]
+			if sum(mins) < best[0]:
+				best = [sum(mins), sum(maxs), mins, maxs, i]
+			elif sum(mins) == best[0] and sum(maxs) < best[1]:
+				best = [sum(mins), sum(maxs), mins, maxs, i]
+
 		# First evaluation
+		print(best[2])
 		x = optTensor(self.tensors, self.environment)
+		for i in range(len(best[2])):
+			for j in range(best[2][i]-1):
+				x.expand(i)
+
 		x.optimizeSweep()
 		t = deepcopy(x.guess)
 		err = x.error
@@ -111,7 +171,7 @@ class optimizer:
 
 	@property
 	def len(self):
-	    return len(self.tensors)	
+		return len(self.tensors)	
 
 	def choose(self):
 		return self.active[-1]
