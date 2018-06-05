@@ -7,6 +7,9 @@ from copy import deepcopy
 import numpy as np
 import networkx
 
+from opt_einsum import contract as einsum
+from opt_einsum import contract_path as einsum_path
+
 from TNR.Utilities.logger import makeLogger
 from TNR import config
 logger = makeLogger(__name__, config.levels['network'])
@@ -87,7 +90,8 @@ class Network:
             args.append(subs[i])
         args.append(out)
 
-        arr = np.einsum(*args, optimize='greedy')
+#        print(einsum_path(*args, path='greedy', memory_limit=1e7)[1])
+        arr = einsum(*args, optimize='greedy', memory_limit=1e7)
 
         logAcc = sum(n.tensor.logScalar for n in nodes)
 
