@@ -18,12 +18,13 @@ def ising2DFreeEnergy(nX, nY, h, J, accuracy):
         accuracy,
         heuristic,
         optimize=True,
-        merge=False)
+        merge=False,
+        plot=False)
     return n.array[1] / (nX * nY)
 
 
-size = (9,9)
-jran = np.linspace(-2, 2, num=35, endpoint=True)
+size = (7, 7)
+jran = np.linspace(-3, 3, num=35, endpoint=True)
 
 res = []
 for J in jran:
