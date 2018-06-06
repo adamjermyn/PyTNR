@@ -1,4 +1,8 @@
 
+# Requirements
+
+PyTNR requires Python v3.3 or above and NumPy, NetworkX and PyYaml.
+
 # Using PyTNR
 
 Programs using PyTNR typically consist of two phases.
@@ -49,6 +53,67 @@ That's all there is to it. Now `n` contains a tensor tree or collection of tenso
 
 If you have any questions don't hesitate to ask, and also please take a look at the provided examples (in Examples /).
 
+# Configuring PyTNR
+
+PyTNR comes with a default configuration controlling various details of the singular value decomposition, logging and memory limits. The defaults are:
+```
+# Logging levels
+
+levels = {}
+levels['svd'] = 'debug'
+levels['linalg'] = 'debug'
+levels['misc'] = 'debug'
+levels['arrays'] = 'debug'
+levels['treeTensor'] = 'debug'
+levels['treeNetwork'] = 'debug'
+levels['identityTensor'] = 'debug'
+levels['bucket'] = 'debug'
+levels['link'] = 'debug'
+levels['compress'] = 'debug'
+levels['mergeLinks'] = 'debug'
+levels['latticeNode'] = 'debug'
+levels['network'] = 'debug'
+levels['networkTree'] = 'debug'
+levels['node'] = 'debug'
+levels['priorityQueue'] = 'debug'
+levels['tensor'] = 'debug'
+levels['compress'] = 'debug'
+levels['arrayTensor'] = 'debug'
+levels['traceMin'] = 'debug'
+
+levels['mergeContractor'] = 'info'
+levels['generic'] = 'info'
+
+# Run parameters
+runParams = {}
+
+# Determines the cutoff size below which matrices default to the dense SVD.
+
+runParams['svdCutoff'] = 1e3
+
+# Determines the maximum number of attempts for the interpolative SVD.
+
+runParams['svdTries'] = 4
+
+# Determines the maximum bond dimension for using sparse SVD. Written as a
+# fraction of the matrix rank.
+
+runParams['svdBondCutoff'] = 0.1
+
+# Sets an upper bound on memory usage
+
+runParams['mem_limit'] = 2**33
+```
+In order to override these defaults create a file `.tnr_config` in your home directory.
+Then specify the configuration using `yaml` syntax as in
+```
+levels:
+ svd: debug
+
+runParams:
+ svdTries: 4
+```
+and so on.
 
 # Referencing PyTNR
 
