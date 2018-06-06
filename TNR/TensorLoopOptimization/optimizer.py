@@ -7,7 +7,7 @@ from TNR.TensorLoopOptimization.optTensor import optTensor
 
 def norm(t):
 	'''
-	Returns the L2 norm of the tensor.
+	The L2 norm of the tensor. Must be a NetworkTensor.
 	'''
 	t1 = t.copy()
 	t2 = t.copy()
@@ -15,6 +15,9 @@ def norm(t):
 	return t1.contract(range(t.rank), t2, range(t.rank), elimLoops=False).array
 
 def envNorm(t, env):
+	'''
+	The L2 norm of the tensor contracted with its environment. Must be a NetworkTensor.
+	'''
 	t1 = t.copy()
 	t2 = t.copy()
 
@@ -23,32 +26,42 @@ def envNorm(t, env):
 
 	return c.array
 
-def cost(tensors):
-	return max(n.tensor.size for n in tensors.network.nodes)
-
-def densityMatrix(loop, indices):
+def densityMatrix(loop, env, indices):
+	'''
+	The density matrix formed by the NetworkTensor specified by loop contracted
+	against itself and the environment NetworkTensor env on all but the specified indices. 
+	'''
 	t1 = loop.copy()
 	t2 = loop.copy()
 	inds = list(set(range(t1.rank)).difference(set(indices)))
-	c = t1.contract(inds, t2, inds, elimLoops=False)
+	c = t1.contract(range(t1.rank), env, range(t1.rank), elimLoops=False)
+	c = c.contract(inds, t2, inds, elimLoops=False)
 	return c.array
 
-def between(i,j,ind,cut):
-    # True if ind lies between i and j after the bond at cut has been removed.
-    # Assumes i < j.
-    if i <= cut and cut < j:
-        if ind >= j or ind < i:
-            return True
-        else:
-            return False
-    else:
-        if ind >= j or ind < i:
-            return False
-        else:
-            return True
+def between(i,j,ind,cutInd):
+	'''
+	In a loop with nodes 0...N-1, cut the link between nodes cutInd and cutInd+1.
+	Returns True if ind lies between i and j and False otherwise.
+	Requires i != j.
+	'''
+	assert i != j
+
+	if i > j:
+		i,j = j,i
+
+	if i <= cutInd and cutInd < j:
+		if ind >= j or ind < i:
+			return True
+		else:
+			return False
+	else:
+		if ind >= j or ind < i:
+			return False
+		else:
+			return True
 
 class optimizer:
-	def __init__(self, tensors, tolerance, environment, bids, otherbids, cut=False):
+	def __init__(self, tensors, tolerance, environment, bids, otherbids):
 
 		# Reorder externalBuckets to match the underlying ordering of nodes in the loop.
 		# At the end of the day what we'll do is read out the tensors in the loop by
@@ -57,6 +70,7 @@ class optimizer:
 		# to move around the buckets in externalBuckets so long as the buckets themselves
 		# are unchanged. The key is that we never need to use the loop network
 		# (which is a NetworkTensor) as a tensor proper.
+
 
 		self.inds = list([0 for _ in range(tensors.rank)])
 		buckets = [tensors.externalBuckets[0]]
@@ -112,7 +126,6 @@ class optimizer:
 		self.tensors = tensors
 		self.environment = environment
 		self.tolerance = tolerance
-		self.cut = cut
 
 		# Store past attempts
 		self.active = []
@@ -120,13 +133,12 @@ class optimizer:
 		self.nanCount = 0
 
 		# Figure out which link to cut
-
-		acc = tolerance
+		acc = tolerance / tensors.rank
 		dims = {}
 
 		for i in range(tensors.rank):
 			for j in range(i):
-				rho = densityMatrix(self.tensors, (i,j)) # Change to use environment
+				rho = densityMatrix(self.tensors, self.environment, (i,j)) # Change to use environment
 				rho = np.reshape(rho, (rho.shape[0]*rho.shape[1], rho.shape[0]*rho.shape[1]))
 				u, s, v = np.linalg.svd(rho)
 				s /= np.sum(s)
@@ -135,6 +147,7 @@ class optimizer:
 				p = p[::-1]
 				dims[(i,j)] = len(p) - np.searchsorted(p,acc)
 				dims[(j,i)] = len(p) - np.searchsorted(p,acc)
+
 
 		best = [1e100, 1e100, None, None, None]
 		for i in range(tensors.rank):
@@ -152,6 +165,9 @@ class optimizer:
 				best = [sum(mins), sum(maxs), mins, maxs, i]
 			elif sum(mins) == best[0] and sum(maxs) < best[1]:
 				best = [sum(mins), sum(maxs), mins, maxs, i]
+
+		# Control flow
+		self.status = 'Expanding'
 
 		# First evaluation
 		print(best[2])
@@ -180,35 +196,60 @@ class optimizer:
 		# Choose an option to improve
 		previous = self.choose()
 
-		for i in range(len(previous)):
-			if not cut or len(list(1 for x in previous.ranks if x == 1)) > 1 or previous.ranks[i] != 1:
-				new = deepcopy(previous)
-				new.expand(i)
-				new.optimizeSweep()
-				err = new.error
-				t = new.guess
 
-#				print(new, new.fullError, err, norm(t), self.norm)
-#				if new.fullError < self.tolerance:
-				print(new, previous, err, envNorm(t, self.environment))
-				if err < self.tolerance:
-					temp = t.externalBuckets[0].node.tensor.array
-					temp *= self.norm
-					t.externalBuckets[0].node.tensor = ArrayTensor(temp)
-					print(norm(t))
-					return t, err
+		if self.status == 'Expanding':
+			print('Status: Expanding')
+			# We haven't found something in our error criterion yet, so expand.			
+			new = deepcopy(previous)
+			for i in range(len(previous)):
+				if len(list(1 for x in previous.ranks if x == 1)) > 1 or previous.ranks[i] != 1:
+					new.expand(i)
+			
+			new.optimizeSweep()
+		
+			err = new.error
+			t = new.guess
 
-				if np.isnan(err):# or err > 1.1 * self.stored[previous][1]:
-					self.stored[new] = (None, 1e100, 0, 0, 0)
-					self.nanCount += 1
-				else:
-					self.active.append(new)
-					derr = self.stored[previous][1] - err
-					c = max(new.ranks)
-					dc = 0
-#					dc = cost(t) - self.stored[previous][3]
-#					c = cost(t)
-					self.stored[new] = (t, err, derr, c, dc)
+			if err < self.tolerance:
+				# The error criterion is satisfied, so now we reduce.
+				self.status = 'Decreasing'
+				print('Status: Decreasing')
+		elif self.status == 'Decreasing':
+			found = False
+			for i in range(len(previous)):
+				if previous.ranks[i] > 1:
+					new = deepcopy(previous)
+					new.reduce(i)
+					print(new.ranks)
+					new.optimizeSweep()
+					err = new.error
+					t = new.guess
+					if err < self.tolerance:
+						# Found a reduction which doesn't break the error criterion.
+						found = True
+						break
+			if not found:
+				# No reductions found. Proceed to return.
+				t = previous.guess
+				err = previous.error
+				temp = t.externalBuckets[0].node.tensor.array
+				temp *= self.norm
+				t.externalBuckets[0].node.tensor = ArrayTensor(temp)
+				return t, err
+
+
+		# Either status is expanding or status is decreasing and a reduction was found.
+		# In either case we have a new valid solution so we write it in.
+		print(new, previous, err, envNorm(t, self.environment))
+		if np.isnan(err):# or err > 1.1 * self.stored[previous][1]:
+			self.stored[new] = (None, 1e100, 0, 0, 0)
+			self.nanCount += 1
+		else:
+			self.active.append(new)
+			derr = self.stored[previous][1] - err
+			c = max(new.ranks)
+			dc = 0
+			self.stored[new] = (t, err, derr, c, dc)
 
 		self.active.remove(previous)
 		self.active = sorted(self.active, key=lambda x: self.stored[x][1] + np.log(self.stored[x][3]), reverse=True)
@@ -216,14 +257,12 @@ class optimizer:
 			return None
 
 def cut(tensors, tolerance, environment, bids, otherbids):
-	opt = optimizer(tensors, tolerance, environment, bids, otherbids, cut=True)
+	opt = optimizer(tensors, tolerance, environment, bids, otherbids)
 	ret = None
 	while ret is None:
 		ret = opt.makeNext()
 		if ret is not None:
 			ret, err = ret
-#		if opt.nanCount > 20:
-#			opt = optimizer(tensors, tolerance, cut=True)
 	return ret, opt.inds, err
 
 
