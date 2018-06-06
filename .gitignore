@@ -1,5 +1,9 @@
+files.txt
 *.pyc
 *.pytest*
 .pytest*
 error
 log
+build/*
+dist/*
+TNR.egg*
