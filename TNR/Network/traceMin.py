@@ -233,23 +233,25 @@ class traceMin:
         if bConn1 not in n1.buckets:
             bConn1, bConn2 = bConn2, bConn1
 
-        ind1 = self.g.nodes().index(n1)
-        ind2 = self.g.nodes().index(n2)
+        ind1 = list(self.g.nodes()).index(n1)
+        ind2 = list(self.g.nodes()).index(n2)
 
         b3 = [b for b in n1.buckets if b != b1 and b != bConn1][0]
 
         # Nothing happnes to links with b1 because it stays put
 
+        g = networkx.Graph(g)
+
         if b2.linked:
             n = b2.otherNode
             if n in g:
-                g.add_edge(n1, n, weight=g.edge[n1][n2]['weight'])
+                g.add_edge(n1, n, weight=g.edges[n1,n2]['weight'])
                 g.remove_edge(n, n2)
 
         if b3.linked:
             n = b3.otherNode
             if n in g:
-                g.add_edge(n2, n, weight=g.edge[n1][n2]['weight'])
+                g.add_edge(n2, n, weight=g.edges[n1,n2]['weight'])
                 g.remove_edge(n, n1)
 
         return g
