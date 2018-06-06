@@ -214,6 +214,69 @@ class optTensor:
 
         return err1
 
+    def reduce(self, index):
+        '''
+        Expands the dimension of the bond between the tensors in t attached to
+        index and index+1 by one. The final entry along this dimension is simply deleted.
+        If this results in a singular network the entries are changed randomly until
+        this is not the case.
+        '''
+
+        # Get the nodes
+        n1 = self.guess.externalBuckets[index].node
+        n2 = self.guess.externalBuckets[(index + 1) % self.guess.rank].node
+
+        # Get the tensors
+        t1 = n1.tensor
+        t2 = n2.tensor
+
+        # Identify the indices for expansion
+        assert n2 in n1.connectedNodes
+        assert n1 in n2.connectedNodes
+        i1 = n1.indexConnecting(n2)
+        i2 = n2.indexConnecting(n1)
+
+        sh = list(t1.shape)
+        shq = list(t2.shape)
+
+        # Reduce the first tensor
+        sh2 = list(sh)
+        sh2[i1] -= 1
+        arr = t1.array
+        sl = [slice(0, sh2[j]) for j in range(len(sh2))]
+        arr = arr[sl]
+        n1.tensor = ArrayTensor(arr)
+
+        # Reduce the second
+        sh2 = list(shq)
+        sh2[i2] -= 1
+        arr = t2.array
+        sl = [slice(0, sh2[j]) for j in range(len(sh2))]
+        arr = arr[sl]
+        n2.tensor = ArrayTensor(arr)
+
+        nor = np.sqrt(norm(self.guess))
+        
+        while abs(nor) < 1e-5: # Keep trying until the tensor isn't singular
+            arr = n1.tensor.array
+            arr += np.random.randn(*arr.shape)
+            n1.tensor = ArrayTensor(arr)
+            arr = n2.tensor.array
+            arr += np.random.randn(*arr.shape)
+            n2.tensor = ArrayTensor(arr)
+
+            nor = np.sqrt(norm(self.guess))
+
+        temp = self.guess.externalBuckets[0].node.tensor.array
+        if np.isfinite(nor) and nor > 1e-5:
+            temp /= nor
+        self.guess.externalBuckets[0].node.tensor = ArrayTensor(temp)
+
+        self.ranks = list(self.ranks)
+        self.ranks[index] -= 1
+        self.ranks = tuple(self.ranks)
+
+
     def expand(self, index, fill='random'):
         '''
         Assumes that the external indices are ordered such that neighbouring (in the periodic sense)
