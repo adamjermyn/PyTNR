@@ -58,13 +58,6 @@ class Tensor(ABC):
         pass
 
     @abstractmethod
-    def traceOut(self, ind):
-        '''
-        Traces out the component of the tensor associated with the specified index (ind).
-        '''
-        pass
-
-    @abstractmethod
     def flatten(self, inds):
         '''
         Returns a copy of the Tensor which has been flattened along the indices
