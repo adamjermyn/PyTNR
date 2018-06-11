@@ -142,7 +142,8 @@ def pruneGraph(g):
 
     gNew = networkx.Graph(g.subgraph(nodes))
 
-    for e in gNew.edges():
+    edgeList = list(gNew.edges())
+    for e in edgeList:
         if (e[0], e[1]) not in edges and (e[1], e[0]) not in edges:
             gNew.remove_edge(e[0], e[1])
 
