@@ -75,7 +75,11 @@ class TreeTensor(Tensor):
 
     @property
     def size(self):
-        return np.product(self.shape)
+        s = self.shape[0]
+        for q in self.shape[1:]:
+            s *= q
+
+        return s
 
     @property
     def compressedSize(self):
