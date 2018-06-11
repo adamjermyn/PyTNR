@@ -75,11 +75,14 @@ class TreeTensor(Tensor):
 
     @property
     def size(self):
-        s = self.shape[0]
-        for q in self.shape[1:]:
-            s *= q
+        if self.rank == 0:
+            return 1.
+        else:
+            s = self.shape[0]
+            for q in self.shape[1:]:
+                s *= q
 
-        return s
+            return s
 
     @property
     def compressedSize(self):
