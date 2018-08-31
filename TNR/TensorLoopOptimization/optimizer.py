@@ -176,7 +176,7 @@ class optimizer:
 			for j in range(best[2][i]-1):
 				x.expand(i)
 
-		x.optimizeSweep(tolerance)
+		x.optimizeSweep(self.tolerance)
 		t = deepcopy(x.guess)
 		err = x.error
 		derr = 1 - err
@@ -205,7 +205,7 @@ class optimizer:
 				if len(list(1 for x in previous.ranks if x == 1)) > 1 or previous.ranks[i] != 1:
 					new.expand(i)
 			
-			new.optimizeSweep(tolerance)
+			new.optimizeSweep(self.tolerance)
 		
 			err = new.error
 			t = new.guess
@@ -221,7 +221,7 @@ class optimizer:
 					new = deepcopy(previous)
 					new.reduce(i)
 					print(new.ranks)
-					new.optimizeSweep(tolerance)
+					new.optimizeSweep(self.tolerance)
 					err = new.error
 					t = new.guess
 					if err < self.tolerance:
