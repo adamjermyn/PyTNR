@@ -199,18 +199,19 @@ class optTensor:
             print(res)
             exit()
 
-    def optimizeSweep(self, stop=0.01):
+    def optimizeSweep(self, stopErr, stop=0.1):
         # Optimization loop
         dlnerr = 1
         err1 = 1e100
 
-        while dlnerr > stop:
+        while dlnerr > stop and err1 > stopErr:
             for i in range(self.loop.rank):
                 self.optimizeIndex(i)
             err2 = self.error
             derr = (err1 - err2)
             dlnerr = derr / err1
             err1 = err2
+            logger.debug('Error: ' + str(err1) + ', ' + str(dlnerr))
 
         return err1
 

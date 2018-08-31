@@ -176,7 +176,7 @@ class optimizer:
 			for j in range(best[2][i]-1):
 				x.expand(i)
 
-		x.optimizeSweep()
+		x.optimizeSweep(tolerance)
 		t = deepcopy(x.guess)
 		err = x.error
 		derr = 1 - err
@@ -205,7 +205,7 @@ class optimizer:
 				if len(list(1 for x in previous.ranks if x == 1)) > 1 or previous.ranks[i] != 1:
 					new.expand(i)
 			
-			new.optimizeSweep()
+			new.optimizeSweep(tolerance)
 		
 			err = new.error
 			t = new.guess
@@ -221,7 +221,7 @@ class optimizer:
 					new = deepcopy(previous)
 					new.reduce(i)
 					print(new.ranks)
-					new.optimizeSweep()
+					new.optimizeSweep(tolerance)
 					err = new.error
 					t = new.guess
 					if err < self.tolerance:
@@ -240,7 +240,7 @@ class optimizer:
 
 		# Either status is expanding or status is decreasing and a reduction was found.
 		# In either case we have a new valid solution so we write it in.
-		print(new, previous, err, envNorm(t, self.environment))
+		print(new, previous, err, self.tolerance, envNorm(t, self.environment))
 		if np.isnan(err):# or err > 1.1 * self.stored[previous][1]:
 			self.stored[new] = (None, 1e100, 0, 0, 0)
 			self.nanCount += 1
