@@ -56,11 +56,19 @@ class NetworkTensor(Tensor):
         for b in node.buckets:
             if b not in self.externalBuckets:
                 self.externalBuckets.append(b.otherBucket)
-                b.otherBucket.link = None
             else:
                 self.externalBuckets.remove(b)
 
         self.network.removeNode(node)
+
+        # Now we de-register all links to the removed node.
+        # This is not handled internally by the network because doing so
+        # interferes with the contraction process. TODO: Refactor so that the following
+        # lines are not needed.
+        for b in node.buckets:
+            if b.link is not None:
+                b.otherBucket.link = None
+
 
     def __str__(self):
         s = 'Network Tensor with Shape:' + str(self.shape) + ' and Network:\n'
