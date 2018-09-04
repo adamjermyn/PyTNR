@@ -99,7 +99,7 @@ def between(i,j,ind,cutInd):
 			return True
 
 class optimizer:
-	def __init__(self, tensors, tolerance, environment, bids, otherbids):
+	def __init__(self, tensors, tolerance, environment, bids, otherbids, cutIndex=None, ranks=None):
 
 		# Reorder externalBuckets to match the underlying ordering of nodes in the loop.
 		# At the end of the day what we'll do is read out the tensors in the loop by
@@ -165,55 +165,64 @@ class optimizer:
 		self.environment = environment
 		self.tolerance = tolerance
 
+		
+
+
 		# Store past attempts
 		self.active = []
 		self.stored = {}
 		self.nanCount = 0
 
 		# Figure out which link to cut
-		acc = tolerance / tensors.rank
-		dims = {}
+		if cutIndex is None:
+			acc = tolerance / tensors.rank
+			dims = {}
 
-		for i in range(tensors.rank):
-			for j in range(i):
-				rho = densityMatrix(self.tensors, self.environment, (i,j)) # Change to use environment
-				rho = np.reshape(rho, (rho.shape[0]*rho.shape[1], rho.shape[0]*rho.shape[1]))
-				u, s, v = np.linalg.svd(rho)
-				s /= np.sum(s)
-				p = np.cumsum(s)
-				p = 1 - p
-				p = p[::-1]
-				dims[(i,j)] = len(p) - np.searchsorted(p,acc)
-				dims[(j,i)] = len(p) - np.searchsorted(p,acc)
+			for i in range(tensors.rank):
+				for j in range(i):
+					rho = densityMatrix(self.tensors, self.environment, (i,j)) # Change to use environment
+					rho = np.reshape(rho, (rho.shape[0]*rho.shape[1], rho.shape[0]*rho.shape[1]))
+					u, s, v = np.linalg.svd(rho)
+					s /= np.sum(s)
+					p = np.cumsum(s)
+					p = 1 - p
+					p = p[::-1]
+					dims[(i,j)] = len(p) - np.searchsorted(p,acc)
+					dims[(j,i)] = len(p) - np.searchsorted(p,acc)
 
 
-		best = [1e100, 1e100, None, None, None]
-		for i in range(tensors.rank):
-			# So we cut the bond to the right of i
-			mins = [1 for _ in range(tensors.rank)]
-			maxs = [0 for _ in range(tensors.rank)]
-			for j in range(tensors.rank):
-				for k in range(j):
-					for q in range(len(mins)):
-						if between(k,j,q,i):
-							if mins[q] < dims[(j,k)]:
-								mins[q] = dims[(j,k)]
-							maxs[q] += dims[(j,k)]
-			if sum(mins) < best[0]:
-				best = [sum(mins), sum(maxs), mins, maxs, i]
-			elif sum(mins) == best[0] and sum(maxs) < best[1]:
-				best = [sum(mins), sum(maxs), mins, maxs, i]
+			best = [1e100, 1e100, None, None, None]
+			for i in range(tensors.rank):
+				# So we cut the bond to the right of i
+				mins = [1 for _ in range(tensors.rank)]
+				maxs = [0 for _ in range(tensors.rank)]
+				for j in range(tensors.rank):
+					for k in range(j):
+						for q in range(len(mins)):
+							if between(k,j,q,i):
+								if mins[q] < dims[(j,k)]:
+									mins[q] = dims[(j,k)]
+								maxs[q] += dims[(j,k)]
+				if sum(mins) < best[0]:
+					best = [sum(mins), sum(maxs), mins, maxs, i]
+				elif sum(mins) == best[0] and sum(maxs) < best[1]:
+					best = [sum(mins), sum(maxs), mins, maxs, i]
+
+			# First evaluation
+			x = optTensor(self.tensors, self.environment)
+			for i in range(len(best[2])):
+				for j in range(best[2][i]-1):
+					x.expand(i)
+
+		else:
+			x = optTensor(self.tensors, self.environment)
+			for i in range(len(self.inds)):
+				if i != cutIndex:
+					x.expand(i)
+
 
 		# Control flow
 		self.status = 'Expanding'
-
-		# First evaluation
-		print(best[2])
-		x = optTensor(self.tensors, self.environment)
-		for i in range(len(best[2])):
-			for j in range(best[2][i]-1):
-				x.expand(i)
-
 		x.optimizeSweep(self.tolerance)
 		t = deepcopy(x.guess)
 		err = x.error
@@ -241,7 +250,7 @@ class optimizer:
 			new = deepcopy(previous)
 			for i in range(len(previous)):
 				if len(list(1 for x in previous.ranks if x == 1)) > 1 or previous.ranks[i] != 1:
-					new.expand(i)
+					new.expand(i, amount=new.ranks[i])
 			
 			new.optimizeSweep(self.tolerance)
 		
@@ -263,6 +272,7 @@ class optimizer:
 					err = new.error
 					t = new.guess
 					if err < self.tolerance:
+						logger.debug('Found reduction. Error: ' + str(err) + ' < ' + str(self.tolerance))
 						# Found a reduction which doesn't break the error criterion.
 						found = True
 						break
@@ -273,6 +283,8 @@ class optimizer:
 				temp = t.externalBuckets[0].node.tensor.array
 				temp *= self.norm
 				t.externalBuckets[0].node.tensor = ArrayTensor(temp)
+				logger.debug('Done. Ranks: ' + str(previous.ranks) + '. Shapes:\n' + str(t))
+				plot(t.network, fname='Done.pdf')
 				return t, err
 
 
@@ -294,8 +306,8 @@ class optimizer:
 		if self.stored[self.active[-1]][1] > self.tolerance:
 			return None
 
-def cut(tensors, tolerance, environment, bids, otherbids):
-	opt = optimizer(tensors, tolerance, environment, bids, otherbids)
+def cut(tensors, tolerance, environment, bids, otherbids, cutIndex=None):
+	opt = optimizer(tensors, tolerance, environment, bids, otherbids, cutIndex=cutIndex)
 	ret = None
 	while ret is None:
 		ret = opt.makeNext()
