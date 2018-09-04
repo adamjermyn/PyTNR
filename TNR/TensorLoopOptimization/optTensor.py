@@ -278,7 +278,7 @@ class optTensor:
         self.ranks = tuple(self.ranks)
 
 
-    def expand(self, index, fill='random'):
+    def expand(self, index, fill='random', amount=1):
         '''
         Assumes that the external indices are ordered such that neighbouring (in the periodic sense)
         external indices are attached to neighbouring tensors in the network.
@@ -310,7 +310,7 @@ class optTensor:
         while abs(nor) < 1e-5: # Keep trying until the tensor isn't singular
             # Expand the first tensor
             sh2 = list(sh)
-            sh2[i1] += 1
+            sh2[i1] += amount
             if fill == 'random':
                 arr = np.random.randn(*sh2)
             elif fill == 'zeros':
@@ -323,7 +323,7 @@ class optTensor:
 
             # Expand the second tensor
             sh2 = list(shq)
-            sh2[i2] += 1
+            sh2[i2] += amount
             if fill == 'random':
                 arr = np.random.randn(*sh2)
             elif fill == 'zeros':
