@@ -247,7 +247,10 @@ class Network:
             indices[0].append(b1.index)
             indices[1].append(b2.index)
 
-        t = n1.tensor.contract(indices[0], n2.tensor, indices[1])
+        if hasattr(n1.tensor, 'artificialCut'):
+            t = n1.tensor.contract(indices[0], n2.tensor, indices[1], elimLoops=False)
+        else:
+            t = n1.tensor.contract(indices[0], n2.tensor, indices[1])
 
         buckets = []
         for b in n1.buckets:
