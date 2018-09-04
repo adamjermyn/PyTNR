@@ -113,6 +113,40 @@ class Network:
 
         return arr, logAcc, bdict
 
+    def copySubset(self, nodes):
+        '''
+        Produces a deepcopy (ID-preserving) of self with only the specified Nodes included.
+        
+        :param nodes: The Nodes to retain.
+        :return: Network containing only the specified Nodes.
+        '''
+        net = deepcopy(self)
+
+        # Prune the network down to just the specified nodes
+        ids = list([n.id for n in nodes])
+        nodes2 = list(net.nodes)
+
+        for n in nodes2:
+            if n.id not in ids:
+                net.removeNode(n)
+
+        return net
+
+    def disjointNetworks(self):
+        '''
+        Splits the Network into its minimal disjoint subgraphs (i.e. connected components).
+        Note: These are constructed using deepcopy so that ID's are preserved.
+        
+        :return: List of Networks each of which contains one connected component.
+        '''
+        
+        g = self.toGraph()
+        components = list(networkx.connected_components(g))
+
+        nets = list(self.copySubset(component) for component in components)        
+        
+        return nets
+
     def addNode(self, node):
         '''
         Registers a new Node in the Network.
