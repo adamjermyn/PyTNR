@@ -9,8 +9,6 @@ def plot(network, fname=None):
     G = network.toGraph()
     pos = networkx.spring_layout(G)  # positions for all nodes
 
-    print(pos)
-
     # nodes
     networkx.draw_networkx_nodes(G, pos,
                            nodelist=nodes,
@@ -18,10 +16,17 @@ def plot(network, fname=None):
                            node_size=500,
                            alpha=0.8)
 
-    # edges
-    networkx.draw_networkx_edges(G, pos, width=1.0, alpha=0.5)
-    
     networkx.draw_networkx_labels(G, pos, {n:str(n.id) for n in nodes}, font_size=16)
+
+    # edges
+    edge_labels = {}
+    for e in G.edges:
+        l = e[0].findLinks(e[1])[0]
+        edge_labels[e] = str(l.bucket1.size)
+        
+    networkx.draw_networkx_edges(G, pos, width=1.0, alpha=0.5)
+    networkx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels,  width=1.0, alpha=0.5)
+
     
     if fname is None:
         plt.show()   
