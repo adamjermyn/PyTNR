@@ -16,8 +16,9 @@ from TNR.Network.node import Node
 from TNR.Network.link import Link
 from TNR.Network.bucket import Bucket
 from TNR.Utilities.svd import entropy
+from TNR.Utilities.graphPlotter import plot
 from TNR.TensorLoopOptimization.optimizer import cut
-
+from TNR.TensorLoopOptimization.densityMatrix import cutSVD
 
 counter0 = 0
 
@@ -61,22 +62,50 @@ class TreeTensor(NetworkTensor):
 
         assert set(t.externalBuckets) == set(t.network.externalBuckets)
 
+        plot(t.network, fname='justbefore.pdf')
+
+        # Sometimes it is necessary to cut a bond running from the loop
+        # to an adjacent tensor (this is needed only when a single tensor
+        # outside the loop joins two tensors in the loop). In this case
+        # the later logic will attempt to recreate this bond, so we have
+        # to explicitly track the bucket ID's involved.
+        onLoopBids = set()
+
         while len(basis) > 1:
             shuffle(basis)
             cycle = basis[0]
+            done = False
+            
             for i in range(len(cycle)):
-                if cycle[i-1].id not in excludeIDs or cycle[i].id not in excludeIDs:
+                if cycle[i-1].id not in excludeIDs and cycle[i].id not in excludeIDs:
                     link = cycle[i-1].findLink(cycle[i])
                     correction *= link.bucket1.size
                     t.network.removeLink(link)
                     t.externalBuckets.append(link.bucket1)
                     t.externalBuckets.append(link.bucket2)
+                    done = True
                     break
+                    
+            if not done:
+                for i in range(len(cycle)):
+                    if cycle[i-1].id not in excludeIDs or cycle[i].id not in excludeIDs:
+                        link = cycle[i-1].findLink(cycle[i])
+                        onLoopBids.add(link.bucket1.id)
+                        onLoopBids.add(link.bucket2.id)
+                        correction *= link.bucket1.size
+                        t.network.removeLink(link)
+                        t.externalBuckets.append(link.bucket1)
+                        t.externalBuckets.append(link.bucket2)
+                        done = True
+                        break
 
+            
             assert set(t.externalBuckets) == set(t.network.externalBuckets)
 
             g = t.network.toGraph()
             basis = networkx.cycles.cycle_basis(t.network.toGraph())
+
+        plot(t.network, fname='justafter.pdf')
 
         nodes2 = list(t.network.nodes)
 
@@ -90,7 +119,7 @@ class TreeTensor(NetworkTensor):
         for nid in excludeIDs:
             assert nid not in set(n.id for n in t.network.nodes)
 
-        return t, correction
+        return t, correction, onLoopBids
 
 
     def contract(self, ind, other, otherInd, front=True, elimLoops=True):
@@ -111,7 +140,7 @@ class TreeTensor(NetworkTensor):
             t.eliminateLoops()
         return t
 
-    def cutLoop(self, loop):
+    def cutLoop(self, loop, cutIndex=None):
         logger.debug('Cutting loop.')
         self.network.check()
 
@@ -119,30 +148,39 @@ class TreeTensor(NetworkTensor):
         net = self.copySubset(loop)
         bids = list([b.id for b in net.externalBuckets])
 
+        # Form the environment network
+        environment, correction, onLoopBids = self.artificialCut(loop)
+        assert environment.network.externalBuckets == set(environment.externalBuckets)
+
+        # Associate bucket indices between the loop and the environment
         otherBids = []
-        for b in net.externalBuckets:
+        for i,b in enumerate(net.externalBuckets):
             ind = list(l.id for l in loop).index(b.node.id)
             ind2 = list(b2.id for b2 in loop[ind].buckets).index(b.id)
-            if loop[ind].buckets[ind2].linked:
+            if loop[ind].buckets[ind2].linked and b.id not in onLoopBids:
                 otherBids.append(loop[ind].buckets[ind2].otherBucket.id)
             else:
-                otherBids.append(None)
-
-        # Form the environment network
-        environment, correction = self.artificialCut(loop)
-        for i in range(len(bids)):
-            if otherBids[i] is None: # If a loop tensor had an external bucket
                 n = Node(ArrayTensor(np.identity(net.externalBuckets[i].size)))
                 environment.network.addNode(n)
                 environment.externalBuckets.append(n.buckets[0])
                 environment.externalBuckets.append(n.buckets[1])
                 # We've just added two buckets, so we associate one with the loop
                 # and one with the environment
-                otherBids[i] = n.buckets[0].id
+                otherBids.append(n.buckets[0].id)
+                print('HI!')
+                
+        assert environment.network.externalBuckets == set(environment.externalBuckets)
+        
+        # Testing code
+        ranks, costs = cutSVD(net, environment, self.accuracy, bids, otherBids)
+            
+        for i in range(len(ranks)):
+            print(costs[i], ranks[i])                
 
         # Optimize
+        correction = 1.
         logger.debug('Correction factor:' + str(correction))
-        net, inds, err_l2 = cut(net, self.accuracy / correction, environment, bids, otherBids)
+        net, inds, err_l2 = cut(net, self.accuracy / correction, environment, bids, otherBids, cutIndex=cutIndex)
         logger.debug('Correction factor:' + str(correction))
 
         # Throw the new tensors back in
@@ -152,7 +190,6 @@ class TreeTensor(NetworkTensor):
                 bidsn = list(b.id for b in n.buckets)
                 bidsm = list(b.id for b in m.buckets)
                 if len(set(bidsn).intersection(bidsm)) > 0:
-                    print(bidsn, bidsm)
                     m.tensor = n.tensor
                     num += 1
 
@@ -199,10 +236,12 @@ class TreeTensor(NetworkTensor):
                         if len(n.linksConnecting(m)) > 1:
                             todo += 1
 
-            cycles = networkx.cycles.cycle_basis(self.network.toGraph())
+            cycles = sorted(list(networkx.cycles.cycle_basis(self.network.toGraph())), key=len)
             if len(cycles) > 0:
-                c = cycles.pop()
-                self.cutLoop(c)
+                print(len(cycles), list(len(c) for c in cycles))
+                self.cutLoop(cycles[0])
+
+#                self.cutLoop(c, cutIndex=cutIndex)
                 self.contractRank2()
 
         assert len(networkx.cycles.cycle_basis(self.network.toGraph())) == 0
