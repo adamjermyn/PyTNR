@@ -241,8 +241,6 @@ class TreeTensor(NetworkTensor):
             if len(cycles) > 0:
                 print(len(cycles), list(len(c) for c in cycles))
                 self.cutLoop(cycles[0])
-
-#                self.cutLoop(c, cutIndex=cutIndex)
                 self.contractRank2()
 
         assert len(networkx.cycles.cycle_basis(self.network.toGraph())) == 0
