@@ -167,20 +167,21 @@ class TreeTensor(NetworkTensor):
                 # We've just added two buckets, so we associate one with the loop
                 # and one with the environment
                 otherBids.append(n.buckets[0].id)
-                print('HI!')
                 
         assert environment.network.externalBuckets == set(environment.externalBuckets)
         
         # Testing code
-        ranks, costs = cutSVD(net, environment, self.accuracy, bids, otherBids)
-            
-        for i in range(len(ranks)):
-            print(costs[i], ranks[i])                
+        ranks, costs, lids = cutSVD(net, environment, self.accuracy, bids, otherBids)
+        
+        ind = np.argmin(costs)
+        
+        ranks = ranks[ind]
+        ranks[ranks == 0] = 1
 
         # Optimize
         correction = 1.
         logger.debug('Correction factor:' + str(correction))
-        net, inds, err_l2 = cut(net, self.accuracy / correction, environment, bids, otherBids, cutIndex=cutIndex)
+        net, inds = cut(net, self.accuracy / correction, environment, bids, otherBids, ranks, lids)
         logger.debug('Correction factor:' + str(correction))
 
         # Throw the new tensors back in

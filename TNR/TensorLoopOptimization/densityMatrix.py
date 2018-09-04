@@ -50,6 +50,7 @@ def cutSVD(loop, environment, tolerance, bids, otherBids):
             if b.linked and b.link.id in lids:
                 links.append(b.link)
     links = list(set(links))
+    lids = list(l.id for l in links)
                 
     ### Identify necessary ranks for all cuts
 
@@ -66,7 +67,8 @@ def cutSVD(loop, environment, tolerance, bids, otherBids):
             p = s / np.sum(s) # We are already working with a density matrix, so no need to square the eigenvalues.
             cp = 1 - np.cumsum(p)
 
-            ind = np.searchsorted(cp[::-1], tolerance, side='left') 
+            # We divide the tolerance by the rank so the accumulated L2 error is below the threshold.
+            ind = np.searchsorted(cp[::-1], tolerance / loop.rank, side='left') 
             ind -= 1 # Because it searches until it hits something bigger than tolerance
             ind = len(cp) - ind
             print(p, ind)
@@ -75,7 +77,7 @@ def cutSVD(loop, environment, tolerance, bids, otherBids):
             ranks[i,j] = ind
             ranks[j,i] = ranks[i,j]
 
-    return ranks, list(cost(r) for r in ranks)
+    return ranks, list(cost(r) for r in ranks), lids
 
 
 def prepareTensors(net, link1, link2):

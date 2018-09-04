@@ -341,7 +341,7 @@ class optTensor:
             self.guess.externalBuckets[0].node.tensor = ArrayTensor(temp)
 
         self.ranks = list(self.ranks)
-        self.ranks[index] += 1
+        self.ranks[index] += amount
         self.ranks = tuple(self.ranks)
 
 
