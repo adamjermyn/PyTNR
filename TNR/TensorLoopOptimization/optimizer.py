@@ -175,6 +175,12 @@ class optimizer:
 
 		# Control flow
 		x.optimizeSweep(self.tolerance)
+		
+		# Undo normalization
+		temp = x.guess.externalBuckets[0].node.tensor.array
+		temp *= self.norm
+		x.guess.externalBuckets[0].node.tensor = ArrayTensor(temp)
+		
 		self.x = x
 
 def cut(tensors, tolerance, environment, bids, otherbids, ranks, lids):
