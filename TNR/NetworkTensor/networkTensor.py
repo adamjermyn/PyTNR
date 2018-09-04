@@ -124,9 +124,7 @@ class NetworkTensor(Tensor):
 
             for b in blist:
                 perm.append(bdict[b])
-
-            print(arr.shape, perm)
-
+                
             arr = np.transpose(arr, axes=perm)
             
             arrs.append(arr)
