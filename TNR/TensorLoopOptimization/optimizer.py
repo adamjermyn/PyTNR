@@ -4,6 +4,44 @@ from copy import deepcopy
 from TNR.Tensor.arrayTensor import ArrayTensor
 from TNR.TensorLoopOptimization.optTensor import optTensor
 
+from TNR.Utilities.graphPlotter import plot
+
+from TNR.Utilities.logger import makeLogger
+from TNR import config
+logger = makeLogger(__name__, config.levels['treeTensor'])
+
+
+'''
+Todo:
+
+It may be faster to cut using SVD.
+
+Select a bond to cut. Tensor product all other tensors with the identity
+to replace that bond. Then pass back and forth with SVD (starting on one end or the other
+because the middle will not compress) until the SVD stops haivng an impact. Do this for
+each possible bond to cut and pick the one with the least cost.
+
+The SVD is probably better in part because it can be done specifically to the accuracy
+of interest rather than having to go back and forth until that's reached. That is, it removes
+the searching for optimal ranks. It can readily incorporate the environment too.
+
+Note that it is not faster to optimize by SVD: this will not catch the loop entropy.
+
+Further note that there is a problem with cutting by SVD: It will initially significantly
+overestimate the memory cost of the cut because the tensor product will produce the largest
+bonds which could possibly be required, and only after O(N) svd operations will these be
+significantly reduced (e.g. once the changes propagate along the identity line to the other side).
+
+A possible compromise is therefore to use the least squares solver in the expanding phase
+and SVD in the reduction phase. Most of the time is spent in the reduction phase anyway
+because that scales exponentially in loop size, so this is not a bad option.
+
+
+Also, should put a cap on how far into the network we go to compute the environment.
+This is just a polynomial scaling problem but becomes significant with large networks.
+
+'''
+
 
 def norm(t):
 	'''
