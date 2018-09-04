@@ -372,6 +372,11 @@ class Network:
                         self.internalBuckets.remove(m.buckets[j])
                         m.buckets.remove(m.buckets[j])
 
+        for n in self.nodes:
+            for b in n.buckets:
+                if b in self.internalBuckets:
+                    assert b.size > 1
+
     def mergeClosestLinks(self, n1, compress=False, accuracy=1e-4):
         best = [1e100, None, None, None, None]
 
