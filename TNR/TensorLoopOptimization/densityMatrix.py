@@ -3,6 +3,8 @@ import numpy as np
 from copy import deepcopy
 from scipy.linalg import svd
 
+from TNR.Utilities.graphPlotter import plot
+
 def cost(rank):
     ind0 = list(rank).index(0)
     rank = np.roll(rank, len(rank) - ind0) # Push the zero to the front
@@ -35,6 +37,8 @@ def cutSVD(loop, environment, tolerance, bids, otherBids):
 
     # Contract
     net = loop.contract(inds, environment, envInds, elimLoops=False)
+    
+    plot(net.network,fname='net.pdf')
 
     ### Next find all internal inks within the result.
     # Because the environment is formed of disjoint pieces, one of which connects to
@@ -47,7 +51,7 @@ def cutSVD(loop, environment, tolerance, bids, otherBids):
                 links.append(b.link)
     links = list(set(links))
                 
-    ### 
+    ### Identify necessary ranks for all cuts
 
     ranks = np.zeros((len(links), len(links)))
     
@@ -65,6 +69,7 @@ def cutSVD(loop, environment, tolerance, bids, otherBids):
             ind = np.searchsorted(cp[::-1], tolerance, side='left') 
             ind -= 1 # Because it searches until it hits something bigger than tolerance
             ind = len(cp) - ind
+            print(p, ind)
 
             
             ranks[i,j] = ind
