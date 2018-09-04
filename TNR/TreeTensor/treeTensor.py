@@ -6,6 +6,7 @@ import itertools as it
 import numpy as np
 import operator
 import networkx
+from random import shuffle
 
 from TNR.Tensor.tensor import Tensor
 from TNR.NetworkTensor.networkTensor import NetworkTensor
@@ -48,22 +49,47 @@ class TreeTensor(NetworkTensor):
 
     def artificialCut(self, exclude):
         '''
-        Copies the network without the excluded nodes and cuts a bond in each loop.
+        Copies the network, cuts all but one loop, and removes the ndoes in that loop.
         '''
-
-        t = self.copySubset(set(self.network.nodes).difference(exclude))
+        
+        t = deepcopy(self)
         g = t.network.toGraph()
         basis = networkx.cycles.cycle_basis(t.network.toGraph())
-        excludeIDs = list(n.id for n in exclude)
+
         correction = 1.
-        print(len(basis))
-        for cycle in basis:
+        excludeIDs = list(n.id for n in exclude)
+
+        assert set(t.externalBuckets) == set(t.network.externalBuckets)
+
+        while len(basis) > 1:
+            shuffle(basis)
+            cycle = basis[0]
             for i in range(len(cycle)):
-                if cycle[i-1].id not in excludeIDs and cycle[i].id not in excludeIDs:
+                if cycle[i-1].id not in excludeIDs or cycle[i].id not in excludeIDs:
                     link = cycle[i-1].findLink(cycle[i])
                     correction *= link.bucket1.size
                     t.network.removeLink(link)
+                    t.externalBuckets.append(link.bucket1)
+                    t.externalBuckets.append(link.bucket2)
                     break
+
+            assert set(t.externalBuckets) == set(t.network.externalBuckets)
+
+            g = t.network.toGraph()
+            basis = networkx.cycles.cycle_basis(t.network.toGraph())
+
+        nodes2 = list(t.network.nodes)
+
+        for n in nodes2:
+            if n.id in excludeIDs:
+                t.removeNode(n)
+
+        for b in t.externalBuckets:
+            b.link = None
+
+        for nid in excludeIDs:
+            assert nid not in set(n.id for n in t.network.nodes)
+
         return t, correction
 
 
