@@ -100,6 +100,39 @@ class NetworkTensor(Tensor):
 
         assert arr.shape == tuple(self.shape)
         return arr
+    
+    @property
+    def disjointArrays(self):
+        '''
+        Calculates an array for each disjoint subgraph of the underlying Network.
+        
+        :return: List of arrays and list of corresponding lists of external Buckets.
+        '''
+        
+        nets = self.network.disjointNetworks()
+
+        arrs = []
+        buckets = []
+        
+        for n in nets:
+            arr, logAcc, bdict = n.array
+
+            arr *= np.exp(logAcc)
+
+            perm = []
+            blist = [b.id for b in self.externalBuckets if b.id in bdict.keys()]
+
+            for b in blist:
+                perm.append(bdict[b])
+
+            print(arr.shape, perm)
+
+            arr = np.transpose(arr, axes=perm)
+            
+            arrs.append(arr)
+            buckets.append(blist)
+        
+        return arrs, buckets
 
     @property
     def scaledArray(self):
