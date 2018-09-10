@@ -125,7 +125,8 @@ def prepareTensors(net, link1, link2):
     # By construction their indices already correspond to one another
     # (e.g. first contracts with first, second with second, etc.).
 
-    arrs, buckets = net.disjointArrays
+    # We don't need the overall scale so we discard the logarithmic part.
+    arrs, buckets, _ = net.disjointArrays    
     
     # Now we transpose these arrays so that the first two indices contain one bucket from each of
     # link1 and link2.

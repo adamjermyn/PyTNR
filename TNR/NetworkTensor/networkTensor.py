@@ -140,11 +140,10 @@ class NetworkTensor(Tensor):
 
         arrs = []
         buckets = []
+        logs = []
         
         for n in nets:
             arr, logAcc, bdict = n.array
-
-            arr *= np.exp(logAcc)
 
             perm = []
             blist = [b.id for b in self.externalBuckets if b.id in bdict.keys()]
@@ -156,8 +155,9 @@ class NetworkTensor(Tensor):
             
             arrs.append(arr)
             buckets.append(blist)
-        
-        return arrs, buckets
+            logs.append(logAcc)
+
+        return arrs, buckets, logs
 
     @property
     def scaledArray(self):
