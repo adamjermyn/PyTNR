@@ -60,8 +60,6 @@ class TreeTensor(NetworkTensor):
 
         assert set(t.externalBuckets) == set(t.network.externalBuckets)
 
-        plot(t.network, fname='justbefore.pdf')
-
         # Sometimes it is necessary to cut a bond running from the loop
         # to an adjacent tensor (this is needed only when a single tensor
         # outside the loop joins two tensors in the loop). In this case
@@ -102,8 +100,6 @@ class TreeTensor(NetworkTensor):
 
             g = t.network.toGraph()
             basis = networkx.cycles.cycle_basis(t.network.toGraph())
-
-        plot(t.network, fname='justafter.pdf')
 
         nodes2 = list(t.network.nodes)
 
