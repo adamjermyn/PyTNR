@@ -33,10 +33,15 @@ class NetworkTensor(Tensor):
     def __deepcopy__(self, memodict={}):
         new = type(self)(self.accuracy)
         new.network = deepcopy(self.network)
+        
+        idDict = {}
+        for n in new.network.nodes:
+            for b in n.buckets:
+                idDict[b.id] = b
+        
         for b in self.externalBuckets:
-            for b2 in new.network.externalBuckets:
-                if b2.id == b.id:
-                    new.externalBuckets.append(b2)
+            new.externalBuckets.append(idDict[b.id])
+
         return new        
 
     def newIDs(self):
