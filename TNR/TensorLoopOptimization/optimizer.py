@@ -44,25 +44,26 @@ This is just a polynomial scaling problem but becomes significant with large net
 
 
 def norm(t):
-	'''
-	The L2 norm of the tensor. Must be a NetworkTensor.
-	'''
-	t1 = t.copy()
-	t2 = t.copy()
-	
-	return 0.5 * t1.contract(range(t.rank), t2, range(t.rank), elimLoops=False).logNorm
+    '''
+    The L2 norm of the tensor. Must be a NetworkTensor.
+    '''
+    t2 = t.copy()
+    tens = t.contract(range(t.rank), t2, range(t.rank), elimLoops=False)
+    tens.network.cutLinks()
+    tens.contractRank2()
+
+    return 0.5 * tens.logNorm
 
 def envNorm(t, env):
-	'''
-	The L2 norm of the tensor contracted with its environment. Must be a NetworkTensor.
-	'''
-	t1 = t.copy()
-	t2 = t.copy()
 
-	c = t1.contract(range(t.rank), env, range(t.rank), elimLoops=False)
-	c = c.contract(range(t.rank), t2, range(t.rank), elimLoops=False)
+    c = t.contract(range(t.rank), env, range(t.rank), elimLoops=False)
+    c.newIDs()
+    c = c.contract(range(t.rank), t, range(t.rank), elimLoops=False)
 
-	return 0.5 * c.logNorm
+    c.network.cutLinks()
+    c.contractRank2()
+
+    return 0.5 * c.logNorm
 
 class optimizer:
 	def __init__(self, tensors, tolerance, environment, bids, otherbids, ranks, lids):
