@@ -8,7 +8,6 @@ import operator
 import networkx
 from random import shuffle
 
-from TNR.Tensor.tensor import Tensor
 from TNR.NetworkTensor.networkTensor import NetworkTensor
 from TNR.Tensor.arrayTensor import ArrayTensor
 from TNR.Network.treeNetwork import TreeNetwork
@@ -16,7 +15,6 @@ from TNR.Network.node import Node
 from TNR.Network.link import Link
 from TNR.Network.bucket import Bucket
 from TNR.Utilities.svd import entropy
-from TNR.Utilities.graphPlotter import plot
 from TNR.TensorLoopOptimization.optimizer import cut
 from TNR.TensorLoopOptimization.densityMatrix import cutSVD
 
