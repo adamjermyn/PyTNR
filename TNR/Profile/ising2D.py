@@ -1,24 +1,24 @@
 import numpy as np
 
 from TNR.Models.isingModel import IsingModel2Dopen
-from TNR.Contractors.mergeContractor import mergeContractor
+from TNR.Contractors.mergeAllContractor import mergeContractor
+from TNR.Contractors.heuristics import entropyHeuristic
 
-nX = 3
-nY = 3
+nX = 6
+nY = 6
 
-accuracy = 1e-3
+accuracy = 1e-4
 
-h = 0.1
-J = 0.5
+h = 0.0
+J = 0.43
 
 n = IsingModel2Dopen(nX, nY, h, J, accuracy)
 n = mergeContractor(
     n,
     accuracy,
-    optimize=False,
-    merge=False,
-    mergeCut=15)
+    entropyHeuristic,
+    optimize=False)
 
 print(len(n.nodes))
 for nn in n.nodes:
-    print(nn.tensor.array)
+    print('Ratio:',np.log(nn.tensor.array) / (nX * nY * 0.93))

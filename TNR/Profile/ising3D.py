@@ -1,25 +1,24 @@
 import numpy as np
 
-from TNR.Models.isingModel import IsingModel3D
-from TNR.Contractors.mergeContractor import mergeContractor
+from TNR.Models.isingModel import IsingModel3Dopen as IsingModel3D
+from TNR.Contractors.mergeAllContractor import mergeContractor
+from TNR.Contractors.heuristics import entropyHeuristic
 
 nX = 6
 nY = 6
-nZ = 6
+nZ = 5
 
-accuracy = 1e-3
+accuracy = 1e-4
 
 h = 0.1
-J = 3.0
+J = 0.5
 
 n = IsingModel3D(nX, nY, nZ, h, J, accuracy)
 n = mergeContractor(
     n,
     accuracy,
-    optimize=True,
-    merge=True,
-    verbose=2,
-    mergeCut=10)
+    entropyHeuristic,
+    optimize=False)
 
 print(len(n.nodes))
 for nn in n.nodes:
