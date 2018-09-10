@@ -148,7 +148,7 @@ class optTensor:
         W = t
 
         # Make N
-        t1 = deepcopy(self.guess)
+        t1 = t2  # We can reuse t2 because we haven't changed it.
         t2 = self.guess.copy()
 
         # Get nodes
