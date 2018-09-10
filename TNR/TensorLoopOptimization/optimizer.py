@@ -49,8 +49,8 @@ def norm(t):
 	'''
 	t1 = t.copy()
 	t2 = t.copy()
-
-	return t1.contract(range(t.rank), t2, range(t.rank), elimLoops=False).array
+	
+	return 0.5 * t1.contract(range(t.rank), t2, range(t.rank), elimLoops=False).logNorm
 
 def envNorm(t, env):
 	'''
@@ -62,41 +62,7 @@ def envNorm(t, env):
 	c = t1.contract(range(t.rank), env, range(t.rank), elimLoops=False)
 	c = c.contract(range(t.rank), t2, range(t.rank), elimLoops=False)
 
-	return c.array
-
-def densityMatrix(loop, env, indices):
-	'''
-	The density matrix formed by the NetworkTensor specified by loop contracted
-	against itself and the environment NetworkTensor env on all but the specified indices. 
-	'''
-	t1 = loop.copy()
-	t2 = loop.copy()
-	inds = list(set(range(t1.rank)).difference(set(indices)))
-	c = t1.contract(range(t1.rank), env, range(t1.rank), elimLoops=False)
-	c = c.contract(inds, t2, inds, elimLoops=False)
-	return c.array
-
-def between(i,j,ind,cutInd):
-	'''
-	In a loop with nodes 0...N-1, cut the link between nodes cutInd and cutInd+1.
-	Returns True if ind lies between i and j and False otherwise.
-	Requires i != j.
-	'''
-	assert i != j
-
-	if i > j:
-		i,j = j,i
-
-	if i <= cutInd and cutInd < j:
-		if ind >= j or ind < i:
-			return True
-		else:
-			return False
-	else:
-		if ind >= j or ind < i:
-			return False
-		else:
-			return True
+	return 0.5 * c.logNorm
 
 class optimizer:
 	def __init__(self, tensors, tolerance, environment, bids, otherbids, ranks, lids):
@@ -135,8 +101,8 @@ class optimizer:
 
 		# Normalise environment
 		envn = norm(environment)
-		environment.externalBuckets[0].node.tensor = ArrayTensor(environment.externalBuckets[0].node.tensor.array / np.sqrt(envn))
-
+		environment.externalBuckets[0].node.tensor = environment.externalBuckets[0].node.tensor.divideLog(envn)
+		
 		# There are two external buckets for each external on loop (one in, one out),
 		# and these are now ordered in two sets which correspond, as in
 		# [p,q,r,..., p,q,r,...]
@@ -155,10 +121,8 @@ class optimizer:
 		environment.externalBuckets = buckets1 + buckets2
 
 		# Normalize tensors
-		self.norm = np.sqrt(envNorm(tensors, environment))
-		temp = tensors.externalBuckets[0].node.tensor.array
-		temp /= self.norm
-		tensors.externalBuckets[0].node.tensor = ArrayTensor(temp)
+		self.norm = envNorm(tensors, environment)
+		tensors.externalBuckets[0].node.tensor = tensors.externalBuckets[0].node.tensor.divideLog(self.norm)
 
 		# Store inputs
 		self.tensors = tensors
@@ -177,9 +141,9 @@ class optimizer:
 		x.optimizeSweep(self.tolerance)
 		
 		# Undo normalization
-		temp = x.guess.externalBuckets[0].node.tensor.array
-		temp *= self.norm
-		x.guess.externalBuckets[0].node.tensor = ArrayTensor(temp)
+		temp = x.guess.externalBuckets[0].node.tensor
+		temp = temp.multiplyLog(self.norm)
+		x.guess.externalBuckets[0].node.tensor = temp
 		
 		self.x = x
 
