@@ -10,18 +10,16 @@ logger = makeLogger(__name__, config.levels['treeTensor'])
 
 def norm(t):
     '''
-    Returns the L2 norm of the tensor.
+    The L2 norm of the tensor. Must be a NetworkTensor.
     '''
-    t1 = t.copy()
     t2 = t.copy()
 
-    return t1.contract(range(t.rank), t2, range(t.rank), elimLoops=False).array
+    return 0.5 * t.contract(range(t.rank), t2, range(t.rank), elimLoops=False).logNorm
 
 def envNorm(t, env):
-    t1 = t.copy()
     t2 = t.copy()
 
-    c = t1.contract(range(t.rank), env, range(t.rank), elimLoops=False)
+    c = t.contract(range(t.rank), env, range(t.rank), elimLoops=False)
     c = c.contract(range(t.rank), t2, range(t.rank), elimLoops=False)
 
     c.contractRank2()
