@@ -13,18 +13,22 @@ def norm(t):
     The L2 norm of the tensor. Must be a NetworkTensor.
     '''
     t2 = t.copy()
+    tens = t.contract(range(t.rank), t2, range(t.rank), elimLoops=False)
+    tens.network.cutLinks()
+    tens.contractRank2()
 
-    return 0.5 * t.contract(range(t.rank), t2, range(t.rank), elimLoops=False).logNorm
+    return 0.5 * tens.logNorm
 
 def envNorm(t, env):
-    t2 = t.copy()
 
     c = t.contract(range(t.rank), env, range(t.rank), elimLoops=False)
-    c = c.contract(range(t.rank), t2, range(t.rank), elimLoops=False)
+    c.newIDs()
+    c = c.contract(range(t.rank), t, range(t.rank), elimLoops=False)
 
+    c.network.cutLinks()
     c.contractRank2()
 
-    return c.array
+    return 0.5 * c.logNorm
 
 def remove(t, index):
     '''
@@ -59,7 +63,7 @@ def rank1guess(base, env):
         n.tensor = ArrayTensor(np.random.randn(*sh))
 
     n = next(iter(start.network.nodes))
-    n.tensor = ArrayTensor(n.tensor.array / np.sqrt(envNorm(start, env)))
+    n.tensor = n.tensor.divideLog(envNorm(start, env))
 
     return start
 
@@ -80,11 +84,11 @@ class optTensor:
 
     @property
     def loopNorm(self):
-        return envNorm(self.loop, self.environment)
+        return np.exp(envNorm(self.loop, self.environment))
 
     @property
     def guessNorm(self):
-        return envNorm(self.guess, self.environment)
+        return np.exp(envNorm(self.guess, self.environment))
 
 
     @property
@@ -96,7 +100,7 @@ class optTensor:
 
         c = c1.contract(range(c1.rank), t2, range(c1.rank), elimLoops=False)
 
-        return envNorm(t1, self.environment) + envNorm(t2, self.environment) - 2 * c.array
+        return np.exp(envNorm(t1, self.environment)) + np.exp(envNorm(t2, self.environment)) - 2 * c.array
 
     def __hash__(self):
         return hash(self.ranks)
