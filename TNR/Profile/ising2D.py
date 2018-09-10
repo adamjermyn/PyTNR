@@ -3,9 +3,12 @@ import numpy as np
 from TNR.Models.isingModel import IsingModel2Dopen
 from TNR.Contractors.mergeAllContractor import mergeContractor
 from TNR.Contractors.heuristics import entropyHeuristic
+import sys
 
-nX = 6
-nY = 6
+n = sys.argv[1]
+n = int(n)
+nX = n
+nY = n
 
 accuracy = 1e-4
 
