@@ -30,12 +30,15 @@ class NetworkTensor(Tensor):
         self.network = Network()
         self.externalBuckets = []
 
+    def newIDs(self):
+        for n in self.network.nodes:
+            n.id = Node.newid()
+        for b in self.network.buckets:
+            b.id = Bucket.newid()
+
     def copy(self):
         new = deepcopy(self)
-        for n in new.network.nodes:
-            n.id = Node.newid()
-        for b in new.network.buckets:
-            b.id = Bucket.newid()
+        new.newIDs()
         for b in new.externalBuckets:
             b.link = None
         return new
