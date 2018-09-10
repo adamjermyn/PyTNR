@@ -94,9 +94,7 @@ class optTensor:
         t1 = self.loop.copy()
         t2 = self.guess.copy()
 
-
         c1 = t1.contract(range(t1.rank), self.environment, range(t1.rank), elimLoops=False)
-        c2 = t2.contract(range(t1.rank), self.environment, range(t1.rank), elimLoops=False)
 
         c = c1.contract(range(c1.rank), t2, range(c1.rank), elimLoops=False)
 
