@@ -21,4 +21,4 @@ n = mergeContractor(
 
 print(len(n.nodes))
 for nn in n.nodes:
-    print('Ratio:',np.log(nn.tensor.array) / (nX * nY * 0.93))
+    print('Ratio:', nn.tensor.logNorm / (nX * nY * 0.93))
