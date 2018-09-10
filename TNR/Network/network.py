@@ -43,6 +43,38 @@ class Network:
             b.link = None
         return new
 
+    def __deepcopy__(self, memodict={}):
+        # Deep copy
+
+        nodes = list(self.nodes)
+
+        # Copy nodes
+        newNodes = []
+        for n in nodes:
+            buckets = []
+            for b in n.buckets:
+                buckets.append(Bucket())
+                buckets[-1].id = b.id
+            n2 = Node(deepcopy(n.tensor), Buckets=buckets)
+            n2.id = n.id
+            newNodes.append(n2)
+        
+        # Create links
+        for j,n in enumerate(nodes):
+            for i,b in enumerate(n.buckets):
+                if b.linked and not newNodes[j].buckets[i].linked:                   
+                    otherNode = newNodes[nodes.index(b.otherBucket.node)]
+                    otherInd = b.otherBucket.node.buckets.index(b.otherBucket)
+                    l = Link(newNodes[j].buckets[i], otherNode.buckets[otherInd])
+                    l.id = b.link.id
+
+        # Add nodes
+        new = type(self)()
+        for n in newNodes:
+            new.addNode(n)
+                        
+        return new
+
     @property
     def array(self):
         '''

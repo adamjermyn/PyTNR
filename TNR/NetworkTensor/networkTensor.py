@@ -30,6 +30,15 @@ class NetworkTensor(Tensor):
         self.network = Network()
         self.externalBuckets = []
 
+    def __deepcopy__(self, memodict={}):
+        new = type(self)(self.accuracy)
+        new.network = deepcopy(self.network)
+        for b in self.externalBuckets:
+            for b2 in new.network.externalBuckets:
+                if b2.id == b.id:
+                    new.externalBuckets.append(b2)
+        return new        
+
     def newIDs(self):
         for n in self.network.nodes:
             n.id = Node.newid()
@@ -196,6 +205,14 @@ class NetworkTensor(Tensor):
         n2 = b2.node
         return len(self.network.pathBetween(n1, n2))
 
+    def contractToArray(self, ind, other, otherInd):
+        '''
+        Contracts self with other and returns an array without constructing intermediate NetworkTensor objects.
+        Always equivalent to front=True.
+        '''
+        
+        return self.contract(ind, other, otherInd).array
+        
     def contract(self, ind, other, otherInd, front=True):
         # We copy the two networks first. If the other is an ArrayTensor we
         # cast it to a NetworkTensor first.
@@ -370,4 +387,3 @@ class NetworkTensor(Tensor):
 
     def contractRank2(self):
         self.network.contractRank2()
-

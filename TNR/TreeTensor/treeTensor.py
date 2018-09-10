@@ -33,6 +33,11 @@ class TreeTensor(NetworkTensor):
         self.externalBuckets = []
         self.optimized = set()
 
+    def __deepcopy__(self, memodict={}):
+        copy = super().__deepcopy__(memodict)
+        copy.optimized = set() # TODO: Fix this implementation
+        return copy
+
     def __str__(self):
         s = 'Tree Tensor with Shape:' + str(self.shape) + ' and Network:\n'
         s = s + str(self.network)

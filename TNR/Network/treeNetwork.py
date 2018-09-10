@@ -40,7 +40,12 @@ class TreeNetwork(Network):
         super().__init__()
 
         self.accuracy = accuracy
-
+    
+    def __deepcopy__(self, memodict={}):
+        copy = super().__deepcopy__(memodict)
+        copy.accuracy = self.accuracy
+        return copy
+    
     def pathBetween(self, node1, node2, calledFrom=None):
         '''
         Returns the unique path between node1 and node2.
