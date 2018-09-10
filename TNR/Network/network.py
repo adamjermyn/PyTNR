@@ -84,8 +84,14 @@ class Network:
         Uses numpy's einsum feature, with order optimization.
         '''
                 
+                
+        net = deepcopy(self)
+        net.cutLinks()
+        net.contractRank2()
+        
+        
         # Fix node order
-        nodes = list(self.nodes)
+        nodes = list(net.nodes)
 
         # Setup subscript arrays
         subs = list([-1 for _ in range(len(n.buckets))] for n in nodes)
