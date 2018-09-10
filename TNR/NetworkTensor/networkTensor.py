@@ -102,6 +102,16 @@ class NetworkTensor(Tensor):
         return arr
     
     @property
+    def logNorm(self):
+        '''
+        :return: The log of the square root of the sum of squared entries in the tensor.
+        '''
+        arr, logAcc, bdict = self.network.array
+        logArr = 0.5 * np.log(np.sum(arr**2))
+        return logArr + logAcc
+
+  
+    @property
     def disjointArrays(self):
         '''
         Calculates an array for each disjoint subgraph of the underlying Network.
