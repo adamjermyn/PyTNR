@@ -3,8 +3,6 @@ import numpy as np
 from copy import deepcopy
 from scipy.linalg import svd
 
-from TNR.Utilities.graphPlotter import plot
-
 def cost(rank):
     ind0 = list(rank).index(0)
     rank = np.roll(rank, len(rank) - ind0) # Push the zero to the front
@@ -38,8 +36,6 @@ def cutSVD(loop, environment, tolerance, bids, otherBids):
     # Contract
     net = loop.contract(inds, environment, envInds, elimLoops=False)
     
-    plot(net.network,fname='net.pdf')
-
     ### Next find all internal inks within the result.
     # Because the environment is formed of disjoint pieces, one of which connects to
     # each loop tensor, these are just the links in the original loop.
