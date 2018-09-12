@@ -27,6 +27,12 @@ class Network:
         self.externalBuckets = set()
         self.optimizedLinks = set()
 
+        # A placeholder for the networkx graph representation.
+        # This can be maintained iteratively, but if it is ever
+        # set to None we just construct it from scratch when it is
+        # next requested.
+        self.graph = None
+
     def __str__(self):
         s = 'Network\n'
         for n in self.nodes:
