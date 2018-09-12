@@ -44,9 +44,7 @@ class ArrayTensor(Tensor):
 
     @property
     def scaledArray(self):
-        return self._array
-
-
+        return np.copy(self._array)
 
     def divideLog(self, log):
         '''        
