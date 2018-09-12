@@ -27,6 +27,12 @@ class Network:
         self.externalBuckets = set()
         self.optimizedLinks = set()
 
+        # A placeholder for the networkx graph representation.
+        # This can be maintained iteratively, but if it is ever
+        # set to None we just construct it from scratch when it is
+        # next requested.
+        self.graph = None
+
     def __str__(self):
         s = 'Network\n'
         for n in self.nodes:
@@ -171,7 +177,7 @@ class Network:
         
         :return: List of Networks each of which contains one connected component.
         '''
-        
+                
         g = self.toGraph()
         components = list(networkx.connected_components(g))
 
@@ -190,6 +196,9 @@ class Network:
         assert node not in self.nodes
         assert node.network is None
 
+        if self.graph is not None:
+            self.graph.add_node(node)
+
         node.network = self
         self.nodes.add(node)
         for b in node.buckets:
@@ -197,6 +206,8 @@ class Network:
             if b.linked and b.otherNode in self.nodes:
                 self.internalBuckets.add(b)
                 self.internalBuckets.add(b.otherBucket)
+                if self.graph is not None:
+                    self.graph.add_edge(node, b.otherNode)
                 if b.otherBucket in self.externalBuckets:
                     self.externalBuckets.remove(b.otherBucket)
             else:
@@ -211,6 +222,9 @@ class Network:
         a Link.
         '''
         assert node in self.nodes
+
+        if self.graph is not None:
+            self.graph.remove_node(node)
 
         node.network = None
         self.nodes.remove(node)
@@ -232,6 +246,9 @@ class Network:
 
         b1, b2 = link.bucket1, link.bucket2
         n1, n2 = b1.node, b2.node
+
+        if self.graph is not None:
+            self.graph.remove_edge(n1, n2)
 
         b1.link = None
         b2.link = None
@@ -349,12 +366,15 @@ class Network:
         return self.nodes.intersection(set(node.connectedNodes))
 
     def toGraph(self):
-        g = networkx.Graph()
-        g.add_nodes_from(self.nodes)
-        for n in self.nodes:
-            for m in self.internalConnected(n):
-                g.add_edge(n, m, weight=np.log(n.tensor.size * m.tensor.size))
-        return g
+        if self.graph is None:
+            g = networkx.Graph()
+            g.add_nodes_from(self.nodes)
+            for n in self.nodes:
+                for m in self.internalConnected(n):
+                    g.add_edge(n, m, weight=np.log(n.tensor.size * m.tensor.size))
+            self.graph = g
+
+        return self.graph
 
     def contractRank2(self):
         done = set()
