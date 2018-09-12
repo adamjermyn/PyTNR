@@ -8,6 +8,7 @@ build/*
 dist/*
 TNR.egg*
 .idea/*
+TNR/.idea/*
 *.pdf
 *.xml
 *.iml
