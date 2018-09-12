@@ -225,8 +225,6 @@ class TreeTensor(NetworkTensor):
                     if not merged:
                         done.add(n)
 
-                ### There's a bug here somewhere that isn't in the cutter so... gotta fix that.
-
                 # See if done
                 todo = 0
                 for n in self.network.nodes:
