@@ -2,7 +2,6 @@ import numpy as np
 
 from TNR.Models.isingModel import IsingModel2Dopen
 from TNR.Contractors.mergeAllContractor import mergeContractor
-from TNR.Contractors.heuristics import entropyHeuristic
 import sys
 
 n = sys.argv[1]
@@ -19,7 +18,6 @@ n = IsingModel2Dopen(nX, nY, h, J, accuracy)
 n = mergeContractor(
     n,
     accuracy,
-    entropyHeuristic,
     optimize=False)
 
 print(len(n.nodes))
