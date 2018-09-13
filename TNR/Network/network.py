@@ -296,11 +296,6 @@ class Network:
             indices[0].append(b1.index)
             indices[1].append(b2.index)
 
-        if hasattr(n1.tensor, 'artificialCut'):
-            t = n1.tensor.contract(indices[0], n2.tensor, indices[1], elimLoops=False)
-        else:
-            t = n1.tensor.contract(indices[0], n2.tensor, indices[1])
-
         buckets = []
         for b in n1.buckets:
             if not b.linked or b.otherBucket not in n2.buckets:
@@ -308,6 +303,13 @@ class Network:
         for b in n2.buckets:
             if not b.linked or b.otherBucket not in n1.buckets:
                 buckets.append(b)
+
+        if hasattr(n1.tensor, 'promote'):
+            t = n1.tensor.contract(indices[0], n2.tensor, indices[1], elimLoops=False)
+        elif hasattr(n2.tensor, 'promote'):
+            t = n2.tensor.contract(indices[1], n1.tensor, indices[0], front=False, elimLoops=False)
+        else:
+            t = n1.tensor.contract(indices[0], n2.tensor, indices[1])
 
         return t, buckets
 
