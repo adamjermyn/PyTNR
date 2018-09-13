@@ -236,7 +236,7 @@ class TreeTensor(NetworkTensor):
 
             cycles = sorted(list(networkx.cycles.cycle_basis(self.network.toGraph())), key=len)
             if len(cycles) > 0:
-                print(len(cycles), list(len(c) for c in cycles))
+                print('Cycles:',len(cycles), list(len(c) for c in cycles))
                 self.cutLoop(cycles[0])
                 self.contractRank2()
 
