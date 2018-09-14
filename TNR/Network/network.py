@@ -90,16 +90,9 @@ class Network:
         nodes = list(self.nodes)
 
         # Copy nodes
-        newNodes = []
-        for n in nodes:
-            buckets = []
-            for b in n.buckets:
-                buckets.append(Bucket())
-                buckets[-1].id = b.id
-            n2 = Node(deepcopy(n.tensor), Buckets=buckets)
-            n2.id = n.id
-            newNodes.append(n2)
-        
+        newBuckets = list([[Bucket(id=b.id) for b in n.buckets] for n in nodes])
+        newNodes = list([Node(deepcopy(n.tensor), Buckets=buckets, id=n.id) for n,buckets in zip(*(nodes, newBuckets))])
+                
         # Create links
         for j,n in enumerate(nodes):
             for i,b in enumerate(n.buckets):
