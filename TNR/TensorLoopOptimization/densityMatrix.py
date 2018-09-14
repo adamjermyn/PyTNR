@@ -20,10 +20,9 @@ def cutSVD(loop, environment, tolerance, bids, otherBids):
     :return:
     '''
 
-    ### First contract the loop with the environment.
-    # We avoid contracting any links because we need the links in the loop to remain identifiable.
+
     
-    # Identify indexing
+    # Next identify the way the environment is indexed.    
     # bids are in order of appearance in loop.externalBuckets
     # otherBids are ordered to correspond to bids
     
@@ -33,20 +32,44 @@ def cutSVD(loop, environment, tolerance, bids, otherBids):
     for bid in otherBids:
         envInds.append(envBids.index(bid))
 
-    # Contract
-    net = loop.contract(inds, environment, envInds, elimLoops=False)
+    # Contract environment against itself
+    nonEnvInds = list(i for i in range(environment.rank) if i not in envInds)
+    env = environment.contract(nonEnvInds, environment.copy(), nonEnvInds, elimLoops=False)
+    env.network.contractRank2()
     
-    ### Next find all internal inks within the result.
-    # Because the environment is formed of disjoint pieces, one of which connects to
-    # each loop tensor, these are just the links in the original loop.
+    # Identify new environment indexing
+    inds = list(range(loop.rank))
+    envInds = []
+    envBids = list(b.id for b in env.externalBuckets)
+    for bid in otherBids:
+        envInds.append(envBids.index(bid))
+    
+    # Copy the loop and grab its bucket indices
+    loop2 = loop.copy()
+    loopBids = list(b.id for b in loop.externalBuckets)
+    loopBids2 = list(b.id for b in loop2.externalBuckets)
+    bdict = {bid:nbid for bid,nbid in zip(*(loopBids, loopBids2))}
+    
+    # Identify corresponding links in loop and loop2
     lids = list(set(b.link.id for n in loop.network.nodes for b in n.buckets if b.linked))
     links = []
-    for n in net.network.nodes:
-        for b in n.buckets:
-            if b.linked and b.link.id in lids:
-                links.append(b.link)
+    linkDict = {}
+    for i,b in enumerate(loop.externalBuckets):
+        n = b.node
+        for j,b2 in enumerate(n.buckets):
+            if b2.linked and b2.link.id in lids:
+                links.append(b2.link)
+                linkDict[b2.link] = loop2.externalBuckets[i].node.buckets[j].link
+
     links = list(set(links))
     lids = list(l.id for l in links)
+
+    # Contract the loop against the environment
+    # The remaining indices on the result are ordered as envInds.
+    net = loop.contract(inds, env, envInds, elimLoops=False)
+    
+    # Contract loop2 against net
+    net = loop2.contract(inds, net, envInds, elimLoops=False)
                 
     ### Identify necessary ranks for all cuts
 
@@ -58,7 +81,7 @@ def cutSVD(loop, environment, tolerance, bids, otherBids):
             l1 = links[i]
             l2 = links[j]
                         
-            mat = prepareTensors(net, l1, l2)
+            mat = prepareTensors(net, l1, l2, linkDict[l1], linkDict[l2])
             s = svd(mat, compute_uv=False)
             p = s / np.sum(s) # We are already working with a density matrix, so no need to square the eigenvalues.
             cp = 1 - np.cumsum(p)
@@ -76,49 +99,47 @@ def cutSVD(loop, environment, tolerance, bids, otherBids):
     return ranks, list(cost(r) for r in ranks), lids
 
 
-def prepareTensors(net, link1, link2):
-    # Copy the NetworkTensor
-    net = deepcopy(net)
-
-    # Record bucket ID's:
+def prepareTensors(net, link1, link2, link1p, link2p):
+    # Grab bucket indices
     bid11 = link1.bucket1.id
     bid12 = link1.bucket2.id
     bid21 = link2.bucket1.id
     bid22 = link2.bucket2.id
-    
+    bid11p = link1p.bucket1.id
+    bid12p = link1p.bucket2.id
+    bid21p = link2p.bucket1.id
+    bid22p = link2p.bucket2.id
+
+    # Copy the NetworkTensor
+    net = deepcopy(net)
+
     # Identify links in the copied NetworkTensor
     for n in net.network.nodes:
         for b in n.buckets:
-            if b.id == bid11 or b.id == bid12:
-                link1 = b.link
-            elif b.id == bid21 or b.id == bid22:
-                link2 = b.link
+            if b.linked:
+                if b.id == bid11:
+                    link1 = b.link
+                elif b.id == bid21:
+                    link2 = b.link
+                elif b.id == bid11p:
+                    link1p = b.link
+                elif b.id == bid21p:
+                    link2p = b.link
+                    
 
     # Delete specified links from loop
-    assert link1.bucket1 in net.network.internalBuckets
-    assert link1.bucket2 in net.network.internalBuckets
-    assert link2.bucket1 in net.network.internalBuckets
-    assert link2.bucket2 in net.network.internalBuckets
     net.network.removeLink(link1)
     net.network.removeLink(link2)
+    net.network.removeLink(link1p)
+    net.network.removeLink(link2p)
     net.externalBuckets.append(link1.bucket1)
     net.externalBuckets.append(link1.bucket2)
     net.externalBuckets.append(link2.bucket1)
     net.externalBuckets.append(link2.bucket2)
-
-    # The final four indices on net now correspond to link1.bucket1, link1.bucket2, link2.bucket1
-    # and link2.bucket2 in that order.
-
-    # Copy the network and grab its bucket indices.
-    cnet = net.copy()
-    bids = list(b.id for b in net.externalBuckets)
-    newBids = list(b.id for b in cnet.externalBuckets)
-    bdict = {bid:nbid for bid,nbid in zip(*(bids, newBids))}
-
-    # Contract network against itself
-    # We omit the final four indices from the contraction because those are the ones we just formed
-    # by cutting link1 and link2.
-    net = net.contract(range(net.rank - 4), cnet, range(net.rank - 4), elimLoops=False)
+    net.externalBuckets.append(link1p.bucket1)
+    net.externalBuckets.append(link1p.bucket2)
+    net.externalBuckets.append(link2p.bucket1)
+    net.externalBuckets.append(link2p.bucket2)
 
     # There are now two disjoint components in net. Each has two external buckets corresponding to
     # each of the two copies of link1 and link2 in the network. We read these tensors out as arrays.
@@ -131,8 +152,8 @@ def prepareTensors(net, link1, link2):
     # Now we transpose these arrays so that the first two indices contain one bucket from each of
     # link1 and link2.
     
-    link1ids = set([bid11, bid12, bdict[bid11], bdict[bid12]])
-    link2ids = set([bid21, bid22, bdict[bid21], bdict[bid22]])
+    link1ids = set([bid11, bid12, bid11p, bid12p])
+    link2ids = set([bid21, bid22, bid21p, bid22p])
     
     if (buckets[0][0] in link1ids and buckets[0][1] in link1ids) or (buckets[0][0] in link2ids and buckets[0][1] in link2ids):
         # Means we need to swap two indices. We arbitrarily choose the middle two.
