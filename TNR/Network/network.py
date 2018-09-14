@@ -108,13 +108,12 @@ class Network:
                     otherInd = b.otherBucket.node.buckets.index(b.otherBucket)
                     l = Link(newNodes[j].buckets[i], otherNode.buckets[otherInd])
                     l.id = b.link.id
-                    self.neighbors[newNodes[j]].add(otherNode)
-                    self.neighbors[otherNode].add(newNodes[j])
 
         # Add nodes
         new = type(self)()
         for n in newNodes:
             new.addNode(n)
+
                      
         return new
 
