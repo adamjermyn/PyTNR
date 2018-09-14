@@ -7,19 +7,29 @@ class Bucket:
     def __init__(self):
         self.id = Bucket.newid()
         self.node = None
-        self.link = None
-
-    @property
-    def otherBucket(self):
-        return self.link.otherBucket(self)
+        self._link = None
+        self.otherBucket = None
+        self.linked = False
 
     @property
     def otherNode(self):
         return self.link.otherBucket(self).node
 
     @property
-    def linked(self):
-        return (self.link is not None)
+    def link(self):
+        return self._link
+
+    @link.setter
+    def link(self, value):
+        self._link = value
+        if value is None:
+            self.otherBucket = None
+            self.linked = False
+        else:
+            self.otherBucket = value.otherBucket(self)
+            self.linked = True
+        
+        self._link = value
 
     @property
     def index(self):

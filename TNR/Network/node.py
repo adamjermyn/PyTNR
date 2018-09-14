@@ -15,8 +15,9 @@ class Node:
 
         self.buckets = Buckets
 
-        for b in Buckets:
+        for b in self.buckets:
             b.node = self
+            
 
     def __str__(self):
         s = 'Node with ID ' + str(self.id) + \

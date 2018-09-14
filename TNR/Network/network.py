@@ -7,6 +7,8 @@ from copy import deepcopy
 import numpy as np
 import networkx
 
+from collections import defaultdict
+
 from opt_einsum import contract as einsum
 
 from TNR.Utilities.logger import makeLogger
@@ -26,12 +28,45 @@ class Network:
         self.internalBuckets = set()
         self.externalBuckets = set()
         self.optimizedLinks = set()
+        self.neighbors = defaultdict(set)
 
         # A placeholder for the networkx graph representation.
         # This can be maintained iteratively, but if it is ever
         # set to None we just construct it from scratch when it is
         # next requested.
         self.graph = None
+
+    def debug(self):
+        
+        for n in self.nodes:
+            for b in n.buckets:
+                if b.linked:
+                    assert b.otherBucket == b.link.otherBucket(b)
+                else:
+                    assert b.link is None
+                assert b.node == n
+
+        for n in self.nodes:
+            for m in self.nodes:
+                if m in n.connectedNodes:
+                    assert m in self.neighbors[n]
+                    assert n in self.neighbors[m]
+                else:
+                    try:
+                        assert m not in self.neighbors[n]
+                        assert n not in self.neighbors[m]
+                    except:
+                        print(n.id,m.id)
+                        print(n)
+                        print(m)
+                        for b in n.buckets:
+                            print(b.id, b.link.id, b.otherBucket.id, b.node.id, b.otherBucket.node.id)
+                        print('---')
+                        for b in m.buckets:
+                            print(b.id, b.link.id, b.otherBucket.id, b.node.id, b.otherBucket.node.id)
+                        assert False
+            for m in self.neighbors[n]:
+                assert m in self.nodes
 
     def __str__(self):
         s = 'Network\n'
@@ -73,12 +108,14 @@ class Network:
                     otherInd = b.otherBucket.node.buckets.index(b.otherBucket)
                     l = Link(newNodes[j].buckets[i], otherNode.buckets[otherInd])
                     l.id = b.link.id
+                    self.neighbors[newNodes[j]].add(otherNode)
+                    self.neighbors[otherNode].add(newNodes[j])
 
         # Add nodes
         new = type(self)()
         for n in newNodes:
             new.addNode(n)
-                        
+                     
         return new
 
     @property
@@ -206,12 +243,15 @@ class Network:
             if b.linked and b.otherNode in self.nodes:
                 self.internalBuckets.add(b)
                 self.internalBuckets.add(b.otherBucket)
+                self.neighbors[node].add(b.otherNode)
+                self.neighbors[b.otherNode].add(node)
                 if self.graph is not None:
                     self.graph.add_edge(node, b.otherNode)
                 if b.otherBucket in self.externalBuckets:
                     self.externalBuckets.remove(b.otherBucket)
             else:
                 self.externalBuckets.add(b)
+
 
     def removeNode(self, node):
         '''
@@ -222,9 +262,15 @@ class Network:
         a Link.
         '''
         assert node in self.nodes
+        
+
 
         if self.graph is not None:
             self.graph.remove_node(node)
+
+        for n in self.neighbors[node]:
+            self.neighbors[n].remove(node)
+        self.neighbors.pop(node)
 
         node.network = None
         self.nodes.remove(node)
@@ -246,6 +292,10 @@ class Network:
 
         b1, b2 = link.bucket1, link.bucket2
         n1, n2 = b1.node, b2.node
+        
+        if len(n1.findLinks(n2)) == 1:
+            self.neighbors[n1].remove(n2)
+            self.neighbors[n2].remove(n1)
 
         if self.graph is not None:
             self.graph.remove_edge(n1, n2)
@@ -258,6 +308,7 @@ class Network:
 
         self.externalBuckets.add(b1)
         self.externalBuckets.add(b2)
+        
 
 
     def check(self):
@@ -319,14 +370,20 @@ class Network:
         '''
         t, buckets = self.dummyMergeNodes(n1, n2)
 
-        n = Node(t, Buckets=buckets)
+
+        
 
         # The order matters here: we have to remove the old nodes before
         # adding the new one to make sure that the correct buckets end up
         # in the network.
+        assert n1 in self.nodes
+        assert n2 in self.nodes
+        
         self.removeNode(n1)
         self.removeNode(n2)
+        n = Node(t, Buckets=buckets)
         self.addNode(n)
+
 
         return n
 
@@ -365,7 +422,7 @@ class Network:
         self.externalBuckets.remove(b)
 
     def internalConnected(self, node):
-        return self.nodes.intersection(set(node.connectedNodes))
+        return self.neighbors[node]
 
     def toGraph(self):
         if self.graph is None:
@@ -387,7 +444,7 @@ class Network:
 
             n = next(iter(self.nodes.difference(done)))
 
-            nodes = self.internalConnected(n)
+            nodes = set(self.internalConnected(n))
             if len(nodes) == 0:
                 done.add(n)
             elif n.tensor.rank <= 2:
@@ -409,14 +466,23 @@ class Network:
         '''
 
         for n in self.nodes:
-            for m in self.internalConnected(n):
+            todo = set(self.internalConnected(n))
+            
+            for m in todo:
                 dim = 1
-                while dim == 1 and m in self.internalConnected(n):
+                while dim == 1 and m in set(self.internalConnected(n)):
                     inds = n.indicesConnecting(m)
                     i = inds[0][0]
                     j = inds[1][0]
                     dim = n.tensor.shape[i]
                     if dim == 1:
+                        if len(n.findLinks(m)) == 1:
+                            self.neighbors[n].remove(m)
+                            self.neighbors[m].remove(n)
+
+                            if self.graph is not None:
+                                self.graph.remove_edge(n, m)
+
                         sl = list(slice(0,n.tensor.shape[k]) for k in range(i)) + [0] + list(slice(0,n.tensor.shape[k]) for k in range(i+1,n.tensor.rank))
                         n.tensor = ArrayTensor(n.tensor.array[sl])
                         self.internalBuckets.remove(n.buckets[i])
@@ -425,6 +491,7 @@ class Network:
                         m.tensor = ArrayTensor(m.tensor.array[sl])
                         self.internalBuckets.remove(m.buckets[j])
                         m.buckets.remove(m.buckets[j])
+
 
         for n in self.nodes:
             for b in n.buckets:
