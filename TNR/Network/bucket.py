@@ -4,8 +4,11 @@ import itertools
 class Bucket:
     newid = itertools.count().__next__
 
-    def __init__(self):
-        self.id = Bucket.newid()
+    def __init__(self, id=None):
+        if id is None:
+            self.id = Bucket.newid()
+        else:
+            self.id = id
         self.node = None
         self._link = None
         self.otherBucket = None
