@@ -3,6 +3,7 @@ from TNR.Network.node import Node
 from TNR.Network.link import Link
 from TNR.Network.compress import compressLink
 from TNR.Tensor.arrayTensor import ArrayTensor
+from TNR.Utilities.misc import nodes_to_einsum
 from copy import deepcopy
 import numpy as np
 import networkx
@@ -92,44 +93,13 @@ class Network:
                 
                 
         net = deepcopy(self)
-        net.cutLinks()
         net.contractRank2()
         
-        
-        # Fix node order
-        nodes = list(net.nodes)
-
-        # Setup subscript arrays
-        subs = list([-1 for _ in range(len(n.buckets))] for n in nodes)
-        out = []
-        bids = []
-
-        # Construct lists
-        counter = 0
-        for i in range(len(nodes)):
-            n = nodes[i]
-
-            for j,b in enumerate(n.buckets):
-                if subs[i][j] == -1:
-                    subs[i][j] = counter
-                    if b.linked:
-                        ind = nodes.index(b.otherBucket.node)
-                        ind2 = nodes[ind].buckets.index(b.otherBucket)
-                        subs[ind][ind2] = counter
-                    else:
-                        out.append(counter)
-                        bids.append(b.id)
-                    counter += 1
-    
-        args = []
-        for i in range(len(nodes)):
-            args.append(nodes[i].tensor.scaledArray)
-            args.append(subs[i])
-        args.append(out)
+        args, bids = nodes_to_einsum(net.nodes)
 
         arr = einsum(*args, optimize='greedy', memory_limit=1e7)
 
-        logAcc = sum(n.tensor.logScalar for n in nodes)
+        logAcc = sum(n.tensor.logScalar for n in net.nodes)
 
         bdict = {}
         for i in range(len(bids)):
