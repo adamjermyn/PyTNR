@@ -13,7 +13,7 @@ class Bucket:
 
     @property
     def otherNode(self):
-        return self.otherBucket(self).node
+        return self.otherBucket.node
 
     @property
     def link(self):
