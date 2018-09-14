@@ -39,8 +39,7 @@ class NetworkTensor(Tensor):
             for b in n.buckets:
                 idDict[b.id] = b
         
-        for b in self.externalBuckets:
-            new.externalBuckets.append(idDict[b.id])
+        new.externalBuckets = list(idDict[b.id] for b in self.externalBuckets)
 
         return new        
 
