@@ -5,9 +5,12 @@ from TNR.Network.bucket import Bucket
 class Node:
     newid = itertools.count().__next__
 
-    def __init__(self, tensor, Buckets=None):
+    def __init__(self, tensor, Buckets=None, id=None):
         self.tensor = tensor
-        self.id = Node.newid()
+        if id is None:
+            self.id = Node.newid()
+        else:
+            self.id = id
         self.network = None
 
         if Buckets is None:
@@ -15,8 +18,9 @@ class Node:
 
         self.buckets = Buckets
 
-        for b in Buckets:
+        for b in self.buckets:
             b.node = self
+            
 
     def __str__(self):
         s = 'Node with ID ' + str(self.id) + \
@@ -78,7 +82,7 @@ class Node:
 
     def eliminateLoops(self):
         if hasattr(self.tensor, 'compressedSize'):
-            self.tensor.eliminateLoops(self.connectedNodes)
+            self.tensor.eliminateLoops()
 
     def mergeBuckets(self, buckets):
         '''

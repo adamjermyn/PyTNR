@@ -1,6 +1,41 @@
 import networkx
 
 
+def plot(network, fname=None):
+    import matplotlib.pyplot as plt
+    
+    nodes = list(network.nodes)
+    
+    G = network.toGraph()
+    pos = networkx.spring_layout(G)  # positions for all nodes
+
+    # nodes
+    networkx.draw_networkx_nodes(G, pos,
+                           nodelist=nodes,
+                           node_color='r',
+                           node_size=500,
+                           alpha=0.8)
+
+    networkx.draw_networkx_labels(G, pos, {n:str(n.id) for n in nodes}, font_size=16)
+
+    # edges
+    edge_labels = {}
+    for e in G.edges:
+        l = e[0].findLinks(e[1])[0]
+        edge_labels[e] = str(l.bucket1.size)
+        
+    networkx.draw_networkx_edges(G, pos, width=1.0, alpha=0.5)
+    networkx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels,  width=1.0, alpha=0.5)
+
+    
+    if fname is None:
+        plt.show()   
+    else:
+        plt.savefig(fname)
+
+    plt.clf()
+    
+
 def makePlotter(fname, counter=0, positions=None):
     '''
     A graph plotter is a function which plots a graph, saves it to a specific location, and

@@ -44,7 +44,21 @@ class ArrayTensor(Tensor):
 
     @property
     def scaledArray(self):
-        return self._array
+        return np.copy(self._array)
+
+    def divideLog(self, log):
+        '''        
+        :param log: The logarithm of the factor by which to divide.
+        :return: A new Tensor given by dividing this one by the exponential of the log.
+        '''
+        return self.multiplyLog(-log)
+
+    def multiplyLog(self, log):
+        '''        
+        :param log: The logarithm of the factor by which to multiply.
+        :return: A new Tensor given by multiplying this one by the exponential of the log.
+        '''
+        return ArrayTensor(self.scaledArray, logScalar=self.logScalar + log)
 
     def contract(self, ind, other, otherInd):
         '''

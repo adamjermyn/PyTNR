@@ -4,22 +4,35 @@ import itertools
 class Bucket:
     newid = itertools.count().__next__
 
-    def __init__(self):
-        self.id = Bucket.newid()
+    def __init__(self, id=None):
+        if id is None:
+            self.id = Bucket.newid()
+        else:
+            self.id = id
         self.node = None
-        self.link = None
-
-    @property
-    def otherBucket(self):
-        return self.link.otherBucket(self)
+        self._link = None
+        self.otherBucket = None
+        self.linked = False
 
     @property
     def otherNode(self):
-        return self.link.otherBucket(self).node
+        return self.otherBucket.node
 
     @property
-    def linked(self):
-        return (self.link is not None)
+    def link(self):
+        return self._link
+
+    @link.setter
+    def link(self, value):
+        self._link = value
+        if value is None:
+            self.otherBucket = None
+            self.linked = False
+        else:
+            self.otherBucket = value.otherBucket(self)
+            self.linked = True
+        
+        self._link = value
 
     @property
     def index(self):

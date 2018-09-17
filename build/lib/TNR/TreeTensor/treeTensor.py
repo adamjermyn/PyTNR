@@ -6,16 +6,17 @@ import itertools as it
 import numpy as np
 import operator
 import networkx
+from random import shuffle
 
-from TNR.Tensor.tensor import Tensor
+from TNR.NetworkTensor.networkTensor import NetworkTensor
 from TNR.Tensor.arrayTensor import ArrayTensor
 from TNR.Network.treeNetwork import TreeNetwork
 from TNR.Network.node import Node
 from TNR.Network.link import Link
 from TNR.Network.bucket import Bucket
-from TNR.Network.traceMin import traceMin
 from TNR.Utilities.svd import entropy
-from TNR.Utilities.graphPlotter import makePlotter
+from TNR.TensorLoopOptimization.optimizer import cut
+from TNR.TensorLoopOptimization.densityMatrix import cutSVD
 
 counter0 = 0
 
@@ -24,7 +25,7 @@ from TNR import config
 logger = makeLogger(__name__, config.levels['treeTensor'])
 
 
-class TreeTensor(Tensor):
+class TreeTensor(NetworkTensor):
 
     def __init__(self, accuracy):
         self.accuracy = accuracy
@@ -32,158 +33,213 @@ class TreeTensor(Tensor):
         self.externalBuckets = []
         self.optimized = set()
 
-    def addTensor(self, tensor):
-        n = Node(tensor, Buckets=[Bucket() for _ in range(tensor.rank)])
-        self.network.addNode(n)
-        self.externalBuckets.extend(n.buckets)
-        if tensor.rank > 3:
-            self.network.splitNode(n)
-        return n
+    def __deepcopy__(self, memodict={}):
+        copy = super().__deepcopy__(memodict)
+        copy.optimized = set() # TODO: Fix this implementation
+        return copy
 
     def __str__(self):
-        s = ''
-        s = s + 'Tree Tensor with Shape:' + str(self.shape) + ' and Network:\n'
+        s = 'Tree Tensor with Shape:' + str(self.shape) + ' and Network:\n'
         s = s + str(self.network)
         return s
 
-    @property
-    def array(self):
-
-        arr, logAcc, bdict = self.network.array
-
-        arr *= np.exp(logAcc)
-
-        perm = []
-        blist = [b.id for b in self.externalBuckets]
-
-        for b in blist:
-            perm.append(bdict[b])
-
-        arr = np.transpose(arr, axes=perm)
-
-        assert arr.shape == tuple(self.shape)
-        return arr
-
-    @property
-    def shape(self):
-        return tuple([b.node.tensor.shape[b.index]
-                      for b in self.externalBuckets])
-
-    @property
-    def rank(self):
-        return len(self.externalBuckets)
-
-    @property
-    def size(self):
-        return np.product(self.shape)
-
-    @property
-    def compressedSize(self):
-        size = 0
-        for n in self.network.nodes:
-            size += n.tensor.size
-        return size
-
-    def distBetween(self, ind1, ind2):
-        n1 = self.externalBuckets[ind1].node
-        n2 = self.externalBuckets[ind2].node
-        return len(self.network.pathBetween(n1, n2))
-
-    def distBetweenBuckets(self, b1, b2):
-        n1 = b1.node
-        n2 = b2.node
-        return len(self.network.pathBetween(n1, n2))
-
-    def contract(self, ind, other, otherInd, front=True):
-        # This method could be vastly simplified by defining a cycle basis
-        # class
-
-        # We copy the two networks first. If the other is an ArrayTensor we
-        # cast it to a TreeTensor first.
-        t1 = deepcopy(self)
-        if hasattr(other, 'network'):
-            t2 = deepcopy(other)
+    def promote(self, other):
+        if not hasattr(other, 'network'):
+            t = TreeTensor(self.accuracy)
+            t.addTensor(other)
         else:
-            t2 = TreeTensor(self.accuracy)
-            t2.addTensor(other)
+            t = deepcopy(other)
+        return t
 
-        # If front == True then we contract t2 into t1, otherwise we contract t1 into t2.
-        # This is so we get the index order correct. Thus
-        if not front:
-            t1, t2 = t2, t1
-            otherInd, ind = ind, otherInd
+    def artificialCut(self, exclude):
+        '''
+        Copies the network, cuts all but one loop, and removes the ndoes in that loop.
+        '''
+        
+        t = deepcopy(self)
+        g = t.network.toGraph()
+        basis = networkx.cycles.cycle_basis(t.network.toGraph())
 
-        # Link the networks
-        links = []
-        for i, j in zip(*(ind, otherInd)):
-            b1, b2 = t1.externalBuckets[i], t2.externalBuckets[j]
-            assert b1 in t1.network.buckets and b1 not in t2.network.buckets
-            assert b2 in t2.network.buckets and b2 not in t1.network.buckets
-            links.append(Link(b1, b2))
+        correction = 1.
+        excludeIDs = list(n.id for n in exclude)
 
-        # Determine new external buckets list
-        for l in links:
-            t1.externalBuckets.remove(l.bucket1)
-            t2.externalBuckets.remove(l.bucket2)
+        assert set(t.externalBuckets) == set(t.network.externalBuckets)
 
-        extB = t1.externalBuckets + t2.externalBuckets
+        # Sometimes it is necessary to cut a bond running from the loop
+        # to an adjacent tensor (this is needed only when a single tensor
+        # outside the loop joins two tensors in the loop). In this case
+        # the later logic will attempt to recreate this bond, so we have
+        # to explicitly track the bucket ID's involved.
+        onLoopBids = set()
 
-        # Merge the networks
-        toRemove = set(t2.network.nodes)
+        while len(basis) > 1:
+            shuffle(basis)
+            cycle = basis[0]
+            done = False
+            
+            for i in range(len(cycle)):
+                if cycle[i-1].id not in excludeIDs and cycle[i].id not in excludeIDs:
+                    link = cycle[i-1].findLink(cycle[i])
+                    correction *= link.bucket1.size
+                    t.network.removeLink(link)
+                    t.externalBuckets.append(link.bucket1)
+                    t.externalBuckets.append(link.bucket2)
+                    done = True
+                    break
+                    
+            if not done:
+                for i in range(len(cycle)):
+                    if cycle[i-1].id not in excludeIDs or cycle[i].id not in excludeIDs:
+                        link = cycle[i-1].findLink(cycle[i])
+                        onLoopBids.add(link.bucket1.id)
+                        onLoopBids.add(link.bucket2.id)
+                        correction *= link.bucket1.size
+                        t.network.removeLink(link)
+                        t.externalBuckets.append(link.bucket1)
+                        t.externalBuckets.append(link.bucket2)
+                        done = True
+                        break
 
-        for n in toRemove:
-            t2.network.removeNode(n)
+            
+            assert set(t.externalBuckets) == set(t.network.externalBuckets)
 
-        for n in toRemove:
-            t1.network.addNode(n)
+            g = t.network.toGraph()
+            basis = networkx.cycles.cycle_basis(t.network.toGraph())
 
-        # Merge any rank-1 or rank-2 objects
-        done = set()
-        while len(done.intersection(t1.network.nodes)) < len(t1.network.nodes):
-            n = next(iter(t1.network.nodes.difference(done)))
-            if n.tensor.rank <= 2:
-                nodes = t1.network.internalConnected(n)
-                if len(nodes) > 0:
-                    t1.network.mergeNodes(n, nodes.pop())
+        nodes2 = list(t.network.nodes)
+
+        for n in nodes2:
+            if n.id in excludeIDs:
+                t.removeNode(n)
+
+        for b in t.externalBuckets:
+            b.link = None
+
+        for nid in excludeIDs:
+            assert nid not in set(n.id for n in t.network.nodes)
+
+        return t, correction, onLoopBids
+
+
+    def contract(self, ind, other, otherInd, front=True, elimLoops=True):
+        t = super().contract(ind, other, otherInd, front=front)
+        if elimLoops:
+            # Merge any rank-1 or rank-2 objects
+            done = set()
+            while len(done.intersection(t.network.nodes)) < len(t.network.nodes):
+                n = next(iter(t.network.nodes.difference(done)))
+                if n.tensor.rank <= 2:
+                    nodes = t.network.internalConnected(n)
+                    if len(nodes) > 0:
+                        t.network.mergeNodes(n, nodes.pop())
+                    else:
+                        done.add(n)
                 else:
                     done.add(n)
+            t.eliminateLoops()
+        return t
+
+    def cutLoop(self, loop, cutIndex=None):
+        logger.debug('Cutting loop.')
+        self.network.check()
+
+        # Form the loop network
+        net = self.copySubset(loop)
+        bids = list([b.id for b in net.externalBuckets])
+
+        # Form the environment network
+        environment, correction, onLoopBids = self.artificialCut(loop)
+        assert environment.network.externalBuckets == set(environment.externalBuckets)
+
+        # Associate bucket indices between the loop and the environment
+        otherBids = []
+        for i,b in enumerate(net.externalBuckets):
+            ind = list(l.id for l in loop).index(b.node.id)
+            ind2 = list(b2.id for b2 in loop[ind].buckets).index(b.id)
+            if loop[ind].buckets[ind2].linked and b.id not in onLoopBids:
+                otherBids.append(loop[ind].buckets[ind2].otherBucket.id)
             else:
-                done.add(n)
+                n = Node(ArrayTensor(np.identity(net.externalBuckets[i].size)))
+                environment.network.addNode(n)
+                environment.externalBuckets.append(n.buckets[0])
+                environment.externalBuckets.append(n.buckets[1])
+                # We've just added two buckets, so we associate one with the loop
+                # and one with the environment
+                otherBids.append(n.buckets[0].id)
+                
+        assert environment.network.externalBuckets == set(environment.externalBuckets)
+        
+        # Testing code
+        ranks, costs, lids = cutSVD(net, environment, self.accuracy, bids, otherBids)
+        
+        ind = np.argmin(costs)
+        
+        ranks = ranks[ind]
+        ranks[ranks == 0] = 1
 
-        t1.externalBuckets = extB
-        assert t1.network.externalBuckets == set(t1.externalBuckets)
+        # Optimize
+        correction = 1.
+        logger.debug('Correction factor:' + str(correction))
+        net, inds = cut(net, self.accuracy / correction, environment, bids, otherBids, ranks, lids)
+        logger.debug('Correction factor:' + str(correction))
 
-        for n in t1.network.nodes:
-            assert n.tensor.rank <= 3
+        # Throw the new tensors back in
+        num = 0
+        for n in net.network.nodes:
+            for m in self.network.nodes:
+                bidsn = list(b.id for b in n.buckets)
+                bidsm = list(b.id for b in m.buckets)
+                if len(set(bidsn).intersection(bidsm)) > 0:
+                    m.tensor = n.tensor
+                    num += 1
 
-        assert t1.rank == self.rank + other.rank - 2 * len(ind)
+        assert num == len(loop)
 
-        return t1
+        self.network.cutLinks()
 
-    def eliminateLoops(self, otherNodes, plot=False):
-        global counter0
-        tm = traceMin(self.network, otherNodes)
+        self.network.check()
 
+        logger.debug('Cut.')
+
+
+    def eliminateLoops(self):
         while len(networkx.cycles.cycle_basis(self.network.toGraph())) > 0:
-            if plot:
-                plotter = makePlotter('PNG/' + str(counter0))
-                plotter = plotter(self.network.toGraph())
+            todo = 1
+            while todo > 0:
+                # Contract rank 2 objects
+                self.contractRank2()
 
-            logger.debug('Cycle utility is ' +
-                         str(tm.util) +
-                         ' and there are ' +
-                         str(len(networkx.cycles.cycle_basis(self.network.toGraph()))) +
-                         ' cycles remaining.')
+                # Contract along double links
+                done = set()
+                while len(
+                    done.intersection(
+                        self.network.nodes)) < len(
+                        self.network.nodes):
+                    n = next(iter(self.network.nodes.difference(done)))
+                    nodes = self.network.internalConnected(n)
+                    merged = False
+                    for n2 in nodes:
+                        if len(n.findLinks(n2)) > 1:
+                            self.network.mergeNodes(n, n2)
+                            merged = True
+                    if not merged:
+                        done.add(n)
 
-            merged = tm.mergeSmall()
+                # See if done
+                todo = 0
+                for n in self.network.nodes:
+                    if n.tensor.rank == 2 and len(self.network.internalConnected(n)):
+                        todo += 1
+                    for m in self.network.internalConnected(n):
+                        if len(n.linksConnecting(m)) > 1:
+                            todo += 1
 
-            if not merged:
-                best = tm.bestSwap()
-                tm.swap(best[1], best[2], best[3])
+            cycles = sorted(list(networkx.cycles.cycle_basis(self.network.toGraph())), key=len)
+            if len(cycles) > 0:
+                print('Cycles:',len(cycles), list(len(c) for c in cycles))
+                self.cutLoop(cycles[0])
+                self.contractRank2()
 
-            logger.debug(str(self.network))
-
-        counter0 += 1
         assert len(networkx.cycles.cycle_basis(self.network.toGraph())) == 0
 
     def trace(self, ind0, ind1):
@@ -199,79 +255,11 @@ class TreeTensor(Tensor):
 
         Returns a Tensor containing the trace over all of the pairs of indices.
         '''
-        arr = self.array
 
-        ind0 = list(ind0)
-        ind1 = list(ind1)
-
-        t = deepcopy(self)
-
-        for i in range(len(ind0)):
-            b1 = t.externalBuckets[ind0[i]]
-            b2 = t.externalBuckets[ind1[i]]
-
-            t.network.trace(b1, b2)
-
-            t.externalBuckets.remove(b1)
-            t.externalBuckets.remove(b2)
-
-            for j in range(len(ind0)):
-                d0 = 0
-                d1 = 0
-
-                if ind0[j] > ind0[i]:
-                    d0 += 1
-                if ind0[j] > ind1[i]:
-                    d0 += 1
-
-                if ind1[j] > ind0[i]:
-                    d1 += 1
-                if ind1[j] > ind1[i]:
-                    d1 += 1
-
-                ind0[j] -= d0
-                ind1[j] -= d1
-
+        t = super().trace(ind0, ind1)
+        t.eliminateLoops()
         return t
-
-    def flatten(self, inds):
-        '''
-        This method merges the listed external indices using a tree tensor
-        by attaching the identity tensor to all of them and to a new
-        external bucket. It then returns the new tree tensor.
-        '''
-
-        buckets = [self.externalBuckets[i] for i in inds]
-        shape = [self.shape[i] for i in inds]
-
-        # Create identity array
-        shape.append(np.product(shape))
-        iden = np.identity(shape[-1])
-        iden = np.reshape(iden, shape)
-
-        # Create Tree Tensor holding the identity
-        tens = ArrayTensor(iden)
-        tn = TreeTensor(self.accuracy)
-        tn.addTensor(tens)
-
-        # Contract the identity
-        ttens = self.contract(inds, tn, list(range(len(buckets))))
-
-        shape2 = [self.shape[i] for i in range(self.rank) if i not in inds]
-        shape2.append(shape[-1])
-        for i in range(len(shape2)):
-            assert ttens.shape[i] == shape2[i]
-
-        return ttens
-
-    def getIndexFactor(self, ind):
-        return self.externalBuckets[ind].node.tensor.scaledArray, self.externalBuckets[ind].index
-
-    def setIndexFactor(self, ind, arr):
-        tt = deepcopy(self)
-        tt.externalBuckets[ind].node.tensor = ArrayTensor(
-            arr, logScalar=tt.externalBuckets[ind].node.tensor.logScalar)
-        return tt
+  
 
     def optimize(self):
         '''
@@ -284,41 +272,10 @@ class TreeTensor(Tensor):
         for n in self.network.nodes:
             s2 += n.tensor.size
 
-        logger.info('Stage 1: Contracting Rank-2 Tensors.')
+        logger.info('Stage 1: Contracting Rank-2 Tensors and Double Links.')
+        self.contractRank2()
 
-        done = set()
-        while len(
-            done.intersection(
-                self.network.nodes)) < len(
-                self.network.nodes):
-            n = next(iter(self.network.nodes.difference(done)))
-            if n.tensor.rank == 2:
-                nodes = self.network.internalConnected(n)
-                if len(nodes) > 0:
-                    self.network.mergeNodes(n, nodes.pop())
-                else:
-                    done.add(n)
-            else:
-                done.add(n)
-
-        logger.info('Stage 2: Contracting Double Links.')
-
-        done = set()
-        while len(
-            done.intersection(
-                self.network.nodes)) < len(
-                self.network.nodes):
-            n = next(iter(self.network.nodes.difference(done)))
-            nodes = self.network.internalConnected(n)
-            merged = False
-            for n2 in nodes:
-                if len(n.findLinks(n2)) > 1:
-                    self.network.mergeNodes(n, n2)
-                    merged = True
-            if not merged:
-                done.add(n)
-
-        logger.info('Stage 3: Optimizing Links.')
+        logger.info('Stage 2: Optimizing Links.')
 
         while len(
             self.optimized.intersection(
