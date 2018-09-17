@@ -161,9 +161,6 @@ class optTensor:
         res = lsqr(N, W)[0]
         res = np.reshape(res, sh)
 
-        if np.max(np.abs(res)) == 0:
-            res += 1e-5
-
         try:
             self.guess.externalBuckets[index].node.tensor = ArrayTensor(res)
         except:
