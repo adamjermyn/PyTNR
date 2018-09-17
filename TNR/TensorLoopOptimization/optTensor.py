@@ -78,13 +78,10 @@ class optTensor:
         # Grad = E (G.E) - 2 (T.E)._.E
         self.environment = environment
         self.loop = loop
+        self.loopNorm = np.exp(envNorm(self.loop, self.environment)) # This is invariant.
         self.guess = rank1guess(loop, self.environment)
         self.ranks = tuple([1 for _ in range(len(self.loop.externalBuckets))])
         self.rands = list([self.random() for _ in range(20)])
-
-    @property
-    def loopNorm(self):
-        return np.exp(envNorm(self.loop, self.environment))
 
     @property
     def guessNorm(self):
