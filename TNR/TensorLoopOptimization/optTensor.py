@@ -87,7 +87,6 @@ class optTensor:
     def guessNorm(self):
         return np.exp(envNorm(self.guess, self.environment))
 
-
     @property
     def error(self):
         t1 = self.loop.copy()
@@ -97,10 +96,7 @@ class optTensor:
 
         c = c1.contract(range(c1.rank), t2, range(c1.rank), elimLoops=False)
 
-        return np.exp(envNorm(t1, self.environment)) + np.exp(envNorm(t2, self.environment)) - 2 * c.array
-
-    def __hash__(self):
-        return hash(self.ranks)
+        return np.exp(2*envNorm(t1, self.environment)) + np.exp(2*envNorm(t2, self.environment)) - 2 * c.array
 
     def __str__(self):
         return str(self.ranks)
