@@ -30,6 +30,7 @@ setup(
 	'TNR.Tensor',
 	'TNR.Test',
 	'TNR.Utilities',
+	'TNR.NetworkTensor',
 	'TNR.TreeTensor',
 	'TNR.TensorLoopOptimization'
 	],
