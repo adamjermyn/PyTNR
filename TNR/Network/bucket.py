@@ -2,6 +2,14 @@ import itertools
 
 
 class Bucket:
+    '''
+    A Bucket is a means of externally referencing an index of a tensor which handles the way in which
+    the tensor is linked to other tensors.
+
+    Each Bucket references exactly one index and up to one link, but a Bucket may be associated with
+    multiple Nodes (and hence Tensors).
+    '''
+    
     newid = itertools.count().__next__
 
     def __init__(self, id=None):
