@@ -30,25 +30,6 @@ def envNorm(t, env):
 
     return 0.5 * c.logNorm
 
-def remove(t, index):
-    '''
-    Returns a copy of the tensor with new bucket ID's and node ID's with
-    the node associated with the specified external index removed.
-
-    Also returns a dictionary mapping from external bucket ID's on the
-    input tensor to those on the output tensor.
-    '''
-    d = {}
-
-    tNew = t.copy()
-    n = t.externalBuckets[index].node
-    nNew = tNew.externalBuckets[index].node
-    for b,bNew in zip(*(n.buckets, nNew.buckets)):
-        d[b.id] = bNew.id
-
-    tNew.removeNode(nNew)
-    return tNew, d
-
 def rank1guess(base, env):
     x = tuple(1 for _ in range(len(base.externalBuckets)))
     start = deepcopy(base)
