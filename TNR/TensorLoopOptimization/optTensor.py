@@ -201,12 +201,14 @@ class optTensor:
 
         while dlnerr > stop and err1 > stopErr:
             for i in range(self.loop.rank):
-                self.optimizeIndex(i)
-            err2 = self.error
-            derr = (err1 - err2)
-            dlnerr = derr / err1
-            err1 = err2
-            logger.debug('Error: ' + str(err1) + ', ' + str(dlnerr))
+                err2, local_norm = self.optimizeIndex(i)
+                derr = (err1 - err2)
+                dlnerr = derr / err1
+                logger.debug('Error: ' + str(err2) + ', ' + str(err1) + ', ' + str(dlnerr) + ', ' + str(local_norm))
+       #         assert err2 < err1 + 1e-10
+                err1 = err2
+
+        assert err1 < stopErr
 
         return err1
 
