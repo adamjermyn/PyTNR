@@ -200,12 +200,12 @@ class optTensor:
         return err, local_norm
 
 
-    def optimizeSweep(self, stopErr, stop=0.01):
+    def optimizeSweep(self, stopErr):
         # Optimization loop
         dlnerr = 1
         err1 = 1e100
 
-        while dlnerr > stop and err1 > stopErr:
+        while err1 > stopErr:
             for i in range(self.loop.rank):
                 err2, local_norm = self.optimizeIndex(i)
                 derr = (err1 - err2)
