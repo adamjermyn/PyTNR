@@ -155,12 +155,31 @@ class optTensor:
 
         N_bak = np.array(N)
         W_bak = np.array(W)
+
         # Flatten, solve, unflatten
 
         sh = W.shape
         W = np.reshape(W, (-1,))
         N = np.reshape(N, (len(W), len(W)))
-        res = lsqr(N, W)[0]
+        
+        try:
+            res = np.linalg.solve(N, W)
+        except np.linalg.LinAlgError:
+            logger.warning('Linear solve failed. Falling back on least squares.')
+            ret = lsqr(N, W, atol=1e-14, btol=1e-14, iter_lim=1e4, conlim=1e20)
+            res = ret[0]
+            istop = ret[1]
+            if istop == 1 or istop == 4:
+                logger.debug('Least squares found an exact solution.')
+            elif istop == 2 or istop == 5:
+                logger.debug('Least squares solve proceeded to desired tolerance.')
+            elif istop == 3 or istop == 6:
+                logger.warning('Least squares exited prematurely due to ill-conditioning.')
+                logger.warning('LSQR L2 Norm Error: ' + str(ret[4]))
+            elif istop == 7:
+                logger.warning('Least squares exited due to iteration limit.')
+                logger.warning('LSQR L2 Norm Error: ' + str(ret[4]))                
+
         res = np.reshape(res, sh)
 
         local_norm = np.einsum('ijk,ijklmn,lmn->',res,N_bak,res)
