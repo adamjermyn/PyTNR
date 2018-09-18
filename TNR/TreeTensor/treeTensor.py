@@ -17,6 +17,7 @@ from TNR.Network.bucket import Bucket
 from TNR.Utilities.svd import entropy
 from TNR.TensorLoopOptimization.optimizer import cut
 from TNR.TensorLoopOptimization.densityMatrix import cutSVD
+from TNR.Utilities.graphPlotter import plot, plotGraph
 
 counter0 = 0
 
@@ -53,72 +54,68 @@ class TreeTensor(NetworkTensor):
 
     def artificialCut(self, exclude):
         '''
-        Copies the network, cuts all but one loop, and removes the ndoes in that loop.
+        Copies the network, cuts all but one loop, and removes the nodes in that loop.
         '''
-        
+        # Ensures we don't break the original
         t = deepcopy(self)
-        g = t.network.toGraph()
-        basis = networkx.cycles.cycle_basis(t.network.toGraph())
 
-        correction = 1.
-        excludeIDs = list(n.id for n in exclude)
-
-        assert set(t.externalBuckets) == set(t.network.externalBuckets)
-
-        # Sometimes it is necessary to cut a bond running from the loop
-        # to an adjacent tensor (this is needed only when a single tensor
-        # outside the loop joins two tensors in the loop). In this case
-        # the later logic will attempt to recreate this bond, so we have
-        # to explicitly track the bucket ID's involved.
-        onLoopBids = set()
-
-        while len(basis) > 1:
-            shuffle(basis)
-            cycle = basis[0]
-            done = False
-            
-            for i in range(len(cycle)):
-                if cycle[i-1].id not in excludeIDs and cycle[i].id not in excludeIDs:
-                    link = cycle[i-1].findLink(cycle[i])
-                    correction *= link.bucket1.size
-                    t.network.removeLink(link)
-                    t.externalBuckets.append(link.bucket1)
-                    t.externalBuckets.append(link.bucket2)
-                    done = True
-                    break
-                    
-            if not done:
-                for i in range(len(cycle)):
-                    if cycle[i-1].id not in excludeIDs or cycle[i].id not in excludeIDs:
-                        link = cycle[i-1].findLink(cycle[i])
-                        onLoopBids.add(link.bucket1.id)
-                        onLoopBids.add(link.bucket2.id)
-                        correction *= link.bucket1.size
-                        t.network.removeLink(link)
-                        t.externalBuckets.append(link.bucket1)
-                        t.externalBuckets.append(link.bucket2)
-                        done = True
-                        break
-
-            
-            assert set(t.externalBuckets) == set(t.network.externalBuckets)
-
-            g = t.network.toGraph()
-            basis = networkx.cycles.cycle_basis(t.network.toGraph())
-
+        # Helper lists
         nodes2 = list(t.network.nodes)
+        excludeIDs = list(n.id for n in exclude)
+                
+        # Prepare graph
+#        plot(t.network, fname='init.pdf')
+        indicator = lambda x: -1e100 if x[0].id in excludeIDs and x[1].id in excludeIDs else 0
+        g = networkx.Graph()
+        g.add_nodes_from(t.network.nodes)
+        for n in t.network.nodes:
+            for m in t.network.internalConnected(n):
+                g.add_edge(n, m, weight=indicator((n,m)))
+    
+#        print(list(indicator(x) for x in g.edges()))
+    
+        # Make spanning tree
+        tree = networkx.minimum_spanning_tree(g)
+#        print(list(x[2] for x in tree.edges(data=True)))
+#        plotGraph(tree, fname='tree.pdf')
+        
+        # Cut all links not in the spanning tree
+        onLoopBids = []
+        for n in nodes2:
+            for b in n.buckets:
+                if b.linked:
+                    n2 = b.otherNode
+                    if (n,n2) not in tree.edges:
+                        t.externalBuckets.append(b.link.bucket1)
+                        t.externalBuckets.append(b.link.bucket2)
+                        if n2.id in excludeIDs and n.id not in excludeIDs:
+                            onLoopBids.append(b.otherBucket.id)
+                        elif n.id in excludeIDs and n2.id not in excludeIDs:
+                            onLoopBids.append(b.id)
+                        elif n.id in excludeIDs and n2.id in excludeIDs:
+                            assert len(n.findLinks(n2)) == 1
+                        t.network.removeLink(b.link)
+    
+    
+#        plot(t.network, fname='pre-loop-removal.pdf')
 
+        # Cut enough links to detach the loop nodes from one another
+
+
+        # Remove the loop
         for n in nodes2:
             if n.id in excludeIDs:
                 t.removeNode(n)
 
+        # Remove outgoing legs
         for b in t.externalBuckets:
             b.link = None
+            
+#        plot(t.network, fname='final.pdf')
 
-        for nid in excludeIDs:
-            assert nid not in set(n.id for n in t.network.nodes)
+#        print(len(excludeIDs), len(onLoopBids), excludeIDs)
 
-        return t, correction, onLoopBids
+        return t, onLoopBids
 
 
     def contract(self, ind, other, otherInd, front=True, elimLoops=True):
@@ -148,7 +145,7 @@ class TreeTensor(NetworkTensor):
         bids = list([b.id for b in net.externalBuckets])
 
         # Form the environment network
-        environment, correction, onLoopBids = self.artificialCut(loop)
+        environment, onLoopBids = self.artificialCut(loop)
         assert environment.network.externalBuckets == set(environment.externalBuckets)
 
         # Associate bucket indices between the loop and the environment
@@ -169,6 +166,8 @@ class TreeTensor(NetworkTensor):
                 
         assert environment.network.externalBuckets == set(environment.externalBuckets)
         
+        
+        
         # Testing code
         ranks, costs, lids = cutSVD(net, environment, self.accuracy, bids, otherBids)
         
@@ -178,10 +177,7 @@ class TreeTensor(NetworkTensor):
         ranks[ranks == 0] = 1
 
         # Optimize
-        correction = 1.
-        logger.debug('Correction factor:' + str(correction))
-        net, inds = cut(net, self.accuracy / correction, environment, bids, otherBids, ranks, lids)
-        logger.debug('Correction factor:' + str(correction))
+        net, inds = cut(net, self.accuracy, environment, bids, otherBids, ranks, lids)
 
         # Throw the new tensors back in
         num = 0
