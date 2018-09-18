@@ -184,8 +184,12 @@ class optTensor:
 
         local_norm = np.einsum('ijk,ijklmn,lmn->',res,N_bak,res)
         err = local_norm + self.loopNorm - 2*np.einsum('ijk,ijk->',res,W_bak)
+        
+
         try:
             self.guess.externalBuckets[index].node.tensor = ArrayTensor(res)
+            logger.debug('Internal Norm: ' + str(local_norm) + ', ' + str(self.guessNorm))
+            logger.debug('Internal Error: ' + str(err) + ', ' + str(self.error))
         except:
             print(norm(self.environment))
             print(N)
@@ -194,6 +198,8 @@ class optTensor:
             exit()
 
         return err, local_norm
+
+
     def optimizeSweep(self, stopErr, stop=0.01):
         # Optimization loop
         dlnerr = 1
