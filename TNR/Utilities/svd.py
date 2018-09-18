@@ -57,6 +57,33 @@ def compareSVD(matrix, u, s, v):
                          matrix)**2) / np.sum(np.abs(matrix)**2)
 
 
+def environmentSVD(matrix, environmentLeft, environmentRight, precision):
+    '''
+    Computes the SVD of matrix with respect to multiplication on the left by
+    environmentLeft and on the right by environmentRight.
+    
+    :param matrix: 
+    :param environmentLeft: 
+    :param environmentRight: 
+    :param precision: 
+    :return: 
+    '''
+    
+    mat = np.dot(environmentLeft, matrix)
+    mat = np.dot(mat, environmentRight)
+    
+    u, s, v = svdByPrecision(mat, precision, True)
+    
+    us = np.einsum('ij,j->ij',u,np.sqrt(s))
+    vs = np.einsum('ij,j->ij',v,np.sqrt(s))
+
+    A = np.linalg.solve(environmentLeft, us)
+    B = np.linalg.solve(environmentRight, vs)
+    
+    B = np.transpose(B)
+    
+    return A, B
+
 def sortSVD(decomp):
     '''
     This method sorts the singular values of an SVD.
