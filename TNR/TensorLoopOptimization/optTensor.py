@@ -30,25 +30,6 @@ def envNorm(t, env):
 
     return 0.5 * c.logNorm
 
-def remove(t, index):
-    '''
-    Returns a copy of the tensor with new bucket ID's and node ID's with
-    the node associated with the specified external index removed.
-
-    Also returns a dictionary mapping from external bucket ID's on the
-    input tensor to those on the output tensor.
-    '''
-    d = {}
-
-    tNew = t.copy()
-    n = t.externalBuckets[index].node
-    nNew = tNew.externalBuckets[index].node
-    for b,bNew in zip(*(n.buckets, nNew.buckets)):
-        d[b.id] = bNew.id
-
-    tNew.removeNode(nNew)
-    return tNew, d
-
 def rank1guess(base, env):
     x = tuple(1 for _ in range(len(base.externalBuckets)))
     start = deepcopy(base)
@@ -78,32 +59,25 @@ class optTensor:
         # Grad = E (G.E) - 2 (T.E)._.E
         self.environment = environment
         self.loop = loop
+        self.loopNorm = np.exp(2*envNorm(self.loop, self.environment)) # This is invariant.
         self.guess = rank1guess(loop, self.environment)
         self.ranks = tuple([1 for _ in range(len(self.loop.externalBuckets))])
         self.rands = list([self.random() for _ in range(20)])
 
     @property
-    def loopNorm(self):
-        return np.exp(envNorm(self.loop, self.environment))
-
-    @property
     def guessNorm(self):
-        return np.exp(envNorm(self.guess, self.environment))
-
+        return np.exp(2*envNorm(self.guess, self.environment))
 
     @property
     def error(self):
         t1 = self.loop.copy()
         t2 = self.guess.copy()
-
+        
         c1 = t1.contract(range(t1.rank), self.environment, range(t1.rank), elimLoops=False)
 
         c = c1.contract(range(c1.rank), t2, range(c1.rank), elimLoops=False)
 
-        return np.exp(envNorm(t1, self.environment)) + np.exp(envNorm(t2, self.environment)) - 2 * c.array
-
-    def __hash__(self):
-        return hash(self.ranks)
+        return self.loopNorm + self.guessNorm - 2 * c.array
 
     def __str__(self):
         return str(self.ranks)
@@ -179,25 +153,52 @@ class optTensor:
     def optimizeIndex(self, index):
         N, W = self.prepareEnv(index)
 
+        N_bak = np.array(N)
+        W_bak = np.array(W)
+
         # Flatten, solve, unflatten
 
         sh = W.shape
         W = np.reshape(W, (-1,))
         N = np.reshape(N, (len(W), len(W)))
-        res = lsqr(N, W)[0]
+        
+        try:
+            res = np.linalg.solve(N, W)
+        except np.linalg.LinAlgError:
+            logger.warning('Linear solve failed. Falling back on least squares.')
+            ret = lsqr(N, W, atol=1e-14, btol=1e-14, iter_lim=1e4, conlim=1e20)
+            res = ret[0]
+            istop = ret[1]
+            if istop == 1 or istop == 4:
+                logger.debug('Least squares found an exact solution.')
+            elif istop == 2 or istop == 5:
+                logger.debug('Least squares solve proceeded to desired tolerance.')
+            elif istop == 3 or istop == 6:
+                logger.warning('Least squares exited prematurely due to ill-conditioning.')
+                logger.warning('LSQR L2 Norm Error: ' + str(ret[4]))
+            elif istop == 7:
+                logger.warning('Least squares exited due to iteration limit.')
+                logger.warning('LSQR L2 Norm Error: ' + str(ret[4]))                
+
         res = np.reshape(res, sh)
 
-        if np.max(np.abs(res)) == 0:
-            res += 1e-5
+        local_norm = np.einsum('ijk,ijklmn,lmn->',res,N_bak,res)
+        err = local_norm + self.loopNorm - 2*np.einsum('ijk,ijk->',res,W_bak)
+        
 
         try:
             self.guess.externalBuckets[index].node.tensor = ArrayTensor(res)
+            logger.debug('Internal Norm: ' + str(local_norm) + ', ' + str(self.guessNorm))
+            logger.debug('Internal Error: ' + str(err) + ', ' + str(self.error))
         except:
             print(norm(self.environment))
             print(N)
             print(W)
             print(res)
             exit()
+
+        return err, local_norm
+
 
     def optimizeSweep(self, stopErr, stop=0.01):
         # Optimization loop
@@ -206,12 +207,14 @@ class optTensor:
 
         while dlnerr > stop and err1 > stopErr:
             for i in range(self.loop.rank):
-                self.optimizeIndex(i)
-            err2 = self.error
-            derr = (err1 - err2)
-            dlnerr = derr / err1
-            err1 = err2
-            logger.debug('Error: ' + str(err1) + ', ' + str(dlnerr))
+                err2, local_norm = self.optimizeIndex(i)
+                derr = (err1 - err2)
+                dlnerr = derr / err1
+                logger.debug('Error: ' + str(err2) + ', ' + str(err1) + ', ' + str(dlnerr) + ', ' + str(local_norm))
+       #         assert err2 < err1 + 1e-10
+                err1 = err2
+
+        assert err1 < stopErr
 
         return err1
 

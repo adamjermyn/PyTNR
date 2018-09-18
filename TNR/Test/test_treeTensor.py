@@ -41,12 +41,10 @@ def test_contract():
         yt.addTensor(ArrayTensor(y))
 
         zt = xt.contract([0, 1, 4], yt, [2, 3, 4])
-        assert np.sum(
-            (zt.array -
-             np.einsum(
-                 'ijklm,qwijm->klqw',
-                 x,
-                 y))**2) < epsilon
+#        zt = xt.contract([0,1,4],yt,[2,3,4],elimLoops=False)
+        print(zt.array)
+        print(np.einsum('ijklm,qwijm->klqw',x,y))
+        assert np.sum((zt.array - np.einsum('ijklm,qwijm->klqw',x,y))**2) < epsilon
 
         zt = yt.contract([0, 1, 4], xt, [2, 3, 4])
         assert np.sum(
