@@ -66,18 +66,18 @@ class optTensor:
 
     @property
     def guessNorm(self):
-        return np.exp(envNorm(self.guess, self.environment))
+        return np.exp(2*envNorm(self.guess, self.environment))
 
     @property
     def error(self):
         t1 = self.loop.copy()
         t2 = self.guess.copy()
-
+        
         c1 = t1.contract(range(t1.rank), self.environment, range(t1.rank), elimLoops=False)
 
         c = c1.contract(range(c1.rank), t2, range(c1.rank), elimLoops=False)
 
-        return np.exp(2*envNorm(t1, self.environment)) + np.exp(2*envNorm(t2, self.environment)) - 2 * c.array
+        return self.loopNorm + self.guessNorm - 2 * c.array
 
     def __str__(self):
         return str(self.ranks)
@@ -153,6 +153,8 @@ class optTensor:
     def optimizeIndex(self, index):
         N, W = self.prepareEnv(index)
 
+        N_bak = np.array(N)
+        W_bak = np.array(W)
         # Flatten, solve, unflatten
 
         sh = W.shape
@@ -161,6 +163,8 @@ class optTensor:
         res = lsqr(N, W)[0]
         res = np.reshape(res, sh)
 
+        local_norm = np.einsum('ijk,ijklmn,lmn->',res,N_bak,res)
+        err = local_norm + self.loopNorm - 2*np.einsum('ijk,ijk->',res,W_bak)
         try:
             self.guess.externalBuckets[index].node.tensor = ArrayTensor(res)
         except:
@@ -170,6 +174,7 @@ class optTensor:
             print(res)
             exit()
 
+        return err, local_norm
     def optimizeSweep(self, stopErr, stop=0.01):
         # Optimization loop
         dlnerr = 1
