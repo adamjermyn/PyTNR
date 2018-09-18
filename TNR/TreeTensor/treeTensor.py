@@ -175,6 +175,8 @@ class TreeTensor(NetworkTensor):
         
         ranks = ranks[ind]
         ranks[ranks == 0] = 1
+        
+        logger.debug('Final ranks: ' + str(ranks))
 
         # Optimize
         net, inds = cut(net, self.accuracy, environment, bids, otherBids, ranks, lids)
