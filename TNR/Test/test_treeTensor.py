@@ -3,7 +3,7 @@ from scipy.linalg import expm
 from TNR.TreeTensor.treeTensor import TreeTensor
 from TNR.Tensor.arrayTensor import ArrayTensor
 
-epsilon = 1e-15
+epsilon = 1e-10
 
 
 def test_init():
