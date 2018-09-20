@@ -49,6 +49,10 @@ runParams['svdBondCutoff'] = 0.1
 
 runParams['mem_limit'] = 2**33
 
+# Sets machine precision
+
+runParams['epsilon'] = 1e-10
+
 # Read config file if possible
 
 home = str(Path.home())
