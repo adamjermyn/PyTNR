@@ -16,6 +16,7 @@ from TNR.Network.link import Link
 from TNR.Network.bucket import Bucket
 from TNR.Utilities.svd import entropy
 from TNR.TensorLoopOptimization.optimizer import cut
+from TNR.TensorLoopOptimization.svdCut import svdCut
 from TNR.TensorLoopOptimization.densityMatrix import cutSVD
 from TNR.Utilities.graphPlotter import plot, plotGraph
 
@@ -165,12 +166,10 @@ class TreeTensor(NetworkTensor):
                 otherBids.append(n.buckets[0].id)
                 
         assert environment.network.externalBuckets == set(environment.externalBuckets)
-        
-        
-        
-        # Testing code
-        ranks, costs, lids = cutSVD(net, environment, self.accuracy, bids, otherBids)
-        
+
+        # Determine optimal cut
+        ranks, costs, lids = cutSVD(net, environment, self.accuracy, bids, otherBids)        
+
         ind = np.argmin(costs)
         
         ranks = ranks[ind]
@@ -178,23 +177,53 @@ class TreeTensor(NetworkTensor):
         
         logger.debug('Final ranks: ' + str(ranks))
 
-        # Optimize
-        net, inds = cut(net, self.accuracy, environment, bids, otherBids, ranks, lids)
-
-        # Throw the new tensors back in
-        num = 0
+        # Cut
+        for i,r in enumerate(ranks):
+            if r == 1:
+                lid = lids[i]
         for n in net.network.nodes:
-            for m in self.network.nodes:
-                bidsn = list(b.id for b in n.buckets)
-                bidsm = list(b.id for b in m.buckets)
-                if len(set(bidsn).intersection(bidsm)) > 0:
-                    m.tensor = n.tensor
-                    num += 1
+            for b in n.buckets:
+                if b.linked and b.link.id == lid:
+                    l = b.link
 
-        assert num == len(loop)
+        newNet = svdCut(net, environment, l, bids, otherBids)
 
+        # Now put the new nodes in the network and replace the loop
+        netBids = list(b.id for b in net.externalBuckets)
+
+        toRemove = []
+        removedBuckets = []
+        for n in self.network.nodes:
+            nbids = set(b.id for b in n.buckets)
+            if len(nbids.intersection(netBids)) > 0:
+                toRemove.append(n)
+        for n in toRemove:
+            self.network.removeNode(n)
+            removedBuckets.extend(n.buckets)
+                        
+        existingBuckets = {}
+        for b in removedBuckets:
+            existingBuckets[b.id] = b
+        
+        newNodes = list(newNet.network.nodes)
+        for n in newNodes:
+            newNet.network.removeNode(n)
+            
+            newBuckets = []
+            for b in n.buckets:
+                if b.id in netBids:
+                    oldB = existingBuckets[b.id]
+                    newBuckets.append(oldB)
+                else:
+                    newBuckets.append(b)
+
+            n.buckets = newBuckets
+            for b in n.buckets:
+                b.node = n
+
+            self.network.addNode(n)
+        
         self.network.cutLinks()
-
         self.network.check()
 
         logger.debug('Cut.')
