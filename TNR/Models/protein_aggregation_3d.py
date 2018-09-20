@@ -104,7 +104,7 @@ def PA3D(nX, nY, nZ, h, J, q, accuracy):
     for i in range(nX):
         for j in range(nY):
             for k in range(nZ):
-                bondL[i][j].append(Node(tt.copy()))
+                bondL[i][j].append(Node(tt.copy()[0]))
 
     # Attach links
     for i in range(nX):

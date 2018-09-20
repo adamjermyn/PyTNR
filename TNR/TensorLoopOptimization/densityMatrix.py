@@ -34,7 +34,7 @@ def cutSVD(loop, environment, tolerance, bids, otherBids):
 
     # Contract environment against itself
     nonEnvInds = list(i for i in range(environment.rank) if i not in envInds)
-    env = environment.contract(nonEnvInds, environment.copy(), nonEnvInds, elimLoops=False)
+    env = environment.contract(nonEnvInds, environment.copy()[0], nonEnvInds, elimLoops=False)
     env.network.contractRank2()
     
     # Identify new environment indexing
@@ -45,7 +45,7 @@ def cutSVD(loop, environment, tolerance, bids, otherBids):
         envInds.append(envBids.index(bid))
     
     # Copy the loop and grab its bucket indices
-    loop2 = loop.copy()
+    loop2 = loop.copy()[0]
     loopBids = list(b.id for b in loop.externalBuckets)
     loopBids2 = list(b.id for b in loop2.externalBuckets)
     bdict = {bid:nbid for bid,nbid in zip(*(loopBids, loopBids2))}
