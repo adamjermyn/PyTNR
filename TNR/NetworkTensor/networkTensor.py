@@ -45,17 +45,24 @@ class NetworkTensor(Tensor):
         return new        
 
     def newIDs(self):
+        nidDict = {}
+        bidDict = {}
         for n in self.network.nodes:
+            nid = n.id
             n.id = Node.newid()
+            nidDict[nid] = n.id
         for b in self.network.buckets:
+            bid = b.id
             b.id = Bucket.newid()
-
+            bidDict[bid] = b.id
+        return nidDict, bidDict
+    
     def copy(self):
         new = deepcopy(self)
-        new.newIDs()
+        nidDict, bidDict = new.newIDs()
         for b in new.externalBuckets:
             b.link = None
-        return new
+        return new, nidDict, bidDict
 
     def addTensor(self, tensor):
         n = Node(tensor, Buckets=[Bucket() for _ in range(tensor.rank)])
@@ -150,7 +157,7 @@ class NetworkTensor(Tensor):
 
             for b in blist:
                 perm.append(bdict[b])
-                
+            
             arr = np.transpose(arr, axes=perm)
             
             arrs.append(arr)
