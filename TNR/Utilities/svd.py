@@ -7,7 +7,7 @@ from scipy.sparse.linalg import svds
 from itertools import combinations
 
 from TNR.Utilities.arrays import permuteIndices
-from TNR.Utilities.linalg import adjoint
+from TNR.Utilities.linalg import adjoint, linear_solve, sqrtm_psd
 
 from TNR.Utilities.logger import makeLogger
 from TNR import config
@@ -69,19 +69,31 @@ def environmentSVD(matrix, environmentLeft, environmentRight, precision):
     :return: 
     '''
     
+    environmentLeft = sqrtm_psd(environmentLeft)
+    environmentRight = sqrtm_psd(environmentRight)
+
     mat = np.dot(environmentLeft, matrix)
     mat = np.dot(mat, environmentRight)
     
-    u, s, v = svdByPrecision(mat, precision, True)
+    u, s, v = sortSVD(np.linalg.svd(mat))
+    
+    s = s[::-1]
+    cp = np.cumsum(s**2) / np.sum(s**2)
+    s = s[::-1]
+
+    ind = np.searchsorted(cp, precision, side='left')
+    ind = len(cp) - ind
+
+    u = u[:, :ind]
+    s = s[:ind]
+    v = v[:ind, :]
     
     us = np.einsum('ij,j->ij',u,np.sqrt(s))
-    vs = np.einsum('ij,j->ij',v,np.sqrt(s))
+    vs = np.einsum('ij,j->ij',np.conjugate(np.transpose(v)),np.sqrt(s))
 
-    A = np.linalg.solve(environmentLeft, us)
-    B = np.linalg.solve(environmentRight, vs)
-    
-    B = np.transpose(B)
-    
+    A = linear_solve(environmentLeft, us)
+    B = linear_solve(environmentRight, vs)
+        
     return A, B
 
 def sortSVD(decomp):
