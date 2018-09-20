@@ -1,5 +1,8 @@
 import numpy as np
 
+from TNR.Utilities.logger import makeLogger
+from TNR import config
+logger = makeLogger(__name__, config.levels['linalg'])
 ##################################
 # General Linear Algebra Functions
 ##################################
