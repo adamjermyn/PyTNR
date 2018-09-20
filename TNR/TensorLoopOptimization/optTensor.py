@@ -1,8 +1,7 @@
 import numpy as np
 from copy import deepcopy
-from scipy.sparse.linalg import lsqr
-
 from TNR.Tensor.arrayTensor import ArrayTensor
+from TNR.Utilities.linalg import linear_solve
 
 from TNR.Utilities.logger import makeLogger
 from TNR import config
@@ -162,24 +161,7 @@ class optTensor:
         W = np.reshape(W, (-1,))
         N = np.reshape(N, (len(W), len(W)))
         
-        try:
-            res = np.linalg.solve(N, W)
-        except np.linalg.LinAlgError:
-            logger.warning('Linear solve failed. Falling back on least squares.')
-            ret = lsqr(N, W, atol=1e-14, btol=1e-14, iter_lim=1e4, conlim=1e20)
-            res = ret[0]
-            istop = ret[1]
-            if istop == 1 or istop == 4:
-                logger.debug('Least squares found an exact solution.')
-            elif istop == 2 or istop == 5:
-                logger.debug('Least squares solve proceeded to desired tolerance.')
-            elif istop == 3 or istop == 6:
-                logger.warning('Least squares exited prematurely due to ill-conditioning.')
-                logger.warning('LSQR L2 Norm Error: ' + str(ret[4]))
-            elif istop == 7:
-                logger.warning('Least squares exited due to iteration limit.')
-                logger.warning('LSQR L2 Norm Error: ' + str(ret[4]))                
-
+        res = linear_solve(N, W)
         res = np.reshape(res, sh)
 
         local_norm = np.einsum('ijk,ijklmn,lmn->',res,N_bak,res)
