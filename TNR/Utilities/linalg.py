@@ -1,8 +1,11 @@
 import numpy as np
+from scipy.sparse.linalg import lsqr
+from scipy.linalg import eigh
 
 from TNR.Utilities.logger import makeLogger
 from TNR import config
 logger = makeLogger(__name__, config.levels['linalg'])
+
 ##################################
 # General Linear Algebra Functions
 ##################################
