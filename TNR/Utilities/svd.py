@@ -7,7 +7,7 @@ from scipy.sparse.linalg import svds
 from itertools import combinations
 
 from TNR.Utilities.arrays import permuteIndices
-from TNR.Utilities.linalg import adjoint, linear_solve, sqrtm_psd
+from TNR.Utilities.linalg import adjoint, linear_solve, sqrtm_psd, L2error
 
 from TNR.Utilities.logger import makeLogger
 from TNR import config
@@ -80,7 +80,7 @@ def environmentSVD(matrix, environmentLeft, environmentRight, precision):
     s = s[::-1]
     cp = np.cumsum(s**2) / np.sum(s**2)
     s = s[::-1]
-
+    
     ind = np.searchsorted(cp, precision, side='left')
     ind = len(cp) - ind
 
@@ -91,8 +91,20 @@ def environmentSVD(matrix, environmentLeft, environmentRight, precision):
     us = np.einsum('ij,j->ij',u,np.sqrt(s))
     vs = np.einsum('ij,j->ij',np.conjugate(np.transpose(v)),np.sqrt(s))
 
+    assert L2error(mat, np.dot(us, vs.T)) < precision
+
     A = linear_solve(environmentLeft, us)
     B = linear_solve(environmentRight, vs)
+    
+    tempUS = np.dot(environmentLeft, A)
+    tempVS = np.dot(environmentRight, B)
+
+    assert L2error(us, tempUS) < precision
+    assert L2error(vs, tempVS) < precision
+    
+    temp = np.einsum('ij,kj->ik',tempUS, tempVS)
+
+    assert L2error(mat, temp) < precision
         
     return A, B
 
