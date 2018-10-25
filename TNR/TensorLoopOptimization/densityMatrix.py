@@ -177,9 +177,9 @@ def prepareTensors(net, link1, link2, link1p, link2p):
     u = np.dot(u, np.diag(np.sqrt(s)))
     v = np.dot(np.diag(np.sqrt(s)), v)
     
-    
     # Finally we multiply v . arrs[1] . u
-    ret = np.einsum('ij,jk,kl->il', v, arrs[1], u)
+    ret = np.dot(v, arrs[1])
+    ret = np.dot(ret, u)
 
     return ret    
 
