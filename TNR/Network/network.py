@@ -97,7 +97,7 @@ class Network:
         
         args, bids = nodes_to_einsum(net.nodes)
 
-        arr = einsum(*args, optimize='greedy', memory_limit=1e7)
+        arr = einsum(*args, optimize='greedy', memory_limit=-1)
 
         logAcc = sum(n.tensor.logScalar for n in net.nodes)
 
