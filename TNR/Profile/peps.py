@@ -8,7 +8,7 @@ nn = int(sys.argv[1])
 nX = nn
 nY = nn
 
-accuracy = 1e-4
+accuracy = 1e-3
 
 if sys.argv[2] == 'akltd':
     A, B = aklt2d()

@@ -152,7 +152,7 @@ def featureless_su2(c1, c2, c3, c4):
 
 def peps2Dhoneycomb(nX, nY, A, B, accuracy):
     '''
-    
+
     :param nX: Size along one dimension.
     :param nY: Size along the other dimension.
     :param A: Rank-4 array specifying the A-sites. The first index is physical.
@@ -160,9 +160,9 @@ def peps2Dhoneycomb(nX, nY, A, B, accuracy):
     :param accuracy: 
     :return: Network encoding the specified peps.
     '''
-    
+
     network = Network()
-    
+
     # Place to store the tensors
     latticeA = [[] for i in range(nX)]
     latticeB = [[] for i in range(nY)]
@@ -181,14 +181,14 @@ def peps2Dhoneycomb(nX, nY, A, B, accuracy):
     for i in range(nX):
         for j in range(nY):
             # A only links to B and vice-versa.
-            
+
             # Conveniently the indices are arranged so that they correspond
             # directly (i.e. 1->1, 2->2, 3->3).
 
             # We take the convention that the X link between A and B occurs at
             # the same i and j, and that the Y link from A to B occurs at the same j
             # but i+1. Hence the Z link from A to B occurs at i+1,j-1.
-            
+
             # X
             b1 = latticeA[i][j].buckets[1]
             b2 = latticeB[i][j].buckets[1]
@@ -200,20 +200,20 @@ def peps2Dhoneycomb(nX, nY, A, B, accuracy):
 
             # Y
             b1 = latticeA[i][j].buckets[2]
-            b2 = latticeB[(i+1)%nX][j].buckets[2]
+            b2 = latticeB[(i + 1) % nX][j].buckets[2]
             Link(b1, b2)
 
             b1 = latticeAp[i][j].buckets[2]
-            b2 = latticeBp[(i+1)%nX][j].buckets[2]
+            b2 = latticeBp[(i + 1) % nX][j].buckets[2]
             Link(b1, b2)
 
             # Z
             b1 = latticeA[i][j].buckets[3]
-            b2 = latticeB[(i+1)%nX][wrapper(j-1,nY)].buckets[3]
+            b2 = latticeB[(i + 1) % nX][wrapper(j - 1, nY)].buckets[3]
             Link(b1, b2)
 
             b1 = latticeAp[i][j].buckets[3]
-            b2 = latticeBp[(i+1)%nX][wrapper(j-1,nY)].buckets[3]
+            b2 = latticeBp[(i + 1) % nX][wrapper(j - 1, nY)].buckets[3]
             Link(b1, b2)
 
             # Physical
@@ -232,6 +232,67 @@ def peps2Dhoneycomb(nX, nY, A, B, accuracy):
             network.addNode(latticeB[i][j])
             network.addNode(latticeAp[i][j])
             network.addNode(latticeBp[i][j])
+
+    return network
+
+
+def single_honeycomb(nX, nY, A, B, accuracy):
+    '''
+
+    :param nX: Size along one dimension.
+    :param nY: Size along the other dimension.
+    :param A: Rank-4 array specifying the A-sites. The first index is physical.
+    :param B: Rank-4 array specifying the B-sites. The first index is physical.
+    :param accuracy: 
+    :return: Network encoding the specified peps.
+    '''
+
+    network = Network()
+
+    # Place to store the tensors
+    latticeA = [[] for i in range(nX)]
+    latticeB = [[] for i in range(nY)]
+
+    # Add tensors
+    for i in range(nX):
+        for j in range(nY):
+            latticeA[i].append(Node(treeify(A, accuracy)))
+            latticeB[i].append(Node(treeify(B, accuracy)))
+
+    # Generate links
+    for i in range(nX-1):
+        for j in range(nY-1):
+            # A only links to B and vice-versa.
+
+            # Conveniently the indices are arranged so that they correspond
+            # directly (i.e. 1->1, 2->2, 3->3).
+
+            # We take the convention that the X link between A and B occurs at
+            # the same i and j, and that the Y link from A to B occurs at the same j
+            # but i+1. Hence the Z link from A to B occurs at i+1,j-1.
+
+            # X
+            b1 = latticeA[i][j].buckets[1]
+            b2 = latticeB[i][j].buckets[1]
+            Link(b1, b2)
+
+
+            # Y
+            b1 = latticeA[i][j].buckets[2]
+            b2 = latticeB[(i + 1) % nX][j].buckets[2]
+            Link(b1, b2)
+
+            # Z
+            b1 = latticeA[i][j].buckets[3]
+            b2 = latticeB[(i + 1) % nX][wrapper(j - 1, nY)].buckets[3]
+            Link(b1, b2)
+
+
+    # Add to network
+    for i in range(nX):
+        for j in range(nY):
+            network.addNode(latticeA[i][j])
+            network.addNode(latticeB[i][j])
 
     return network
 
