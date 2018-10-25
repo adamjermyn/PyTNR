@@ -4,7 +4,12 @@ from TNR.Network.link import Link
 from TNR.Network.node import Node
 from TNR.Tensor.arrayTensor import ArrayTensor
 from TNR.Utilities import svd
+from TNR.Utilities.linalg import L2error
 from TNR import config
+
+from TNR.Utilities.logger import makeLogger
+from TNR import config
+logger = makeLogger(__name__, config.levels['treeTensor'])
 
 
 def trivialCut(loop, link):
@@ -168,11 +173,9 @@ def prepareEnvironment(node1, node2, tensor, externalEnvironment, bids, otherBid
 
     # The arrays should be symmetric and rank 2.
     for a in arrs:
-        print(a)
-        print(a.T)
-        print(a-a.T)
         assert len(a.shape) == 2
-        assert np.sum((a - np.transpose(a))**2) < config.runParams['epsilon'] * np.sum(a**2)
+        if L2error(a, a.T) > config.runParams['epsilon']:
+            logger.warning('Environment not symmetric. Violation ' + str(L2error(a, a.T))) 
 
     
     # Associate arrays with buckets
@@ -185,7 +188,7 @@ def prepareEnvironment(node1, node2, tensor, externalEnvironment, bids, otherBid
             
     return environment
 
-def environmentSVD(node1, node2, environment, accuracy):
+def environmentSVD(node1, node2, environment, accuracy, rank):
     '''
     Compresses the link between node1 and node2, accounting for the environment.
     :param node1: The first Node. Must be linked to node2.
@@ -203,7 +206,7 @@ def environmentSVD(node1, node2, environment, accuracy):
     ind1, ind2 = node1.indicesConnecting(node2) 
     ind1 = ind1[0]
     ind2 = ind2[0]
-
+    
     # Order environment tensors
     env1 = []
     for i,b in enumerate(node1.buckets):
@@ -246,8 +249,9 @@ def environmentSVD(node1, node2, environment, accuracy):
     # SVD
     A, B = svd.environmentSVD(net, envArr1, envArr2, accuracy)
 
+    logger.debug('Predicted rank is ' + str(rank) + ', actual ' + str(A.shape[1]))
+
     # Un-flatten
-    print(A.shape, sh1, B.shape, sh2)
     A = np.reshape(A, list(sh1) + [A.shape[1]])
     B = np.reshape(B, list(sh2) + [B.shape[1]])
 
@@ -268,7 +272,7 @@ def environmentSVD(node1, node2, environment, accuracy):
 
     return A, B
     
-def svdCut(loop, environment, link, bids, otherBids):
+def svdCut(loop, environment, link, bids, otherBids, rankDict):
     lbids = list(b.id for b in loop.externalBuckets)
     ebids = list(b.id for b in environment.externalBuckets)
     for i in range(len(bids)):
@@ -295,6 +299,9 @@ def svdCut(loop, environment, link, bids, otherBids):
     newEnv, _, _ = environment.copy()
     environment = environment.contract(inds, newEnv, inds, elimLoops=False)
     environment.contractRank2()
+    
+    for n in environment.network.nodes:
+        n.tensor = ArrayTensor(np.identity(n.tensor.shape[0]))
 
     ebids = list(b.id for b in environment.externalBuckets)
     for i in range(len(bids)):
@@ -306,13 +313,43 @@ def svdCut(loop, environment, link, bids, otherBids):
     for l in links:
         node1 = l.bucket1.node
         node2 = l.bucket2.node
+
+        freeBuckets = lambda x: list(b for b in x.buckets if not b.linked)
+
+        leftBids = set()
+        current = node1
+        prev = node2
+        done = False
+        while not done:
+            fb = freeBuckets(current)
+            for f in fb:
+                leftBids.add(f.id)
+            found = False
+            for n in current.connectedNodes:
+                if n != prev:
+                    prev = current
+                    current = n
+                    found = True
+                    break
+            
+            if not found:
+                done = True        
+        
+        rightBids = set(b.id for b in loop2.externalBuckets).difference(leftBids)
+
+        leftBids = frozenset(leftBids)
+        rightBids = frozenset(rightBids)
+        
+        rank = rankDict[(leftBids, rightBids)]
+            
         env = prepareEnvironment(node1, node2, loop2, environment, bids, otherBids)
-        A, B = environmentSVD(node1, node2, env, loop.accuracy)
+        # The rank corrects for the fact that we will incur this error multiple times as 
+        # we go through the loop truncating. For a discussion see doi:10.1137/090752286.
+        A, B = environmentSVD(node1, node2, env, loop.accuracy / loop.rank, rank)
         
         print(A.shape, B.shape)
         node1.tensor = ArrayTensor(A)
         node2.tensor = ArrayTensor(B)
-    
-
+        
     
     return loop2
