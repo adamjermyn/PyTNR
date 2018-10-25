@@ -3,6 +3,10 @@ import numpy as np
 from copy import deepcopy
 from scipy.linalg import svd
 
+from TNR.Utilities.logger import makeLogger
+from TNR import config
+logger = makeLogger(__name__, config.levels['treeTensor'])
+
 def cost(rank):
     ind0 = list(rank).index(0)
     rank = np.roll(rank, len(rank) - ind0) # Push the zero to the front
@@ -75,6 +79,7 @@ def cutSVD(loop, environment, tolerance, bids, otherBids):
 
     ranks = np.zeros((len(links), len(links)))
     
+    logger.debug('Identifying optimal cut for loop of shape ' + str(loop.shape))
     # Iterate over pairs of links
     for i in range(1,len(links)):
         for j in range(i):
