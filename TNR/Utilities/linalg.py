@@ -41,10 +41,14 @@ def adjoint(m):
     return np.transpose(np.conjugate(m))
 
 def linear_solve(a, b):
+    # Check condition number
     try:
         res = np.linalg.solve(a, b)
-    except np.linalg.LinAlgError:
-        logger.warning('Linear solve failed. Falling back on least squares.')
+        l2err = L2error(b, np.dot(a, res))
+        if l2err > 1e-10:
+            raise np.linalg.LinAlgError('Direct solve failed. Falling back on least squares.')
+    except:
+        logger.warning('Matrix nearly singular. Falling back on least squares.')
         if len(b.shape) == 2:
             logger.warning('Using least squares on matrix requires looping over columns, which is slow.')
             vecs = list(b[:,i] for i in range(b.shape[1]))
@@ -71,6 +75,11 @@ def linear_solve(a, b):
             res = ress[0]
         else:
             res = np.array(ress).T
+    l2err = L2error(b, np.dot(a, res))
+    if l2err > 1e-7:
+        logger.warning('Linear solve complete with L2 error: ' + str(l2err))
+        print(np.linalg.cond(a))
+        print(b)
     return res
 
 def sqrtm_psd(a):
