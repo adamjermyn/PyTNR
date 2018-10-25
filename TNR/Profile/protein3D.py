@@ -3,9 +3,9 @@ import numpy as np
 from TNR.Models.protein_aggregation_3d import PA3D
 from TNR.Contractors.mergeAllContractor import mergeContractor
 
-nX = 3
-nY = 3
-nZ = 3
+nX = 5
+nY = 5
+nZ = 5
 
 accuracy = 1e-4
 
