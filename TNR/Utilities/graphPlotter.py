@@ -9,10 +9,10 @@ def plotGraph(G, fname=None):
     networkx.draw_networkx_nodes(G, pos,
                                  nodelist=nodes,
                                  node_color='r',
-                                 node_size=500,
+                                 node_size=300,
                                  alpha=0.8)
 
-    networkx.draw_networkx_labels(G, pos, {n: str(n.id) for n in nodes}, font_size=16)
+    networkx.draw_networkx_labels(G, pos, {n: str(n.id) for n in nodes}, font_size=13)
 
     # edges
     edge_labels = {}
