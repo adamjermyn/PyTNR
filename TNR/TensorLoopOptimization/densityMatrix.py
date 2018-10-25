@@ -173,7 +173,7 @@ def prepareTensors(net, link1, link2, link1p, link2p):
     arrs[1] = np.reshape(arrs[1], (arrs[1].shape[0]*arrs[1].shape[1], arrs[1].shape[2]*arrs[1].shape[3]))
 
     # Now we pull arrs[0] apart using SVD
-    u, s, v = svd(arrs[0], full_matrices=False)
+    u, s, v = svdByPrecision(arrs[0], net.accuracy/10, compute_uv=True)
     u = np.dot(u, np.diag(np.sqrt(s)))
     v = np.dot(np.diag(np.sqrt(s)), v)
     
