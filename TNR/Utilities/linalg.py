@@ -10,6 +10,14 @@ logger = makeLogger(__name__, config.levels['linalg'])
 # General Linear Algebra Functions
 ##################################
 
+def L2error(x, xapprox):
+    '''
+    Calculates the L2 error of an approximation.
+    :param x: The `true` numpy array.
+    :param xapprox: The approximation of x.
+    :return: The sum of squared errors, normalized by the squared norm of x.
+    '''
+    return np.sum((x - xapprox)**2) / np.sum(x**2)
 
 def kroneckerDelta(dim, length):
     '''
