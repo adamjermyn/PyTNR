@@ -19,6 +19,7 @@ from TNR.TensorLoopOptimization.optimizer import cut
 from TNR.TensorLoopOptimization.svdCut import svdCut
 from TNR.TensorLoopOptimization.densityMatrix import cutSVD
 from TNR.Utilities.graphPlotter import plot, plotGraph
+from TNR.Utilities.linalg import L2error
 
 counter0 = 0
 
@@ -168,7 +169,51 @@ class TreeTensor(NetworkTensor):
         assert environment.network.externalBuckets == set(environment.externalBuckets)
 
         # Determine optimal cut
-        ranks, costs, lids = cutSVD(net, environment, self.accuracy, bids, otherBids)        
+        ranks, costs, lids = cutSVD(net, environment, self.accuracy, bids, otherBids)
+
+        links = set()
+        for n in net.network.nodes:
+            for b in n.buckets:
+                if b.linked:
+                    links.add(b.link)
+    
+        freeBucket = lambda x: list(b for b in x.buckets if not b.linked)[0]
+        rankDict = {}
+        for i,l in enumerate(links):
+            for j,l2 in enumerate(links):
+                if i != j:
+                    n11 = l.bucket1.node
+                    n12 = l.bucket2.node
+                    n21 = l2.bucket1.node
+                    n22 = l2.bucket2.node
+
+
+                    leftBids = set()
+                    current = n11
+                    prev = n12
+                    while True:
+                        leftBids.add(freeBucket(current).id)
+                        if current == n21 or current == n22:
+                            break
+                        found = False
+                        for n in current.connectedNodes:
+                            if n != prev:
+                                prev = current
+                                current = n
+                                found = True
+                                break
+
+                        if not found:
+                            break
+
+                    rightBids = set(b.id for b in net.externalBuckets).difference(leftBids)
+
+                    leftBids = frozenset(leftBids)
+                    rightBids = frozenset(rightBids)
+
+                    rankDict[(leftBids, rightBids)] = ranks[lids.index(l.id), lids.index(l2.id)]
+                    rankDict[(rightBids, leftBids)] = ranks[lids.index(l.id), lids.index(l2.id)]
+
 
         ind = np.argmin(costs)
         
@@ -186,7 +231,20 @@ class TreeTensor(NetworkTensor):
                 if b.linked and b.link.id == lid:
                     l = b.link
 
-        newNet = svdCut(net, environment, l, bids, otherBids)
+        print(list(b.id for b in net.externalBuckets))
+
+        newNet = svdCut(net, environment, l, bids, otherBids, rankDict)
+
+
+        ranks2 = []
+        doneLinks = set()
+        for n in newNet.network.nodes:
+            for b in n.buckets:
+                if b.linked and b.link not in doneLinks:
+                    doneLinks.add(b.link)
+                    ranks2.append(b.size)
+
+        logger.debug('actual ranks: ' + str(ranks2) + ', predicted: ' + str(ranks))
 
         # Now put the new nodes in the network and replace the loop
         netBids = list(b.id for b in net.externalBuckets)
