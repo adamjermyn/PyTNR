@@ -1,7 +1,9 @@
 import numpy as np
 
 from copy import deepcopy
-from scipy.linalg import svd
+from numpy.linalg import svd
+
+from TNR.Utilities.svd import svdByPrecision
 
 from TNR.Utilities.logger import makeLogger
 from TNR import config
@@ -95,11 +97,12 @@ def cutSVD(loop, environment, tolerance, bids, otherBids):
             ind = np.searchsorted(cp[::-1], tolerance / loop.rank, side='left') 
             ind -= 1 # Because it searches until it hits something bigger than tolerance
             ind = len(cp) - ind
-            print(p, ind)
-
+            
+            print(i,j,ind)
             
             ranks[i,j] = ind
             ranks[j,i] = ranks[i,j]
+    logger.debug('Done!')
 
     return ranks, list(cost(r) for r in ranks), lids
 
