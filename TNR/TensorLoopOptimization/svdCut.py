@@ -299,9 +299,6 @@ def svdCut(loop, environment, link, bids, otherBids, rankDict):
     newEnv, _, _ = environment.copy()
     environment = environment.contract(inds, newEnv, inds, elimLoops=False)
     environment.contractRank2()
-    
-    for n in environment.network.nodes:
-        n.tensor = ArrayTensor(np.identity(n.tensor.shape[0]))
 
     ebids = list(b.id for b in environment.externalBuckets)
     for i in range(len(bids)):
