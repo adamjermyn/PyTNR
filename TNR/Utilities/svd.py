@@ -91,7 +91,9 @@ def environmentSVD(matrix, environmentLeft, environmentRight, precision):
     us = np.einsum('ij,j->ij',u,np.sqrt(s))
     vs = np.einsum('ij,j->ij',np.conjugate(np.transpose(v)),np.sqrt(s))
 
-    assert L2error(mat, np.dot(us, vs.T)) < precision
+    if L2error(mat, np.dot(us, vs.T)) > precision:
+        logger.error('SVD mat failed. Error:', L2error(mat, np.dot(us, vs.T)))
+        raise ValueError
 
     A = linear_solve(environmentLeft, us)
     B = linear_solve(environmentRight, vs)
@@ -99,13 +101,19 @@ def environmentSVD(matrix, environmentLeft, environmentRight, precision):
     tempUS = np.dot(environmentLeft, A)
     tempVS = np.dot(environmentRight, B)
 
-    assert L2error(us, tempUS) < precision
-    assert L2error(vs, tempVS) < precision
-    
+    if L2error(us, tempUS) > precision:
+        logger.error('SVD US failed. Error:', L2error(us, tempUS))
+        raise ValueError
+    if L2error(vs, tempVS) > precision:
+        logger.error('SVD VS failed. Error:', L2error(vs, tempVS))
+        raise ValueError
+
     temp = np.einsum('ij,kj->ik',tempUS, tempVS)
 
-    assert L2error(mat, temp) < precision
-        
+    if L2error(mat, temp) > precision:
+        logger.error('SVD overall failed. Error:', L2error(mat, temp))
+        raise ValueError
+
     return A, B
 
 def sortSVD(decomp):
@@ -176,6 +184,7 @@ def svdByPrecision(matrix, precision, compute_uv):
 
     # The dense decomposition is more efficient for small matrices.
     if matrix.size < config.svdCutoff:
+        logger.debug('Using dense SVD because matrix is small.')
         decomp = svd(matrix, full_matrices=False, compute_uv=compute_uv)
     else:
         # First try the interpolative decomposition SVD. This typically
@@ -203,6 +212,7 @@ def svdByPrecision(matrix, precision, compute_uv):
             if error > precision:
                 # Getting to this stage means the interpolative decomposition just isn't working.
                 # We now fall back on the dense decomposition.
+                logger.debug('Sparse SVD has failed to reach desired precision. Falling back on dense SVD.')
                 decomp = svd(
                     matrix,
                     full_matrices=False,
@@ -216,6 +226,7 @@ def svdByPrecision(matrix, precision, compute_uv):
         except BaseException:
             # Means the SVD has raised an error so we fall back on the dense
             # one.
+            logger.debug('Sparse SVD has raised an error. Falling back on dense SVD.')
             decomp = svd(matrix, full_matrices=False, compute_uv=compute_uv)
 
     decomp = sortSVD(decomp)
