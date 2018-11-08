@@ -1,11 +1,13 @@
 import numpy as np
-
+import sys
 from TNR.Models.isingModel import IsingModel3Dopen as IsingModel3D
 from TNR.Contractors.mergeAllContractor import mergeContractor
 
-nX = 6
-nY = 6
-nZ = 5
+n = int(sys.argv[1])
+
+nX = n
+nY = n
+nZ = n
 
 accuracy = 1e-4
 
