@@ -94,30 +94,47 @@ class Network:
                 
         net = deepcopy(self)
         net.contractRank2()
-        
-        args, bids = nodes_to_einsum(net.nodes)
+        net.cutLinks()
 
-        arr = einsum(*args, optimize='greedy', memory_limit=-1)
+        nodes = list(net.nodes)
+        logAcc = 0
+        sgn = 1.
+        for n in net.nodes:
+            if n.tensor.rank == 0:
+                logAcc += n.tensor.logScalar + np.log(np.abs(n.tensor.scaledArray))
+                sgn *= n.tensor.scaledArray / np.abs(n.tensor.scaledArray)
+                nodes.remove(n)
 
-        logAcc = sum(n.tensor.logScalar for n in net.nodes)
+        if (len(nodes) == 0):
+            arr = np.array(sgn)
+            bdict = {}
+        else:
 
-        bdict = {}
-        for i in range(len(bids)):
-            bdict[bids[i]] = i
+            args, bids = nodes_to_einsum(nodes)
 
-        bids = sorted(bids)
+            arr = einsum(*args, optimize='greedy', memory_limit=-1)
 
-        perm = []
-        for b in bids:
-            perm.append(bdict[b])
+            logAcc += sum(n.tensor.logScalar for n in nodes)
 
-        if len(perm) > 0:
-            arr = np.transpose(arr, axes=perm)
+            bdict = {}
+            for i in range(len(bids)):
+                bdict[bids[i]] = i
+
+            bids = sorted(bids)
+
+            perm = []
+            for b in bids:
+                perm.append(bdict[b])
+
+            if len(perm) > 0:
+                arr = np.transpose(arr, axes=perm)
 
 
-        bdict = {}
-        for i in range(len(bids)):
-            bdict[bids[i]] = i
+            bdict = {}
+            for i in range(len(bids)):
+                bdict[bids[i]] = i
+
+            arr *= sgn
 
         return arr, logAcc, bdict
 
