@@ -15,7 +15,7 @@ from TNR.Network.node import Node
 from TNR.Network.link import Link
 from TNR.Network.bucket import Bucket
 from TNR.Utilities.svd import entropy
-from TNR.TensorLoopOptimization.optimizer import cut
+from TNR.TensorLoopOptimization.optimizer import optimize as opt
 from TNR.TensorLoopOptimization.svdCut import svdCut
 from TNR.TensorLoopOptimization.densityMatrix import cutSVD
 from TNR.Utilities.graphPlotter import plot, plotGraph
@@ -322,8 +322,60 @@ class TreeTensor(NetworkTensor):
             cycles = sorted(list(networkx.cycles.cycle_basis(self.network.toGraph())), key=len)
             if len(cycles) > 0:
                 print('Cycles:',len(cycles), list(len(c) for c in cycles))
+                old_nodes = set(self.network.nodes)
                 self.cutLoop(cycles[0])
                 self.contractRank2()
+                new_nodes = set(self.network.nodes)
+
+                affected = set(cycles[0])
+                affected.update(new_nodes.difference(old_nodes))
+                cycles = sorted(list(networkx.cycles.cycle_basis(self.network.toGraph())), key=len)
+
+                for loop in cycles:
+                    if len(affected.intersection(loop)) > 0 and len(loop) < 15:
+                        print('Optimizing cycle of length',len(loop))
+                        # Form the loop network
+                        net = self.copySubset(loop)
+                        bids = list([b.id for b in net.externalBuckets])
+
+                        # Form the environment network
+                        environment, onLoopBids = self.artificialCut(loop)
+                        assert environment.network.externalBuckets == set(environment.externalBuckets)
+
+                        # Associate bucket indices between the loop and the environment
+                        otherBids = []
+                        for i,b in enumerate(net.externalBuckets):
+                            ind = list(l.id for l in loop).index(b.node.id)
+                            ind2 = list(b2.id for b2 in loop[ind].buckets).index(b.id)
+                            if loop[ind].buckets[ind2].linked and b.id not in onLoopBids:
+                                otherBids.append(loop[ind].buckets[ind2].otherBucket.id)
+                            else:
+                                n = Node(ArrayTensor(np.identity(net.externalBuckets[i].size)))
+                                environment.network.addNode(n)
+                                environment.externalBuckets.append(n.buckets[0])
+                                environment.externalBuckets.append(n.buckets[1])
+                                # We've just added two buckets, so we associate one with the loop
+                                # and one with the environment
+                                otherBids.append(n.buckets[0].id)
+                                
+                        assert environment.network.externalBuckets == set(environment.externalBuckets)
+
+                        # Optimize
+                        net, inds = opt(net, self.accuracy, environment, bids, otherBids)
+
+                        # Throw the new tensors back in
+                        num = 0
+                        for n in net.network.nodes:
+                            for m in self.network.nodes:
+                                bidsn = list(b.id for b in n.buckets)
+                                bidsm = list(b.id for b in m.buckets)
+                                if len(set(bidsn).intersection(bidsm)) > 0:
+                                    m.tensor = n.tensor
+                                    num += 1
+
+                        assert num == len(loop)
+
+
 
         assert len(networkx.cycles.cycle_basis(self.network.toGraph())) == 0
 
