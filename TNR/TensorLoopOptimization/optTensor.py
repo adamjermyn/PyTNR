@@ -11,7 +11,7 @@ def norm(t):
     '''
     The L2 norm of the tensor. Must be a NetworkTensor.
     '''
-    t2 = t.copy()
+    t2 = t.copy()[0]
     tens = t.contract(range(t.rank), t2, range(t.rank), elimLoops=False)
     tens.network.cutLinks()
     tens.contractRank2()
@@ -59,9 +59,7 @@ class optTensor:
         self.environment = environment
         self.loop = loop
         self.loopNorm = np.exp(2*envNorm(self.loop, self.environment)) # This is invariant.
-        self.guess = rank1guess(loop, self.environment)
-        self.ranks = tuple([1 for _ in range(len(self.loop.externalBuckets))])
-        self.rands = list([self.random() for _ in range(20)])
+        self.guess = deepcopy(self.loop)
 
     @property
     def guessNorm(self):
@@ -69,8 +67,8 @@ class optTensor:
 
     @property
     def error(self):
-        t1 = self.loop.copy()
-        t2 = self.guess.copy()
+        t1 = self.loop.copy()[0]
+        t2 = self.guess.copy()[0]
         
         c1 = t1.contract(range(t1.rank), self.environment, range(t1.rank), elimLoops=False)
 
@@ -78,14 +76,11 @@ class optTensor:
 
         return self.loopNorm + self.guessNorm - 2 * c.array
 
-    def __str__(self):
-        return str(self.ranks)
-
     def __len__(self):
         return self.loop.rank
 
     def random(self):
-        t = self.loop.copy()
+        t = self.loop.copy()[0]
         for n in t.network.nodes:
             n.tensor = ArrayTensor(np.random.randn(*n.tensor.shape))
         return t
@@ -111,7 +106,7 @@ class optTensor:
         '''
 
         # Make W
-        t1 = self.loop.copy()
+        t1 = self.loop.copy()[0]
         t2 = deepcopy(self.guess)
         n = t2.externalBuckets[index].node
         t = t1.contract(range(t1.rank), self.environment, range(t1.rank), elimLoops=False)
@@ -122,7 +117,7 @@ class optTensor:
 
         # Make N
         t1 = t2  # We can reuse t2 because we haven't changed it.
-        t2 = self.guess.copy()
+        t2 = self.guess.copy()[0]
 
         # Get nodes
         n1 = t1.externalBuckets[index].node
@@ -170,8 +165,8 @@ class optTensor:
 
         try:
             self.guess.externalBuckets[index].node.tensor = ArrayTensor(res)
-            logger.debug('Internal Norm: ' + str(local_norm) + ', ' + str(self.guessNorm))
-            logger.debug('Internal Error: ' + str(err) + ', ' + str(self.error))
+#            logger.debug('Internal Norm: ' + str(local_norm) + ', ' + str(self.guessNorm))
+#            logger.debug('Internal Error: ' + str(err) + ', ' + str(self.error))
         except:
             print(norm(self.environment))
             print(N)
@@ -187,16 +182,13 @@ class optTensor:
         dlnerr = 1
         err1 = 1e100
 
-        while err1 > stopErr:
+        while abs(dlnerr) > 0.1 and err1 > stopErr:
             for i in range(self.loop.rank):
                 err2, local_norm = self.optimizeIndex(i)
                 derr = (err1 - err2)
                 dlnerr = derr / err1
-                logger.debug('Error: ' + str(err2) + ', ' + str(err1) + ', ' + str(dlnerr) + ', ' + str(local_norm))
-       #         assert err2 < err1 + 1e-10
+#                logger.debug('Error: ' + str(err2) + ', ' + str(err1) + ', ' + str(dlnerr) + ', ' + str(local_norm))
                 err1 = err2
-
-        assert err1 < stopErr
 
         return err1
 
@@ -224,6 +216,9 @@ class optTensor:
 
         sh = list(t1.shape)
         shq = list(t2.shape)
+
+        if (sh[i1] == 1):
+            return False
 
         # Reduce the first tensor
         sh2 = list(sh)
@@ -258,10 +253,7 @@ class optTensor:
             temp /= nor
         self.guess.externalBuckets[0].node.tensor = ArrayTensor(temp)
 
-        self.ranks = list(self.ranks)
-        self.ranks[index] -= 1
-        self.ranks = tuple(self.ranks)
-
+        return True
 
     def expand(self, index, fill='random', amount=1):
         '''
@@ -325,9 +317,6 @@ class optTensor:
                 temp /= nor
             self.guess.externalBuckets[0].node.tensor = ArrayTensor(temp)
 
-        self.ranks = list(self.ranks)
-        self.ranks[index] += amount
-        self.ranks = tuple(self.ranks)
 
 
 
