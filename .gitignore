@@ -14,3 +14,4 @@ TNR/.idea/*
 *.iml
 *.prof
 *~
+*DS_store
