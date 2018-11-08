@@ -249,11 +249,6 @@ def environmentSVD(node1, node2, environment, accuracy, rank):
     # SVD
     envArr1 = np.identity(envArr1.shape[0])
     envArr2 = np.identity(envArr2.shape[0])
-#    print(environment)
-#    print('env',envArr1)
-#    print('env',envArr2)
-#    assert np.sum((envArr1 - np.identity(len(envArr1)))**2) < 1e-10
-#    assert np.sum((envArr2 - np.identity(len(envArr2)))**2) < 1e-10
     A, B = svd.environmentSVD(net, envArr1, envArr2, accuracy)
 
     logger.debug('Predicted rank is ' + str(rank) + ', actual ' + str(A.shape[1]))
