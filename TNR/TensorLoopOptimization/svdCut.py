@@ -346,7 +346,9 @@ def svdCut(loop, environment, link, bids, otherBids, rankDict):
         
         rank = rankDict[(leftBids, rightBids)]
             
+        # Calculate environment tensors
         env = prepareEnvironment(node1, node2, loop2, environment, bids, otherBids)
+
         # The rank corrects for the fact that we will incur this error multiple times as 
         # we go through the loop truncating. For a discussion see doi:10.1137/090752286.
         A, B = environmentSVD(node1, node2, env, loop.accuracy / loop.rank, rank)
