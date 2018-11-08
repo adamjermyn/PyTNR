@@ -68,17 +68,45 @@ def environmentSVD(matrix, environmentLeft, environmentRight, precision):
     :param precision: 
     :return: 
     '''
+
+
+    # First perform SVD with no environment
+    u, s, v = sortSVD(np.linalg.svd(matrix))
+
+    # Split into part being kept and remainder
+    s = s[::-1]
+    norm = np.sum(s**2)
+    cp = np.cumsum(s**2) / norm
+    s = s[::-1]
     
+    ind = np.searchsorted(cp, precision, side='left')
+    ind = len(cp) - ind
+
+    u0 = u[:, :ind]
+    s0 = s[:ind]
+    v0 = v[:ind, :]   
+
+    us0 = np.einsum('ij,j->ij',u0,np.sqrt(s0))
+    vs0 = np.einsum('ij,j->ij',np.conjugate(np.transpose(v0)),np.sqrt(s0))
+
+    u_remainder = u[:,ind:]
+    s_remainder = s[ind:]
+    v_remainder = v[ind:,:]
+
+    # Construct remainder matrix
+    mat = np.einsum('ij,j,jk->ik',u_remainder,s_remainder,v_remainder)
+
+    # SVD remainder with environment
     environmentLeft = sqrtm_psd(environmentLeft)
     environmentRight = sqrtm_psd(environmentRight)
 
-    mat = np.dot(environmentLeft, matrix)
+    mat = np.dot(environmentLeft, mat)
     mat = np.dot(mat, environmentRight)
     
     u, s, v = sortSVD(np.linalg.svd(mat))
     
     s = s[::-1]
-    cp = np.cumsum(s**2) / np.sum(s**2)
+    cp = np.cumsum(s**2) / (norm * np.sum(environmentLeft**2) * np.sum(environmentRight**2))
     s = s[::-1]
     
     ind = np.searchsorted(cp, precision, side='left')
@@ -88,33 +116,41 @@ def environmentSVD(matrix, environmentLeft, environmentRight, precision):
     s = s[:ind]
     v = v[:ind, :]
     
+    # Assemble us, vs
     us = np.einsum('ij,j->ij',u,np.sqrt(s))
     vs = np.einsum('ij,j->ij',np.conjugate(np.transpose(v)),np.sqrt(s))
 
-    if L2error(mat, np.dot(us, vs.T)) > precision:
-        logger.error('SVD mat failed. Error:', L2error(mat, np.dot(us, vs.T)))
-        raise ValueError
+#    if L2error(mat, np.dot(us, vs.T)) > precision:
+#        logger.error('SVD mat failed. Error:' + str(L2error(mat, np.dot(us, vs.T))))
+#        raise ValueError
 
+    # Remove the environment from us and vs.
     A = linear_solve(environmentLeft, us)
     B = linear_solve(environmentRight, vs)
     
     tempUS = np.dot(environmentLeft, A)
     tempVS = np.dot(environmentRight, B)
 
-    if L2error(us, tempUS) > precision:
-        logger.error('SVD US failed. Error:', L2error(us, tempUS))
-        raise ValueError
-    if L2error(vs, tempVS) > precision:
-        logger.error('SVD VS failed. Error:', L2error(vs, tempVS))
-        raise ValueError
+#    if L2error(us, tempUS) > precision:
+#        logger.error('SVD US failed. Error:', L2error(us, tempUS))
+#        raise ValueError
+#    if L2error(vs, tempVS) > precision:
+#        logger.error('SVD VS failed. Error:', L2error(vs, tempVS))
+#        raise ValueError
 
     temp = np.einsum('ij,kj->ik',tempUS, tempVS)
 
-    if L2error(mat, temp) > precision:
-        logger.error('SVD overall failed. Error:', L2error(mat, temp))
-        raise ValueError
+#    if L2error(mat, temp) > precision:
+#        logger.error('SVD overall failed. Error:', L2error(mat, temp))
+#        raise ValueError
 
-    return A, B
+    us, vs = A, B
+
+    # Assemble full u,v
+    u = np.concatenate((us0,us),axis=1)
+    v = np.concatenate((vs0,vs),axis=1)
+
+    return u,v
 
 def sortSVD(decomp):
     '''
