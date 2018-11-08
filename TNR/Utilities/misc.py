@@ -96,29 +96,4 @@ def nodes_to_einsum(nodes):
     
     return args, bids
 
-
-def merge_rank_2_einsum(args):
-    '''
-    Recursively merges all rank-2 objects in the specified einsum contraction.
-    
-    :param args: einsum contraction specification
-    :return: argsNew: New einsum contraction specification with no rank-2 objects.
-    '''
-    
-    tensors = args[::2]
-    indices = args[1::2]
-    out = indices[-1]
-    
-    # Find rank-2 objects
-    rank2 = list([i for i in range(len(tensors)) if len(tensors[i].shape) == 2])
-    done = []
-    while len(rank2) > 0:
-        i = rank2[0]
-        if indices[i][0] in out and indices[i][1] in out:
-            # Means this is fully external
-            done.append(i)
-            rank2.pop(0)
-    #    else:
-            
-        
     
