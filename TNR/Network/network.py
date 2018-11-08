@@ -387,12 +387,19 @@ class Network:
                     j = inds[1][0]
                     dim = n.tensor.shape[i]
                     if dim == 1:
-                        sl = list(slice(0,n.tensor.shape[k]) for k in range(i)) + [0] + list(slice(0,n.tensor.shape[k]) for k in range(i+1,n.tensor.rank))
-                        n.tensor = ArrayTensor(n.tensor.array[sl])
+                        if (n.tensor.rank == 1):
+                            n.tensor = ArrayTensor(n.tensor.array[0])
+                        else:
+                            sl = list(slice(0,n.tensor.shape[k]) for k in range(i)) + [0] + list(slice(0,n.tensor.shape[k]) for k in range(i+1,n.tensor.rank))
+                            n.tensor = ArrayTensor(n.tensor.array[sl])
                         self.internalBuckets.remove(n.buckets[i])
                         n.buckets.remove(n.buckets[i])
-                        sl = list(slice(0,m.tensor.shape[k]) for k in range(j)) + [0] + list(slice(0,m.tensor.shape[k]) for k in range(j+1,m.tensor.rank))
-                        m.tensor = ArrayTensor(m.tensor.array[sl])
+
+                        if (m.tensor.rank == 1):
+                            m.tensor = ArrayTensor(m.tensor.array[0])
+                        else:
+                            sl = list(slice(0,m.tensor.shape[k]) for k in range(j)) + [0] + list(slice(0,m.tensor.shape[k]) for k in range(j+1,m.tensor.rank))
+                            m.tensor = ArrayTensor(m.tensor.array[sl])
                         self.internalBuckets.remove(m.buckets[j])
                         m.buckets.remove(m.buckets[j])
 
