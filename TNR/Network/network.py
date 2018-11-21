@@ -138,6 +138,62 @@ class Network:
 
         return arr, logAcc, bdict
 
+    @property
+    def cut_array(self):
+        '''
+        Contracts the network down to an array object.
+        Indices are ordered by ascending bucket ID.
+        Returns the array, the log of a prefactor, and a bucket dictionary.
+        Uses numpy's einsum feature, with order optimization.
+        '''
+                
+        net = deepcopy(self)
+        net.contractRank2()
+
+        nodes = list(net.nodes)
+        logAcc = 0
+        sgn = 1.
+        for n in net.nodes:
+            if n.tensor.rank == 0:
+                logAcc += n.tensor.logScalar + np.log(np.abs(n.tensor.scaledArray))
+                sgn *= n.tensor.scaledArray / np.abs(n.tensor.scaledArray)
+                nodes.remove(n)
+
+        if (len(nodes) == 0):
+            arr = np.array(sgn)
+            bdict = {}
+        else:
+
+            args, bids = nodes_to_einsum(nodes)
+
+            arr = einsum(*args, optimize='greedy', memory_limit=-1)
+
+            logAcc += sum(n.tensor.logScalar for n in nodes)
+
+            bdict = {}
+            for i in range(len(bids)):
+                bdict[bids[i]] = i
+
+            bids = sorted(bids)
+
+            perm = []
+            for b in bids:
+                perm.append(bdict[b])
+
+            if len(perm) > 0:
+                arr = np.transpose(arr, axes=perm)
+
+
+            bdict = {}
+            for i in range(len(bids)):
+                bdict[bids[i]] = i
+
+            arr *= sgn
+
+        return arr, logAcc, bdict
+
+
+
     def copySubset(self, nodes):
         '''
         Produces a deepcopy (ID-preserving) of self with only the specified Nodes included.
@@ -395,30 +451,35 @@ class Network:
         Identifies links with dimension 1 and eliminates them.
         '''
 
+        from TNR.Utilities.linalg import L2error
+#        arr,log,_ = self.cut_array
+
         for n in self.nodes:
             for m in self.internalConnected(n):
                 dim = 1
                 while dim == 1 and m in self.internalConnected(n):
                     inds = n.indicesConnecting(m)
-                    i = inds[0][0]
-                    j = inds[1][0]
-                    dim = n.tensor.shape[i]
-                    if dim == 1:
-                        if (n.tensor.rank == 1):
-                            n.tensor = ArrayTensor(n.tensor.array[0])
-                        else:
-                            sl = list(slice(0,n.tensor.shape[k]) for k in range(i)) + [0] + list(slice(0,n.tensor.shape[k]) for k in range(i+1,n.tensor.rank))
-                            n.tensor = ArrayTensor(n.tensor.array[sl])
-                        self.internalBuckets.remove(n.buckets[i])
-                        n.buckets.remove(n.buckets[i])
+                    for k in range(len(inds[0])):
+                        i = inds[0][k]
+                        j = inds[1][k]
+                        dim = n.tensor.shape[i]
+                        if dim == 1:
+                            if (n.tensor.rank == 1):
+                                n.tensor = ArrayTensor(n.tensor.array[0])
+                            else:
+                                sl = list(slice(0,n.tensor.shape[k]) for k in range(i)) + [0] + list(slice(0,n.tensor.shape[k]) for k in range(i+1,n.tensor.rank))
+                                n.tensor = ArrayTensor(n.tensor.array[sl])
+                            self.internalBuckets.remove(n.buckets[i])
+                            n.buckets.remove(n.buckets[i])
 
-                        if (m.tensor.rank == 1):
-                            m.tensor = ArrayTensor(m.tensor.array[0])
-                        else:
-                            sl = list(slice(0,m.tensor.shape[k]) for k in range(j)) + [0] + list(slice(0,m.tensor.shape[k]) for k in range(j+1,m.tensor.rank))
-                            m.tensor = ArrayTensor(m.tensor.array[sl])
-                        self.internalBuckets.remove(m.buckets[j])
-                        m.buckets.remove(m.buckets[j])
+                            if (m.tensor.rank == 1):
+                                m.tensor = ArrayTensor(m.tensor.array[0])
+                            else:
+                                sl = list(slice(0,m.tensor.shape[k]) for k in range(j)) + [0] + list(slice(0,m.tensor.shape[k]) for k in range(j+1,m.tensor.rank))
+                                m.tensor = ArrayTensor(m.tensor.array[sl])
+                            self.internalBuckets.remove(m.buckets[j])
+                            m.buckets.remove(m.buckets[j])
+                            break
 
         for n in self.nodes:
             for b in n.buckets:
@@ -427,3 +488,8 @@ class Network:
                         print(self)
                         print(n)
                         print(b)
+                        raise ValueError('A bucket remains with size 1.')
+
+#        arr2,log2,_ = self.cut_array
+#        if L2error(arr*np.exp(log-log2), arr2) > 1e-10:
+#            print('Err 3', L2error(arr*np.exp(log-log2), arr2))
