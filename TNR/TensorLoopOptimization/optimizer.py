@@ -121,22 +121,33 @@ class optimizer:
         # Construct guess
         x = optTensor(self.tensors, self.environment)
 
+        # Optimize. If an index fails to optimize we don't revisit it because
+        # that means that index cannot be compressed.
         err = self.tolerance
+        canDo = list(range(tensors.rank))
         while True:
             i = 0
             did = False
-            while i < tensors.rank:
+            toRemove = []
+            while i < len(canDo):
                 y = deepcopy(x)
-                reduced = y.reduce(i)
+                reduced = y.reduce(canDo[i])
                 if reduced:
                     y.optimizeSweep(err)
-                    if (y.error < err):
-                        print('Succeeded reduction. Error:', y.error)
+                    yerr = abs(y.error)
+                    if yerr < err:
+                        print('Succeeded reduction. Error:', yerr,err,self.tolerance)
                         x = y
                         did = True
-                        err -= y.error
+                        err -= yerr
+                    else:
+                        toRemove.append(canDo[i])
+                else:
+                    toRemove.append(canDo[i])
                 i += 1
-            if not did:
+            for j in toRemove:
+                canDo.remove(j)
+            if not did or len(canDo) == 0:
                 break
 
         # Undo normalization
