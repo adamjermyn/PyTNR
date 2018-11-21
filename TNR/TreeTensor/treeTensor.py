@@ -20,6 +20,8 @@ from TNR.TensorLoopOptimization.svdCut import svdCut
 from TNR.TensorLoopOptimization.densityMatrix import cutSVD
 from TNR.Utilities.graphPlotter import plot, plotGraph
 from TNR.Utilities.linalg import L2error
+from TNR.Utilities.misc import shortest_cycles
+from TNR.Environment.environment import artificialCut, identityEnvironment, fullEnvironment
 
 counter0 = 0
 
@@ -54,72 +56,6 @@ class TreeTensor(NetworkTensor):
             t = deepcopy(other)
         return t
 
-    def artificialCut(self, exclude):
-        '''
-        Copies the network, cuts all but one loop, and removes the nodes in that loop.
-        '''
-        # Ensures we don't break the original
-        t = deepcopy(self)
-
-        # Helper lists
-        nodes2 = list(t.network.nodes)
-        excludeIDs = list(n.id for n in exclude)
-                
-        # Prepare graph
-#        plot(t.network, fname='init.pdf')
-        indicator = lambda x: -1e100 if x[0].id in excludeIDs and x[1].id in excludeIDs else 0
-        g = networkx.Graph()
-        g.add_nodes_from(t.network.nodes)
-        for n in t.network.nodes:
-            for m in t.network.internalConnected(n):
-                g.add_edge(n, m, weight=indicator((n,m)))
-    
-#        print(list(indicator(x) for x in g.edges()))
-    
-        # Make spanning tree
-        tree = networkx.minimum_spanning_tree(g)
-#        print(list(x[2] for x in tree.edges(data=True)))
-#        plotGraph(tree, fname='tree.pdf')
-        
-        # Cut all links not in the spanning tree
-        onLoopBids = []
-        for n in nodes2:
-            for b in n.buckets:
-                if b.linked:
-                    n2 = b.otherNode
-                    if (n,n2) not in tree.edges:
-                        t.externalBuckets.append(b.link.bucket1)
-                        t.externalBuckets.append(b.link.bucket2)
-                        if n2.id in excludeIDs and n.id not in excludeIDs:
-                            onLoopBids.append(b.otherBucket.id)
-                        elif n.id in excludeIDs and n2.id not in excludeIDs:
-                            onLoopBids.append(b.id)
-                        elif n.id in excludeIDs and n2.id in excludeIDs:
-                            assert len(n.findLinks(n2)) == 1
-                        t.network.removeLink(b.link)
-    
-    
-#        plot(t.network, fname='pre-loop-removal.pdf')
-
-        # Cut enough links to detach the loop nodes from one another
-
-
-        # Remove the loop
-        for n in nodes2:
-            if n.id in excludeIDs:
-                t.removeNode(n)
-
-        # Remove outgoing legs
-        for b in t.externalBuckets:
-            b.link = None
-            
-#        plot(t.network, fname='final.pdf')
-
-#        print(len(excludeIDs), len(onLoopBids), excludeIDs)
-
-        return t, onLoopBids
-
-
     def contract(self, ind, other, otherInd, front=True, elimLoops=True):
         t = super().contract(ind, other, otherInd, front=front)
         if elimLoops:
@@ -140,37 +76,19 @@ class TreeTensor(NetworkTensor):
 
     def cutLoop(self, loop, cutIndex=None):
         logger.debug('Cutting loop.')
+        print(len(loop))
         self.network.check()
 
-        # Form the loop network
-        net = self.copySubset(loop)
+        # Form the environment network
+
+#        environment, net, internalBids, envBids = artificialCut(self, loop)
+        environment, net, internalBids, envBids = identityEnvironment(self, loop)
         bids = list([b.id for b in net.externalBuckets])
 
-        # Form the environment network
-        environment, onLoopBids = self.artificialCut(loop)
-        assert environment.network.externalBuckets == set(environment.externalBuckets)
-
-        # Associate bucket indices between the loop and the environment
-        otherBids = []
-        for i,b in enumerate(net.externalBuckets):
-            ind = list(l.id for l in loop).index(b.node.id)
-            ind2 = list(b2.id for b2 in loop[ind].buckets).index(b.id)
-            if loop[ind].buckets[ind2].linked and b.id not in onLoopBids:
-                otherBids.append(loop[ind].buckets[ind2].otherBucket.id)
-            else:
-                n = Node(ArrayTensor(np.identity(net.externalBuckets[i].size)))
-                environment.network.addNode(n)
-                environment.externalBuckets.append(n.buckets[0])
-                environment.externalBuckets.append(n.buckets[1])
-                # We've just added two buckets, so we associate one with the loop
-                # and one with the environment
-                otherBids.append(n.buckets[0].id)
-                
-        assert environment.network.externalBuckets == set(environment.externalBuckets)
-
         # Determine optimal cut
-        ranks, costs, lids = cutSVD(net, environment, self.accuracy, bids, otherBids)
+        ranks, costs, lids = cutSVD(net, environment, self.accuracy, bids, envBids)
 
+        # Assocaite links with ranks
         links = set()
         for n in net.network.nodes:
             for b in n.buckets:
@@ -231,9 +149,10 @@ class TreeTensor(NetworkTensor):
                 if b.linked and b.link.id == lid:
                     l = b.link
 
-        print(list(b.id for b in net.externalBuckets))
+        #print('Err',net.array)
+        newNet = svdCut(net, environment, l, bids, envBids, rankDict)
+        #print('Err_new',newNet.array)
 
-        newNet = svdCut(net, environment, l, bids, otherBids, rankDict)
 
 
         ranks2 = []
@@ -247,6 +166,8 @@ class TreeTensor(NetworkTensor):
         logger.debug('actual ranks: ' + str(ranks2) + ', predicted: ' + str(ranks))
 
         # Now put the new nodes in the network and replace the loop
+        #print('Err_0',self.array)
+        #print(self)
         netBids = list(b.id for b in net.externalBuckets)
 
         toRemove = []
@@ -281,6 +202,9 @@ class TreeTensor(NetworkTensor):
 
             self.network.addNode(n)
         
+        #print(self)
+        #print('Err_1',self.array)
+        
         self.network.cutLinks()
         self.network.check()
 
@@ -288,90 +212,95 @@ class TreeTensor(NetworkTensor):
 
 
     def eliminateLoops(self):
+        canon = lambda x: list(y for y in self.network.nodes for i in range(len(x)) if y.id == x[i])
+        prodkey = lambda x: sum(x[i].tensor.size*x[i+1].tensor.size for i in range(len(x)-1))
         while len(networkx.cycles.cycle_basis(self.network.toGraph())) > 0:
-            todo = 1
-            while todo > 0:
-                # Contract rank 2 objects
-                self.contractRank2()
+#        while len(shortest_cycles(self.network.toGraph())) > 0:
 
-                # Contract along double links
-                done = set()
-                while len(
-                    done.intersection(
-                        self.network.nodes)) < len(
-                        self.network.nodes):
-                    n = next(iter(self.network.nodes.difference(done)))
-                    nodes = self.network.internalConnected(n)
-                    merged = False
-                    for n2 in nodes:
-                        if len(n.findLinks(n2)) > 1:
-                            self.network.mergeNodes(n, n2)
-                            merged = True
-                    if not merged:
-                        done.add(n)
+            self.contractRank2()
 
-                # See if done
-                todo = 0
-                for n in self.network.nodes:
-                    if n.tensor.rank == 2 and len(self.network.internalConnected(n)):
-                        todo += 1
-                    for m in self.network.internalConnected(n):
-                        if len(n.linksConnecting(m)) > 1:
-                            todo += 1
-
-            cycles = sorted(list(networkx.cycles.cycle_basis(self.network.toGraph())), key=len)
+            cycles = sorted(networkx.cycles.cycle_basis(self.network.toGraph()), key=len)
+#            cycles = sorted(list(map(canon,shortest_cycles(self.network.toGraph()))), key=prodkey)
             if len(cycles) > 0:
                 print('Cycles:',len(cycles), list(len(c) for c in cycles))
                 old_nodes = set(self.network.nodes)
+
+                #arr = self.array
+
                 self.cutLoop(cycles[0])
+
+                #arr2 = self.array
+                #print('Original (Err 2):',arr,arr2)
+
                 self.contractRank2()
                 new_nodes = set(self.network.nodes)
 
                 affected = set(cycles[0])
                 affected.update(new_nodes.difference(old_nodes))
-                cycles = sorted(list(networkx.cycles.cycle_basis(self.network.toGraph())), key=len)
+                self.network.graph = None
+#                cycles = sorted(list(map(canon,shortest_cycles(self.network.toGraph()))), key=prodkey)
+                cycles = sorted(networkx.cycles.cycle_basis(self.network.toGraph()), key=len)
+
+                # Really want to go over all small cycles, but unclear how to generate them.
+                #cycles = networkx.cycles.simple_cycles(networkx.DiGraph(self.network.toGraph()))
 
                 for loop in cycles:
-                    if len(affected.intersection(loop)) > 0 and len(loop) < 15:
-                        print('Optimizing cycle of length',len(loop))
-                        # Form the loop network
-                        net = self.copySubset(loop)
+                    if len(affected.intersection(loop)) > 0 and len(loop) < 0:
+
+                        print(loop)
+
+                        #print('Optimizing cycle of length',len(loop))
+
+                        environment, net, internalBids, envBids = identityEnvironment(self, loop)
+
+                        print(net)
+
+                        #environment, net, internalBids, envBids = artificialCut(self, loop)
                         bids = list([b.id for b in net.externalBuckets])
 
-                        # Form the environment network
-                        environment, onLoopBids = self.artificialCut(loop)
-                        assert environment.network.externalBuckets == set(environment.externalBuckets)
-
-                        # Associate bucket indices between the loop and the environment
-                        otherBids = []
-                        for i,b in enumerate(net.externalBuckets):
-                            ind = list(l.id for l in loop).index(b.node.id)
-                            ind2 = list(b2.id for b2 in loop[ind].buckets).index(b.id)
-                            if loop[ind].buckets[ind2].linked and b.id not in onLoopBids:
-                                otherBids.append(loop[ind].buckets[ind2].otherBucket.id)
-                            else:
-                                n = Node(ArrayTensor(np.identity(net.externalBuckets[i].size)))
-                                environment.network.addNode(n)
-                                environment.externalBuckets.append(n.buckets[0])
-                                environment.externalBuckets.append(n.buckets[1])
-                                # We've just added two buckets, so we associate one with the loop
-                                # and one with the environment
-                                otherBids.append(n.buckets[0].id)
-                                
-                        assert environment.network.externalBuckets == set(environment.externalBuckets)
+                        #print(net)
 
                         # Optimize
-                        net, inds = opt(net, self.accuracy, environment, bids, otherBids)
+                        #arr = self.array #####
+                        #arr0 = net.array
+                        #net0 = deepcopy(net)
+                        net, inds = opt(net, 1e-12, environment, bids, envBids)
+                        #bidDict = {b.id:i for i,b in enumerate(net.externalBuckets)}
+                        #iDict = {i:bid for i,bid in enumerate(bids)}
+                        #net.externalBuckets = list(net.externalBuckets[bidDict[iDict[i]]] for i in range(len(bids)))
+                        #arr01 = net.array
+
+                        #print('Err_internal',L2error(arr0,arr01))
 
                         # Throw the new tensors back in
                         num = 0
-                        for n in net.network.nodes:
-                            for m in self.network.nodes:
-                                bidsn = list(b.id for b in n.buckets)
-                                bidsm = list(b.id for b in m.buckets)
-                                if len(set(bidsn).intersection(bidsm)) > 0:
+                        for m in self.network.nodes:
+                            for n in net.network.nodes:
+                                if n.id == m.id:
                                     m.tensor = n.tensor
                                     num += 1
+
+                        #environment, net, internalBids, envBids = identityEnvironment(self, loop)
+                        #bidDict = {b.id:i for i,b in enumerate(net.externalBuckets)}
+                        #iDict = {i:bid for i,bid in enumerate(bids)}
+                        #net.externalBuckets = list(net.externalBuckets[bidDict[iDict[i]]] for i in range(len(bids)))                        
+                        #arr11 = net.array
+                        #print(arr0 / np.max(np.abs(arr0)))
+                        #print(arr11 / np.max(np.abs(arr0)))
+
+                        #print('Err_internal_set',L2error(arr0,arr11))
+                        # Either something is going wrong with the above insertion procedure
+                        # or else the network is somehow hypersensitive to small components.
+                        # That couuld be captured by the environment but the degree (of order
+                        # 1e15) is surprising, especially on small networks where Z ~ 5000.
+                        # Is something going wrong with the above insertion proceduure?
+
+                        #arr2 = self.array  #####
+                        #print('Original (Err):',arr,arr2)
+                        #environment, net2, internalBids, envBids = fullEnvironment(self, loop)
+                        #print('Err Angle:',np.exp(self.logNorm - environment.logNorm - net2.logNorm))
+                        #print('Err Angle:',np.exp(self.logNorm - environment.logNorm - net0.logNorm))
+                        #print('Err2',L2error(arr,arr2))
 
                         assert num == len(loop)
 
