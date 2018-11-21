@@ -1,4 +1,5 @@
-
+import networkx
+from copy import deepcopy
 
 ################################
 # Miscillaneous Helper Functions
@@ -31,6 +32,22 @@ def cutSlice(i, shape):
     sl = list(slice(0, shape[k]) for k in range(i)) + [0] + list(
         slice(0, shape[k]) for k in range(i + 1, len(shape)))
     return sl
+
+def shortest_cycles(graph):
+    graph = networkx.relabel_nodes(graph, lambda x: x.id)
+    cycles = []
+    for e in graph.edges():
+        n1 = e[0]
+        n2 = e[1]
+        g = deepcopy(graph)
+        g.remove_edge(n1, n2)
+        try:
+            path = networkx.shortest_path(g, n1,  n2)
+            cycles.append(path)
+        except networkx.exception.NetworkXNoPath:
+            break
+    return cycles
+
 
 def nodes_to_einsum(nodes):
     '''
@@ -96,4 +113,4 @@ def nodes_to_einsum(nodes):
     
     return args, bids
 
-    
+
