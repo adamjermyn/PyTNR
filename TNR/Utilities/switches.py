@@ -132,6 +132,8 @@ def switch_tree(accuracy, data_dimensions):
 
 	root.network.contractRank2()
 
+	root.externalBuckets = root.externalBuckets[:N][::-1] + root.externalBuckets[N::]
+
 	return root, N
 
 
