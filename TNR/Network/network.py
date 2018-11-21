@@ -423,4 +423,7 @@ class Network:
         for n in self.nodes:
             for b in n.buckets:
                 if b in self.internalBuckets:
-                    assert b.size > 1
+                    if (b.size == 1):
+                        print(self)
+                        print(n)
+                        print(b)
