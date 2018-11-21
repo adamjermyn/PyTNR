@@ -96,7 +96,7 @@ def cutSVD(loop, environment, tolerance, bids, otherBids):
             ind -= 1 # Because it searches until it hits something bigger than tolerance
             ind = len(cp) - ind
             
-            print(i,j,ind)
+            logger.debug(str(i) + ' ' + str(j) + ' ' + str(ind))
             
             ranks[i,j] = ind
             ranks[j,i] = ranks[i,j]
