@@ -26,8 +26,6 @@ def cutSVD(loop, environment, tolerance, bids, otherBids):
     :return:
     '''
 
-
-    
     # Next identify the way the environment is indexed.    
     # bids are in order of appearance in loop.externalBuckets
     # otherBids are ordered to correspond to bids
@@ -108,6 +106,54 @@ def cutSVD(loop, environment, tolerance, bids, otherBids):
 
 
 def prepareTensors(net, link1, link2, link1p, link2p):
+    '''
+    Arguments:
+        net         -   A NetworkTensor containing a loop.
+        link1       -   The link of the cut.
+        link2       -   The link of interestt.
+        link1p      -   The double of the link of the cut.
+        link2p      -   The double of the link of interestt.
+
+    Let A be the tensor given by the portion of the loop between index1 (exclusive) and
+    index2 (inclusive), and let C be the complement. Let envA and envC be the portions
+    of the environment tensor which contract against A and C respectively.
+
+    The reduced density matrix after tracing out the external legs of C is
+
+    R = envA . A . C . envC . envC* . C* . A* . envA*
+
+    where the dot product means summation over shared indices and * denotes a transpose.
+    Note that the structure of this network is such that the above notation is associative.
+
+    Let
+
+    D = C . envC . envC* . C*
+
+    This is Hermitian, so Sqrt[D] exists. Hence with
+
+    K = envA . A . Sqrt[D]
+
+    we find
+
+    R = K . K*.
+
+    The conjugate density matrix is given by
+
+    Q = K* . K = Sqrt[D]* . envA* . A* . A . envA . Sqrt[D]
+
+    This method returns Q.
+
+    Note:
+
+    It can be shown that R and Q have the same non-zero eigenvalues. This is because the
+    non-zero eigenvalues of AB are the same as those of BA for any A and B, which in turn
+    follows from the fact that the coefficients of the characteristic polynomial of a matrix
+    M depend only on powers of trace(M^n) and trace((AB)^n) = trace((BA)^n).
+
+    This is useful because Q is much smaller in size than R and so can be used to efficiently
+    compute the bond dimensions of cuts.
+    '''
+
     # Grab bucket indices
     bid11 = link1.bucket1.id
     bid12 = link1.bucket2.id
@@ -155,8 +201,8 @@ def prepareTensors(net, link1, link2, link1p, link2p):
     # (e.g. first contracts with first, second with second, etc.).
 
     # We don't need the overall scale so we discard the logarithmic part.
-    arrs, buckets, _ = net.disjointArrays    
-    
+    arrs, buckets, _ = net.disjointArrays  
+
     # Now we transpose these arrays so that the first two indices contain one bucket from each of
     # link1 and link2.
     
@@ -182,52 +228,3 @@ def prepareTensors(net, link1, link2, link1p, link2p):
     ret = np.dot(ret, u)
 
     return ret    
-
-def densityMatrix(loop, environment, index1, index2):
-    '''
-    Arguments:
-        loop        -   A NetworkTensor containing a loop.
-        environment -   A NetworkTensor containing the environment of the loop.
-                        This should have no cycles.
-        index1      -   The index to the left of the first bond of interest.
-        index2      -   The index to the left of the second bond of interest.
-
-    Let A be the tensor given by the portion of the loop between index1 (exclusive) and
-    index2 (inclusive), and let C be the complement. Let envA and envC be the portions
-    of the environment tensor which contract against A and C respectively.
-
-    The reduced density matrix after tracing out the external legs of C is
-
-    R = envA . A . C . envC . envC* . C* . A* . envA*
-
-    where the dot product means summation over shared indices and * denotes a transpose.
-    Note that the structure of this network is such that the above notation is associative.
-
-    Let
-
-    D = C . envC . envC* . C*
-
-    This is Hermitian, so Sqrt[D] exists. Hence with
-
-    K = envA . A . Sqrt[D]
-
-    we find
-
-    R = K . K*.
-
-    The conjugate density matrix is given by
-
-    Q = K* . K = Sqrt[D]* . envA* . A* . A . envA . Sqrt[D]
-
-    This method returns Q.
-
-    Note:
-
-    It can be shown that R and Q have the same non-zero eigenvalues. This is because the
-    non-zero eigenvalues of AB are the same as those of BA for any A and B, which in turn
-    follows from the fact that the coefficients of the characteristic polynomial of a matrix
-    M depend only on powers of trace(M^n) and trace((AB)^n) = trace((BA)^n).
-
-    This is useful because Q is much smaller in size than R and so can be used to efficiently
-    compute the bond dimensions of cuts.
-    '''
