@@ -88,11 +88,6 @@ class optimizer:
         environment = environment.contract(inds, newEnv, inds, elimLoops=False)
         environment.contractRank2()
 
-        # Replace environment with identity
-        for n in environment.network.nodes:
-            if n.tensor.rank == 2:
-                n.tensor = ArrayTensor(np.identity(n.tensor.shape[0]))
-
         # Normalise environment
         envn = norm(environment)
         environment.externalBuckets[0].node.tensor = environment.externalBuckets[0].node.tensor.divideLog(envn)
