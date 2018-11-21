@@ -165,14 +165,8 @@ class optTensor:
 
         try:
             self.guess.externalBuckets[index].node.tensor = ArrayTensor(res)
-#            logger.debug('Internal Norm: ' + str(local_norm) + ', ' + str(self.guessNorm))
-#            logger.debug('Internal Error: ' + str(err) + ', ' + str(self.error))
         except:
-            print(norm(self.environment))
-            print(N)
-            print(W)
-            print(res)
-            exit()
+            logger.warning('Failed to converge index optimization. Moving on.')
 
         return err, local_norm
 
