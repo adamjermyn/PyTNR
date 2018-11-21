@@ -243,7 +243,6 @@ def environmentSVD(node1, node2, environment, accuracy, rank):
     sh2 = net.shape[2:]
     
     # Flatten
-    oldNet = np.array(net)
     net = np.reshape(net, (net.shape[0]*net.shape[1], net.shape[2]*net.shape[3]))
     
     # SVD
