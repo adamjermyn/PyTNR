@@ -98,7 +98,8 @@ def switch_tree(accuracy, data_dimensions):
 		N += 1
 
 	# Pad data_dimensions out to 2**N
-	data_dimensions = list(data_dimensions) + list(1 for _ in range(2**N - len(data_dimensions)))
+	padding = 2**N - len(data_dimensions)
+	data_dimensions = list(data_dimensions) + list(1 for _ in range(padding))
 
 	# Construct root
 	data_dimension_1 = max(data_dimensions[:len(data_dimensions)//2])
@@ -123,6 +124,13 @@ def switch_tree(accuracy, data_dimensions):
 
 			root.externalBuckets = root.externalBuckets[:start] + root.externalBuckets[-num_in:] + root.externalBuckets[start:-num_in]
 			start += num_in
+
+	# Dot all padded readouts with [1.]
+	for i in range(padding):
+		root = root.contract([root.rank - 1], ArrayTensor(np.ones((1,))), [0], elimLoops=False)
+
+
+	root.network.contractRank2()
 
 	return root, N
 
