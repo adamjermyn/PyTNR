@@ -238,7 +238,7 @@ class NetworkTensor(Tensor):
         
         return self.contract(ind, other, otherInd).array
         
-    def contract(self, ind, other, otherInd, front=True):
+    def contract(self, ind, other, otherInd, front=True, elimLoops=False):
         # We copy the two networks first. If the other is an ArrayTensor we
         # cast it to a NetworkTensor first.
         t1 = deepcopy(self)
@@ -412,3 +412,4 @@ class NetworkTensor(Tensor):
 
     def contractRank2(self):
         self.network.contractRank2()
+
