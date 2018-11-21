@@ -5,8 +5,8 @@ from pathlib import Path
 # Logging levels
 
 levels = {}
-levels['svd'] = 'debug'
-levels['linalg'] = 'debug'
+levels['svd'] = 'warning'
+levels['linalg'] = 'warning'
 levels['misc'] = 'debug'
 levels['arrays'] = 'debug'
 levels['treeTensor'] = 'debug'
