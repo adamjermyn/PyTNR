@@ -72,6 +72,19 @@ class NetworkTensor(Tensor):
             self.network.splitNode(n)
         return n
 
+    def addNode(self, node):
+        assert node in self.network.nodes
+
+        # The external buckets associated this node are added at the end of the list.
+        for b in node.buckets:
+            if not b.linked or b.otherBucket not in self.externalBuckets:
+                self.externalBuckets.append(b)
+            elif b.linked and b.otherBucket in self.externalBuckets:
+                self.externalBuckets.remove(b.otherBucket)
+
+        self.network.addNode(node)
+
+
     def removeNode(self, node):
         assert node in self.network.nodes
 
