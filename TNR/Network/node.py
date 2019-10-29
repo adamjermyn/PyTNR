@@ -27,6 +27,10 @@ class Node:
         return s
 
     @property
+    def compressedSize(self):
+        return self.tensor.compressedSize
+
+    @property
     def linkedBuckets(self):
         return [b for b in self.buckets if b.linked]
 

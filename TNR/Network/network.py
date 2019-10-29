@@ -83,6 +83,10 @@ class Network:
         return new
 
     @property
+    def compressedSize(self):
+        return sum(n.compressedSize for n in self.nodes)
+
+    @property
     def array(self):
         '''
         Contracts the network down to an array object.
