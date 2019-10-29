@@ -35,6 +35,10 @@ class ArrayTensor(Tensor):
         return self._size
 
     @property
+    def compressedSize(self):
+        return self._size
+
+    @property
     def logScalar(self):
         return self._logScalar
 
