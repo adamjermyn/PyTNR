@@ -2,7 +2,7 @@ import numpy as np
 import time
 
 from TNR.Models.isingModel import IsingModel2Dopen, exactIsing2D
-from TNR.Contractors.mergeContractor import mergeContractor
+from TNR.Contractors.managedContractor import managedContractor
 from TNR.Contractors.heuristics import loopHeuristic as heuristic
 
 from TNR.Utilities.logger import makeLogger
@@ -12,22 +12,22 @@ logger = makeLogger(__name__, config.levels['generic'])
 
 def ising2DFreeEnergy(nX, nY, h, J, accuracy):
     n = IsingModel2Dopen(nX, nY, h, J, accuracy)
-    n = mergeContractor(
+    n = managedContractor(
         n,
+        5,
         accuracy,
         heuristic,
         optimize=True,
-        merge=False,
-        plot=False)
+        cost_cap = 1e6)
     return n.array[1] / (nX * nY)
 
 
-for J in [-2, -1, -0.5, 0, 0.5, 1, 2]:
+for J in [-0.5]:
 
     h = 0
     accuracy = 1e-3
     size = [(2, 2), (2, 3), (2, 4), (3, 3), (2, 5), (3, 4), (4, 4), (3, 6), (4, 5), (3, 7), (3, 8),
-            (5, 5), (3, 9), (4, 7), (5, 6), (4, 8), (5, 7), (6, 6), (6, 7), (7, 7), (7, 8), (8, 8)]
+            (5, 5), (3, 9), (4, 7), (5, 6), (4, 8), (5, 7), (6, 6), (6, 7), (7, 7), (7, 8), (8, 8), (8,9)]
 
     res = []
 

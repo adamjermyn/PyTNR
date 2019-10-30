@@ -38,34 +38,46 @@ def managedContractor(n, num_copies, accuracy, heuristic, optimize=True, cost_ca
             if optimize:
                 n3.tensor.optimize()
 
-            logger.info('Merging nodes...')
-            nn = n3
-            if hasattr(
-                    nn.tensor, 'compressedSize'):
-                done2 = False
-                while not done2:
-                    merged = net.mergeClosestLinks(
-                        n3, compress=True, accuracy=accuracy)
-                    if merged is not None:
-                        nn.eliminateLoops()
-                        merged.eliminateLoops()
-                        if optimize:
-                            nn.tensor.optimize()
-                            merged.tensor.optimize()
-                    else:
-                        done2 = True
+            merge = False
+            mergeCut = 20
+            if merge:
+                logger.info('Merging nodes...')
+                nn = n3
+                if hasattr(
+                        nn.tensor, 'compressedSize') and len(
+                        nn.tensor.network.nodes) > mergeCut:
+                    done2 = False
+                    while len(nn.tensor.network.nodes) > mergeCut and not done2:
+                        merged = n.mergeClosestLinks(
+                            n3, compress=True, accuracy=accuracy)
+                        if merged is not None:
+                            nn.eliminateLoops()
+                            merged.eliminateLoops()
+                            if optimize:
+                                nn.tensor.optimize()
+                                merged.tensor.optimize()
+                        else:
+                                done2 = True
 
-            logger.info('Merging complete.')
+                logger.info('Merging complete.')
 
             costs[ind] = net.compressedSize
 
             if len(net.internalBuckets) == 0:
                 done = True
-
-
-
         except KeyboardInterrupt:
             exit()
+        except:
+            e = sys.exc_info()[0]
+            logger.info(str(e))
+            logger.info('Failed to contract network ' + str(ind) + '.')
+            logger.info('Replacing that with a clone of the next best network.')
+            # Clone the current best network in place of the failed one
+            del networks[ind]
+            del costs[ind]
+            ind = costs.index(min(costs))
+            networks.append(deepcopy(networks[ind]))
+            costs.append(costs[ind])
 
         if cost_cap is not None:
             for i in range(num_copies):

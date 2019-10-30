@@ -3,7 +3,7 @@ import time
 import sys
 
 from TNR.Models.isingModel import IsingModel2D, exactIsing2D
-from TNR.Contractors.mergeContractor import mergeContractor
+from TNR.Contractors.managedContractor import managedContractor
 from TNR.Contractors.heuristics import loopHeuristic as heuristic
 
 from TNR.Utilities.logger import makeLogger
@@ -13,13 +13,13 @@ logger = makeLogger(__name__, config.levels['generic'])
 
 def ising2DFreeEnergy(nX, nY, h, J, accuracy):
     n = IsingModel2D(nX, nY, h, J, accuracy)
-    n = mergeContractor(
+    n = managedContractor(
         n,
+        5,
         accuracy,
         heuristic,
         optimize=True,
-        merge=False,
-        plot=False)
+        cost_cap = 1e6)
     return n.array[1] / (nX * nY)
 
 
