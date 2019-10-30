@@ -22,7 +22,7 @@ def ising2DFreeEnergy(nX, nY, h, J, accuracy):
     return n.array[1] / (nX * nY)
 
 
-for J in [-0.5]:
+for J in [-2, -1, -0.5, 0, 0.5, 1, 2]:
 
     h = 0
     accuracy = 1e-3
