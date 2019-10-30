@@ -23,6 +23,7 @@ setup(
 	packages = [
 	'TNR',
 	'TNR.Contractors',
+	'TNR.Environment',
 	'TNR.Examples',
 	'TNR.Test',
 	'TNR.Models',
