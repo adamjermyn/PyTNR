@@ -69,7 +69,7 @@ def mergeContractor(
             logger.info('Merging nodes...')
             nn = n3
             if hasattr(
-                    nn.tensor, 'compressedSize') and len(
+                    nn.tensor, 'network') and len(
                     nn.tensor.network.nodes) > mergeCut:
                 done = False
                 while len(nn.tensor.network.nodes) > mergeCut and not done:
@@ -87,7 +87,7 @@ def mergeContractor(
             logger.info('Merging complete.')
 
         for nn in n.nodes:
-            if hasattr(nn.tensor, 'compressedSize'):
+            if hasattr(nn.tensor, 'network'):
                 logger.debug(nn.id,
                              nn.tensor.shape,
                              nn.tensor.compressedSize,
