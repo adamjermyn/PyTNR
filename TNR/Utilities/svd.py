@@ -367,8 +367,8 @@ def splitArray(array, indices, accuracy=1e-4):
     p /= np.sum(p)
     cp = np.cumsum(p)
 
-    ind = np.searchsorted(cp, accuracy, side='left')
-    ind = len(cp) - ind
+    ind = np.searchsorted(cp, 1-accuracy, side='right')
+    ind += 1
 
     u = u[:, :ind]
     lam = lam[:ind]
