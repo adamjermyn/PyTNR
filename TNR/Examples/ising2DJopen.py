@@ -1,5 +1,6 @@
 import numpy as np
 import time
+import sys
 
 from TNR.Models.isingModel import IsingModel2Dopen, exactIsing2D
 from TNR.Contractors.managedContractor import managedContractor
