@@ -15,7 +15,7 @@ def ising2DFreeEnergy(nX, nY, h, J, accuracy):
     n = IsingModel2D(nX, nY, h, J, accuracy)
     n = managedContractor(
         n,
-        3,
+        5,
         accuracy,
         heuristic,
         optimize=True,
