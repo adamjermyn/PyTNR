@@ -246,13 +246,13 @@ class traceMin:
         if b2.linked:
             n = b2.otherNode
             if n in g:
-                g.add_edge(n1, n, weight=g.edges[n1,n2]['weight'])
+                g.add_edge(n1, n, weight=g.get_edge_data(n1,n2)['weight'])
                 g.remove_edge(n, n2)
 
         if b3.linked:
             n = b3.otherNode
             if n in g:
-                g.add_edge(n2, n, weight=g.edges[n1,n2]['weight'])
+                g.add_edge(n2, n, weight=g.get_edge_data(n1,n2)['weight'])
                 g.remove_edge(n, n1)
 
         return g
