@@ -36,4 +36,4 @@ for h in [-2, -1, -0.5, 0, 0.5, 1, 2]:
 
     res = np.array(res)
 
-    np.savetxt('ising1Dh_h=' + str(h) + '.dat', res)
+    np.savetxt('ising2Dh_h=' + str(h) + '.dat', res)
