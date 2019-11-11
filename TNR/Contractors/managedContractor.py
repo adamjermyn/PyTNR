@@ -28,7 +28,7 @@ def managedContractor(n, num_copies, accuracy, heuristic, optimize=True, cost_ca
 
         # Perform one contraction step
         try:
-            logger.info('Performing contraction on network ' + str(ind) + ' with cost ' + str(costs[ind]) + '. Costs: ' + str(costs) + '.')
+            logger.info('Performing contraction on network ' + str(ind) + ' with cost ' + str(costs[ind]) + '. Costs: ' + str(costs) + '. # Nodes is ' + str(len(net.nodes)))
             logger.info('Network has ' + str(len(net.nodes)) + ' nodes.')
             q, n1, n2 = heuristic(net)
             n3 = net.mergeNodes(n1, n2)
