@@ -19,7 +19,7 @@ def ising2DFreeEnergy(nX, nY, h, J, accuracy):
         accuracy,
         heuristic,
         optimize=True,
-        cost_cap = 1e6)
+        cost_cap = 1e9)
     return n.array[1] / (nX * nY)
 
 accuracy = 1e-3
