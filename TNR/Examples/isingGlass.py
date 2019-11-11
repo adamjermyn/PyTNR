@@ -19,8 +19,9 @@ def isingFreeEnergy(nX, J, k, accuracy):
         optimize=True,
         merge=False,
         plot=False)
-    return n.array[1] / (nX)
 
+    arr, log_arr, bdict = n.array
+    return (np.log(arr) + log_arr) / nX
 
 J = 1
 accuracy = 1e-3

@@ -15,7 +15,9 @@ def ising1DFreeEnergy(nX, h, J, accuracy):
         optimize=False,
         merge=False,
         plot=False)
-    return n.array[1] / nX
+
+    arr, log_arr, bdict = n.array
+    return (np.log(arr) + log_arr) / nX
 
 
 h = 1

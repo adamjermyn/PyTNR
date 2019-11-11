@@ -15,8 +15,9 @@ def ising2DFreeEnergy(nX, nY, h, J, accuracy):
         optimize=True,
         merge=False,
         plot=False)
-    arr = n.array
-    return n.array[1] / (nX * nY)
+
+    arr, log_arr, bdict = n.array
+    return (np.log(arr) + log_arr) / (nX * nY)
 
 
 for h in [-2, -1, -0.5, 0, 0.5, 1, 2]:
