@@ -45,7 +45,7 @@ size = [
     250,
     300]
 size = 3 * size
-accuracy = 1e-6
+accuracy = 1e-4
 res = []
 
 for s in size:

@@ -31,7 +31,7 @@ jran = np.linspace(-3, 3, num=35, endpoint=True)
 res = []
 for J in jran:
     h = 0
-    accuracy = 1e-6
+    accuracy = 1e-4
 
     logger.info('Examining system of J = ' + str(J) + '.')
     start = time.clock()
