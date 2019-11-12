@@ -24,7 +24,7 @@ for J in [-2, -1, -0.5, 0, 0.5, 1, 2]:
     size = list(range(2, 25))
 
     h = 0
-    accuracy = 1e-3
+    accuracy = 1e-6
 
     res = []
 
