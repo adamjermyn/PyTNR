@@ -24,7 +24,7 @@ def isingFreeEnergy(nX, J, k, accuracy):
     return (np.log(np.abs(arr)) + log_arr) / nX
 
 J = 1
-accuracy = 1e-4
+accuracy = 1e-6
 size = list(range(4, 10))
 k = 1.5
 
