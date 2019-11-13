@@ -14,11 +14,11 @@ for J in Js:
 
 		name = str(J) + '_' + str(nX) + '_' + str(nY) + '.periodic'
 	
-		fi.write('activate base; cd /mnt/home/ajermyn/Software/PyTNR; export PYTHONPATH=.; python TNR/Examples/ising2DJ.py ' + str(J) + ' ' + str(nX) + ' ' + str(nY) + ' > LOGS/ ' + name + '.log 2>&1 \n')		
+		fi.write('activate base; cd /mnt/home/ajermyn/Software/PyTNR; export PYTHONPATH=.; python TNR/Examples/ising2DJ.py ' + str(J) + ' ' + str(nX) + ' ' + str(nY) + ' > LOGS/' + name + '.log 2>&1 \n')		
 
 		name = str(J) + '_' + str(nX) + '_' + str(nY) + '.open'
 	
-		fi.write('activate base; cd /mnt/home/ajermyn/Software/PyTNR; export PYTHONPATH=.; python TNR/Examples/ising2DJopen.py ' + str(J) + ' ' + str(nX) + ' ' + str(nY) + ' > LOGS/ ' + name + '.log 2>&1 \n')
+		fi.write('activate base; cd /mnt/home/ajermyn/Software/PyTNR; export PYTHONPATH=.; python TNR/Examples/ising2DJopen.py ' + str(J) + ' ' + str(nX) + ' ' + str(nY) + ' > LOGS/' + name + '.log 2>&1 \n')
 
 # Sweep
 Js = np.linspace(-3, 3, num=35, endpoint=True)
@@ -27,4 +27,4 @@ nY = 7
 for J in Js:
 		name = str(J) + '_' + str(nX) + '_' + str(nY) + '.periodic_sweep'
 	
-		fi.write('activate base; cd /mnt/home/ajermyn/Software/PyTNR; export PYTHONPATH=.; python TNR/Examples/ising2DJ.py ' + str(J) + ' ' + str(nX) + ' ' + str(nY) + ' > LOGS/ ' + name + '.log 2>&1 \n')		
+		fi.write('activate base; cd /mnt/home/ajermyn/Software/PyTNR; export PYTHONPATH=.; python TNR/Examples/ising2DJ.py ' + str(J) + ' ' + str(nX) + ' ' + str(nY) + ' > LOGS/' + name + '.log 2>&1 \n')		
