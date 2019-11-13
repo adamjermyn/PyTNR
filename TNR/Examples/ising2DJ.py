@@ -22,9 +22,9 @@ def ising2DFreeEnergy(nX, nY, h, J, accuracy):
         cost_cap = 1e9)
 
     arr, log_arr, bdict = n.array
-    return (np.log(arr) + log_arr) / (nX * nY)
+    return (np.log(np.abs(arr)) + log_arr) / nX
 
-accuracy = 1e-4
+accuracy = 1e-3
 h = 0
 J = float(sys.argv[1])
 nX = int(sys.argv[2])

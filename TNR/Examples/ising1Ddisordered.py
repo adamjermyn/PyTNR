@@ -17,7 +17,7 @@ def ising1DFreeEnergy(nX, h, J, accuracy):
         plot=False)
 
     arr, log_arr, bdict = n.array
-    return (np.log(arr) + log_arr) / nX
+    return (np.log(np.abs(arr)) + log_arr) / nX
 
 
 h = 1
@@ -45,7 +45,7 @@ size = [
     250,
     300]
 size = 3 * size
-accuracy = 1e-4
+accuracy = 1e-3
 res = []
 
 for s in size:

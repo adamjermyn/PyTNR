@@ -21,12 +21,12 @@ def ising2DFreeEnergy(nX, nY, h, J, accuracy):
         cost_cap = 1e6)
 
     arr, log_arr, bdict = n.array
-    return (np.log(arr) + log_arr) / (nX * nY)
+    return (np.log(np.abs(arr)) + log_arr) / nX
 
 
 h = 1
 J = 1
-accuracy = 1e-4
+accuracy = 1e-3
 size = [(2, 2), (2, 3), (2, 4), (3, 3), (2, 5), (3, 4), (4, 4), (3, 6), (4, 5), (3, 7), (3, 8), (5, 5), (3, 9),
         (4, 7), (5, 6), (4, 8), (5, 7), (6, 6), (6, 7), (7, 7), (7, 8), (8, 8), (8,9)]
 

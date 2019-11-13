@@ -22,7 +22,7 @@ def ising2DFreeEnergy(nX, nY, h, J, accuracy):
         cost_cap = 1e6)
 
     arr, log_arr, bdict = n.array
-    return (np.log(arr) + log_arr) / (nX * nY)
+    return (np.log(np.abs(arr)) + log_arr) / nX
 
 
 size = (7, 7)
@@ -31,7 +31,7 @@ jran = np.linspace(-3, 3, num=35, endpoint=True)
 res = []
 for J in jran:
     h = 0
-    accuracy = 1e-4
+    accuracy = 1e-3
 
     logger.info('Examining system of J = ' + str(J) + '.')
     start = time.clock()

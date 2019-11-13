@@ -21,10 +21,10 @@ def isingFreeEnergy(nX, J, k, accuracy):
         plot=False)
 
     arr, log_arr, bdict = n.array
-    return (np.log(arr) + log_arr) / nX
+    return (np.log(np.abs(arr)) + log_arr) / nX
 
 J = 1
-accuracy = 1e-4
+accuracy = 1e-3
 size = list(range(4, 10))
 k = 1.5
 
