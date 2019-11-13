@@ -24,7 +24,7 @@ def ising2DFreeEnergy(nX, nY, h, J, accuracy):
     arr, log_arr, bdict = n.array
     return (np.log(np.abs(arr)) + log_arr) / (nX * nY)
 
-accuracy = 1e-3
+accuracy = 1e-4
 h = 0
 J = float(sys.argv[1])
 nX = int(sys.argv[2])
