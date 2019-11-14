@@ -9,7 +9,7 @@ levels['svd'] = 'debug'
 levels['linalg'] = 'debug'
 levels['misc'] = 'debug'
 levels['arrays'] = 'debug'
-levels['treeTensor'] = 'debug'
+levels['treeTensor'] = 'info'
 levels['treeNetwork'] = 'debug'
 levels['identityTensor'] = 'debug'
 levels['bucket'] = 'debug'
@@ -21,9 +21,9 @@ levels['network'] = 'debug'
 levels['networkTree'] = 'debug'
 levels['node'] = 'debug'
 levels['priorityQueue'] = 'debug'
-levels['tensor'] = 'debug'
+levels['tensor'] = 'info'
 levels['compress'] = 'debug'
-levels['arrayTensor'] = 'debug'
+levels['arrayTensor'] = 'info'
 levels['traceMin'] = 'debug'
 
 levels['mergeContractor'] = 'info'
@@ -34,7 +34,7 @@ runParams = {}
 
 # Determines the cutoff size below which matrices default to the dense SVD.
 
-runParams['svdCutoff'] = 1e3
+runParams['svdCutoff'] = 3e2
 
 # Determines the maximum number of attempts for the interpolative SVD.
 
