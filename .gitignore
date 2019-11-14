@@ -5,3 +5,4 @@ log
 build/*
 dist/*
 TNR.egg*
+*.dat
