@@ -123,6 +123,9 @@ def svdByPrecision(matrix, precision, compute_uv):
         raise ValueError(
             'Cannot decompose a matrix with infinite or NaN elements.')
 
+    if np.product(matrix.shape) > config.svdMaxSize:
+        raise ValueError('Matrix too big. SVD would take a prohibitive amount of time.')        
+
     # The dense decomposition is more efficient for small matrices.
     if matrix.size < config.svdCutoff:
         decomp = svd(matrix, full_matrices=False, compute_uv=compute_uv)
