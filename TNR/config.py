@@ -63,6 +63,7 @@ if config_file.is_file():
 		for key in data['runParams'].keys():
 			runParams[key] = data['runParams'][key]
 
+svdMaxSize = 5e8
 svdCutoff = int(runParams['svdCutoff'])
 svdTries = int(runParams['svdTries'])
 svdBondCutoff = float(runParams['svdBondCutoff'])
