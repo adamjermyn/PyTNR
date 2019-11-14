@@ -24,7 +24,7 @@ levels['priorityQueue'] = 'debug'
 levels['tensor'] = 'info'
 levels['compress'] = 'debug'
 levels['arrayTensor'] = 'info'
-levels['traceMin'] = 'debug'
+levels['traceMin'] = 'info'
 
 levels['mergeContractor'] = 'info'
 levels['generic'] = 'info'
