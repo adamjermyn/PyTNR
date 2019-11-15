@@ -166,10 +166,11 @@ def util(adj):
         cycles = minimalCycleBasis(adj)
 
         for c in cycles:
-            un = 0
-            for i in range(len(c)):
-                un += adj[c[i][0], c[i][1]]
-            u += un**0.25
+            u += len(c)
+#            un = 0
+#            for i in range(len(c)):
+#                un += adj[c[i][0], c[i][1]]
+#            u += un**0.25
 
     return u
 
@@ -283,9 +284,9 @@ class traceMin:
         cacheSet = set(nodes)
 
         cacheSet = frozenset(cacheSet)
-        if cacheSet in self.diffVals:
-            logger.debug('Cache hit.')
-            return self.diffVals[cacheSet]
+#        if cacheSet in self.diffVals:
+#            logger.debug('Cache hit.')
+#            return self.diffVals[cacheSet]
 
         logger.debug('Not cached. Recomputing on' + str(len(nodes)) + 'nodes.')
         subG = g.subgraph(nodes)
