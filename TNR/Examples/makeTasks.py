@@ -5,7 +5,7 @@ fi = open('tasks','w')
 
 
 # Glass
-sizes = list(range(2,12))
+sizes = list(range(2,13))
 iters = list(range(3))
 
 for s in sizes:
