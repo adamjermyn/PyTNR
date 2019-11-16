@@ -1,5 +1,6 @@
 import numpy as np
 import time
+import sys
 
 from TNR.Models.isingModel import IsingSpinGlass
 from TNR.Contractors.mergeContractor import mergeContractor
@@ -25,26 +26,23 @@ def isingFreeEnergy(nX, J, k, accuracy):
 
 J = 1
 accuracy = 1e-6
-size = list(range(4, 10))
 k = 1.5
 
 res = []
 
-for s in size:
-    for _ in range(3):
-        logger.info(
-            'Examining system of size ' +
-            str(s) +
-            ' and J = ' +
-            str(J) +
-            '.')
-        start = time.clock()
-        f = isingFreeEnergy(s, J, k, accuracy)
-        end = time.clock()
-        res.append((s, f, end - start))
+size = int(sys.argv[1])
+
+logger.info(
+    'Examining system of size ' +
+    str(s) +
+    ' and J = ' +
+    str(J) +
+    '.')
+start = time.clock()
+f = isingFreeEnergy(s, J, k, accuracy)
+end = time.clock()
+res.append((s, f, end - start))
 
 res = np.array(res)
 
-print(res)
-
-np.savetxt('isingGlass.dat', res)
+np.savetxt('isingGlass_' + str(size) + '_' + sys.argv[2] + '.dat', res)
