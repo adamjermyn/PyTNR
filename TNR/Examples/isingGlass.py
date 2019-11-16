@@ -30,7 +30,7 @@ k = 1.5
 
 res = []
 
-size = int(sys.argv[1])
+s = int(sys.argv[1])
 
 logger.info(
     'Examining system of size ' +
@@ -45,4 +45,4 @@ res.append((s, f, end - start))
 
 res = np.array(res)
 
-np.savetxt('isingGlass_' + str(size) + '_' + sys.argv[2] + '.dat', res)
+np.savetxt('isingGlass_' + str(s) + '_' + sys.argv[2] + '.dat', res)

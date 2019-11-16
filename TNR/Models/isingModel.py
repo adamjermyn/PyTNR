@@ -516,7 +516,6 @@ def IsingSpinGlass(n, J, k, accuracy):
 
     # Determine bond locations
     options = [(i, j) for i in range(n) for j in range(i)]
-    print(len(options), nBonds)
     choices = np.random.choice(
         list(
             range(
