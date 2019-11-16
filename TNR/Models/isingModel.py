@@ -375,14 +375,17 @@ def IsingModel2Ddisordered(nX, nY, h0, J0, accuracy):
 
 
 def exactIsing2D(J):
-    if J < 1e-4:
-        return np.log(np.cosh(2 * J)**2)
+    if abs(J) > 1e-4:
+        k = 1 / np.sinh(2 * J)**2
 
-    k = 1 / np.sinh(2 * J)**2
+        def f(x):
+            return np.log(np.cosh(2 * J)**2 + (1 / k) *
+                          np.sqrt(1 + k**2 - 2 * k * np.cos(2 * x)))
+    else:
+        k = np.sinh(2 * J)**2
+        def f(x):
+            return np.log(np.cosh(2 * J)**2 + 1 - k * np.cos(2 * x))
 
-    def f(x):
-        return np.log(np.cosh(2 * J)**2 + (1 / k) *
-                      np.sqrt(1 + k**2 - 2 * k * np.cos(2 * x)))
 
     inte = quad(f, 0, np.pi)[0]
 
