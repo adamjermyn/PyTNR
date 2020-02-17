@@ -3,7 +3,7 @@ import time
 import sys
 
 from TNR.Models.isingModel import IsingSpinGlass
-from TNR.Contractors.mergeContractor import mergeContractor
+from TNR.Contractors.contractor import contractor
 from TNR.Contractors.heuristics import loopHeuristic as heuristic
 
 from TNR.Utilities.logger import makeLogger
@@ -13,13 +13,13 @@ logger = makeLogger(__name__, config.levels['generic'])
 
 def isingFreeEnergy(nX, J, k, accuracy):
     n = IsingSpinGlass(nX, J, k, accuracy)
-    n = mergeContractor(
-        n,
-        accuracy,
-        heuristic,
-        optimize=True,
-        merge=False,
-        plot=False)
+
+    c = contractor(n)
+    done = False
+    while not done:
+        node, done = c.take_step(heuristic, eliminateLoops=True)
+        c.optimize(node)
+    n = c.network
 
     arr, log_arr, bdict = n.array
     return (np.log(np.abs(arr)) + log_arr) / nX

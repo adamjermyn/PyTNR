@@ -2,7 +2,7 @@ import numpy as np
 import time
 
 from TNR.Models.bayes import BayesTest2
-from TNR.Contractors.mergeContractor import mergeContractor
+from TNR.Contractors.contractor import contractor
 from TNR.Contractors.heuristics import utilHeuristic as heuristic
 
 from TNR.Utilities.logger import makeLogger
@@ -29,12 +29,11 @@ n = BayesTest2(
     discreteW,
     discreteH,
     accuracy)
-n = mergeContractor(
-    n,
-    accuracy,
-    heuristic,
-    optimize=True,
-    merge=False,
-    plot=False)
+
+c = contractor(n)
+done = False
+while not done:
+    node, done = c.take_step(heuristic, eliminateLoops=True)
+n = c.network
 
 print(n.nodes.pop().tensor.array)

@@ -13,13 +13,14 @@ logger = makeLogger(__name__, config.levels['generic'])
 
 def ising2DFreeEnergy(nX, nY, h, J, accuracy):
     n = IsingModel2Dopen(nX, nY, h, J, accuracy)
-    n = managedContractor(
-        n,
-        3,
-        accuracy,
-        heuristic,
-        optimize=True,
-        cost_cap = 1e9)
+
+    c = replicaContractor(n, 3, 1e9)
+    done = False
+    while not done:
+        node, done, ind, replaced = c.take_step(heuristic, eliminateLoops=True)
+        if not replaced:
+            c.optimize(new_node)
+    n = c.replicas[ind].network
 
     arr, log_arr, bdict = n.array
     return (np.log(np.abs(arr)) + log_arr) / (nX * nY)

@@ -26,7 +26,7 @@ levels['compress'] = 'debug'
 levels['arrayTensor'] = 'info'
 levels['traceMin'] = 'info'
 
-levels['mergeContractor'] = 'info'
+levels['contractor'] = 'info'
 levels['generic'] = 'info'
 
 # Run parameters

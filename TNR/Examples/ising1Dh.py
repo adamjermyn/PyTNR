@@ -2,19 +2,18 @@ import numpy as np
 import time
 
 from TNR.Models.isingModel import IsingModel1D, exactIsing1Dh
-from TNR.Contractors.mergeContractor import mergeContractor
-from TNR.Contractors.heuristics import entropyHeuristic
+from TNR.Contractors.contractor import contractor
+from TNR.Contractors.heuristics import entropyHeuristic as heuristic
 
 
 def ising1DFreeEnergy(nX, h, J, accuracy):
     n = IsingModel1D(nX, h, J, accuracy)
-    n = mergeContractor(
-        n,
-        accuracy,
-        entropyHeuristic,
-        optimize=False,
-        merge=False,
-        plot=False)
+
+    c = contractor(n)
+    done = False
+    while not done:
+        node, done = c.take_step(heuristic, eliminateLoops=True)
+    n = c.network
 
     arr, log_arr, bdict = n.array
     return (np.log(np.abs(arr)) + log_arr) / nX
