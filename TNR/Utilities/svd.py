@@ -7,7 +7,7 @@ from scipy.sparse.linalg import svds
 from itertools import combinations
 
 from TNR.Utilities.arrays import permuteIndices
-from TNR.Utilities.linalg import adjoint
+from TNR.Utilities.linalg import adjoint, linear_solve, sqrtm_psd, L2error
 
 from TNR.Utilities.logger import makeLogger
 from TNR import config
@@ -48,14 +48,109 @@ def compareSVD(matrix, u, s, v):
     and returns the relative L2 error.
 
     The arguments are:
-            matrix		-	The matrix.
-            u		-	The unitary matrix U in the SVD.
-            s		-	The diagonal matrix S in the SVD.
-            v		-	The unitary matrix V^adjoint in the SVD.
+            matrix      -   The matrix.
+            u       -   The unitary matrix U in the SVD.
+            s       -   The diagonal matrix S in the SVD.
+            v       -   The unitary matrix V^adjoint in the SVD.
     '''
     return np.sum(np.abs(np.einsum('ij,j,jk->ik', u, s, v) -
                          matrix)**2) / np.sum(np.abs(matrix)**2)
 
+
+def environmentSVD(matrix, environmentLeft, environmentRight, precision):
+    '''
+    Computes the SVD of matrix with respect to multiplication on the left by
+    environmentLeft and on the right by environmentRight.
+    
+    :param matrix: 
+    :param environmentLeft: 
+    :param environmentRight: 
+    :param precision: 
+    :return: 
+    '''
+
+
+    # First perform SVD with no environment
+    u, s, v = sortSVD(np.linalg.svd(matrix))
+
+    # Split into part being kept and remainder
+    s = s[::-1]
+    norm = np.sum(s**2)
+    cp = np.cumsum(s**2) / norm
+    s = s[::-1]
+    
+    ind = np.searchsorted(cp, precision, side='left')
+    ind = len(cp) - ind
+
+    u0 = u[:, :ind]
+    s0 = s[:ind]
+    v0 = v[:ind, :]   
+
+    us0 = np.einsum('ij,j->ij',u0,np.sqrt(s0))
+    vs0 = np.einsum('ij,j->ij',np.conjugate(np.transpose(v0)),np.sqrt(s0))
+
+    u_remainder = u[:,ind:]
+    s_remainder = s[ind:]
+    v_remainder = v[ind:,:]
+
+    # Construct remainder matrix
+    mat = np.einsum('ij,j,jk->ik',u_remainder,s_remainder,v_remainder)
+
+    # SVD remainder with environment
+    environmentLeft = sqrtm_psd(environmentLeft)
+    environmentRight = sqrtm_psd(environmentRight)
+
+    mat = np.dot(environmentLeft, mat)
+    mat = np.dot(mat, environmentRight)
+    
+    u, s, v = sortSVD(np.linalg.svd(mat))
+    
+    s = s[::-1]
+    cp = np.cumsum(s**2) / (norm * np.sum(environmentLeft**2) * np.sum(environmentRight**2))
+    s = s[::-1]
+    
+    ind = np.searchsorted(cp, precision, side='left')
+    ind = len(cp) - ind
+
+    u = u[:, :ind]
+    s = s[:ind]
+    v = v[:ind, :]
+    
+    # Assemble us, vs
+    us = np.einsum('ij,j->ij',u,np.sqrt(s))
+    vs = np.einsum('ij,j->ij',np.conjugate(np.transpose(v)),np.sqrt(s))
+
+#    if L2error(mat, np.dot(us, vs.T)) > precision:
+#        logger.error('SVD mat failed. Error:' + str(L2error(mat, np.dot(us, vs.T))))
+#        raise ValueError
+
+    # Remove the environment from us and vs.
+    A = linear_solve(environmentLeft, us)
+    B = linear_solve(environmentRight, vs)
+    
+    tempUS = np.dot(environmentLeft, A)
+    tempVS = np.dot(environmentRight, B)
+
+#    if L2error(us, tempUS) > precision:
+#        logger.error('SVD US failed. Error:', L2error(us, tempUS))
+#        raise ValueError
+#    if L2error(vs, tempVS) > precision:
+#        logger.error('SVD VS failed. Error:', L2error(vs, tempVS))
+#        raise ValueError
+
+    temp = np.einsum('ij,kj->ik',tempUS, tempVS)
+
+#    if L2error(mat, temp) > precision:
+#        logger.error('SVD overall failed. Error:', L2error(mat, temp))
+#        raise ValueError
+
+    us, vs = A, B
+
+    # Assemble full u,v
+    u = np.concatenate((us0,us),axis=1)
+    v = np.concatenate((vs0,vs),axis=1)
+
+    return u,v
 
 def sortSVD(decomp):
     '''
@@ -93,10 +188,10 @@ def svdByPrecision(matrix, precision, compute_uv):
     descending order, which some solvers do not guarantee.
 
     The arguments are:
-            matrix		-	A 2D array
-            precision	-	This is a float in the range [0,1) specifying
+            matrix      -   A 2D array
+            precision   -   This is a float in the range [0,1) specifying
                                     the relative precision of the desired decomposition.
-            compute_uv	-	A bool specifying whether or not to compute the matrices
+            compute_uv  -   A bool specifying whether or not to compute the matrices
                                     U and V or just the singular values. Note that some methods
                                     intrinsically compute all of these, so when those are used
                                     this just determines whether or not U and V are returned.
@@ -124,10 +219,11 @@ def svdByPrecision(matrix, precision, compute_uv):
             'Cannot decompose a matrix with infinite or NaN elements.')
 
     if np.product(matrix.shape) > config.svdMaxSize:
-        raise ValueError('Matrix too big. SVD would take a prohibitive amount of time.')        
-
+        raise ValueError('Matrix too big. SVD would take a prohibitive amount of time.')     
+        
     # The dense decomposition is more efficient for small matrices.
     if matrix.size < config.svdCutoff:
+        logger.debug('Using dense SVD because matrix is small.')
         decomp = svd(matrix, full_matrices=False, compute_uv=compute_uv)
     else:
         # First try the interpolative decomposition SVD. This typically
@@ -155,6 +251,7 @@ def svdByPrecision(matrix, precision, compute_uv):
             if error > precision:
                 # Getting to this stage means the interpolative decomposition just isn't working.
                 # We now fall back on the dense decomposition.
+                logger.debug('Sparse SVD has failed to reach desired precision. Falling back on dense SVD.')
                 decomp = svd(
                     matrix,
                     full_matrices=False,
@@ -168,6 +265,7 @@ def svdByPrecision(matrix, precision, compute_uv):
         except BaseException:
             # Means the SVD has raised an error so we fall back on the dense
             # one.
+            logger.debug('Sparse SVD has raised an error. Falling back on dense SVD.')
             decomp = svd(matrix, full_matrices=False, compute_uv=compute_uv)
 
     decomp = sortSVD(decomp)
@@ -180,9 +278,9 @@ def svdByRank(matrix, rank, compute_uv):
     with the singular values sorted in descending order, which some solvers do not guarantee.
 
     The arguments are:
-            matrix		-	A 2D array
-            precision	-	This is an integer >= 1 giving the bond dimension of the decomposition.
-            compute_uv	-	A bool specifying whether or not to compute the matrices
+            matrix      -   A 2D array
+            precision   -   This is an integer >= 1 giving the bond dimension of the decomposition.
+            compute_uv  -   A bool specifying whether or not to compute the matrices
                                     U and V or just the singular values. Note that some methods
                                     intrinsically compute all of these, so when those are used
                                     this just determines whether or not U and V are returned.
@@ -248,7 +346,7 @@ def entropy(array, pref=None, tol=1e-3):
     # We filter out options which are complements of one another, and
     # hence give the same answer. We do not filter out pref in this process.
 
-#	print('Filtering complements.')
+#   print('Filtering complements.')
     indexLists = [set(q) for q in indexLists]
 
     complements = [set(range(len(array.shape))).difference(l)
@@ -264,11 +362,11 @@ def entropy(array, pref=None, tol=1e-3):
                 complements.remove(s)
     indexLists = [tuple(l) for l in indexSets]
 
-#	print('Examining options.')
+#   print('Examining options.')
 
     # Lists for storing intermediate results.
-    mins = [1e10 for _ in indexLists]			# Lower bound on entropy
-    maxs = [-1 for _ in indexLists]				# Upper bound on entropy
+    mins = [1e10 for _ in indexLists]           # Lower bound on entropy
+    maxs = [-1 for _ in indexLists]             # Upper bound on entropy
     # Frobenius norms of the array in different shapes
     norms = [-1 for _ in indexLists]
     # Temporary storage for singular values
@@ -307,8 +405,8 @@ def entropy(array, pref=None, tol=1e-3):
             # If the bond dimension is too large, full SVD is required.
             lams = svdByRank(mat, bondDimension, False)
             lams = np.sqrt(lams)
-            lams /= norms[i]					# Normalize
-            knownVals[i] = lams**2				# Turn into probabilities
+            lams /= norms[i]                    # Normalize
+            knownVals[i] = lams**2              # Turn into probabilities
             p = knownVals[i]
             # Ensure probabilities are non-zero for floating point reasons
             p = p[p > 0]
@@ -328,14 +426,14 @@ def entropy(array, pref=None, tol=1e-3):
 
             # Now we check if any can be eliminated
             if maxs[i] < lowest[0] - \
-                    tol:		# Means this is better than the previous best
+                    tol:        # Means this is better than the previous best
                 lowest[0] = maxs[i]
                 lowest[1] = i
             # Means that this is strictly worse than the current best
             elif mins[i] > lowest[0] + tol:
                 liveIndices.remove(i)
-            else:								# Means this is tied within tolerance to the current best
-                if pref == set():				# If we have no preference we remove this unless it is the current best
+            else:                               # Means this is tied within tolerance to the current best
+                if pref == set():               # If we have no preference we remove this unless it is the current best
                     if i != lowest[1]:
                         liveIndices.remove(i)
                 elif pref != set(indexLists[i]) and pref in [indexSets[j] for j in liveIndices]:
@@ -350,7 +448,7 @@ def entropy(array, pref=None, tol=1e-3):
                     # Means the preferred option is still live and is tied for
                     # best.
                     return list(indexLists[i])
-#			print(mins, maxs, lowest, i, pref, indexLists)
+#           print(mins, maxs, lowest, i, pref, indexLists)
     return list(indexLists[liveIndices[0]])
 
 

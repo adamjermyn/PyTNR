@@ -16,6 +16,8 @@ class ArrayTensor(Tensor):
         # We normalize the Tensor by factoring out the log of the
         # maximum-magnitude element.
         m = np.max(np.abs(tens))
+        if m == 0:
+            m = 1.
         self._logScalar = np.log(m) + logScalar
         self._array = np.copy(tens / m)
 
@@ -48,7 +50,21 @@ class ArrayTensor(Tensor):
 
     @property
     def scaledArray(self):
-        return self._array
+        return np.copy(self._array)
+
+    def divideLog(self, log):
+        '''        
+        :param log: The logarithm of the factor by which to divide.
+        :return: A new Tensor given by dividing this one by the exponential of the log.
+        '''
+        return self.multiplyLog(-log)
+
+    def multiplyLog(self, log):
+        '''        
+        :param log: The logarithm of the factor by which to multiply.
+        :return: A new Tensor given by multiplying this one by the exponential of the log.
+        '''
+        return ArrayTensor(self.scaledArray, logScalar=self.logScalar + log)
 
     def contract(self, ind, other, otherInd):
         '''

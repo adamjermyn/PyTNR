@@ -2,6 +2,11 @@ import itertools
 
 
 class Link:
+    '''
+    A Link is a means of indicating an intent to contract two tensors.
+    This object has two Buckets, one for each Node being connected.
+    '''
+    
     newid = itertools.count().__next__
 
     def __init__(self, b1, b2):

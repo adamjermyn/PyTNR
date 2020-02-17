@@ -1,6 +1,7 @@
 from copy import deepcopy
 import numpy as np
 import operator
+import sys
 
 from TNR.Network.network import Network
 from TNR.Network.node import Node
@@ -9,7 +10,6 @@ from TNR.Network.link import Link
 from TNR.Tensor.arrayTensor import ArrayTensor
 from TNR.Utilities.svd import entropy, splitArray
 
-import sys
 sys.setrecursionlimit(10000)
 
 from TNR.Utilities.logger import makeLogger
@@ -40,7 +40,12 @@ class TreeNetwork(Network):
         super().__init__()
 
         self.accuracy = accuracy
-
+    
+    def __deepcopy__(self, memodict={}):
+        copy = super().__deepcopy__(memodict)
+        copy.accuracy = self.accuracy
+        return copy
+    
     def pathBetween(self, node1, node2, calledFrom=None):
         '''
         Returns the unique path between node1 and node2.
@@ -69,38 +74,6 @@ class TreeNetwork(Network):
                     return path2
 
         return []
-
-    def trace(self, b1, b2):
-        '''
-        Links external buckets b1 and b2 and eliminates any loops which result.
-        '''
-        assert b1 in self.externalBuckets
-        assert b2 in self.externalBuckets
-        assert b1 != b2
-        n1 = b1.node
-        n2 = b2.node
-
-        if n1 == n2:
-            # So we're just tracing an arrayTensor.
-            n1.tensor = n1.tensor.trace([b1.index], [b2.index])
-            n1.buckets.remove(b1)
-            n1.buckets.remove(b2)
-            self.externalBuckets.remove(b1)
-            self.externalBuckets.remove(b2)
-        else:
-            # We may be introducing a loop
-            loop = self.pathBetween(n1, n2)
-            if len(loop) > 0:
-                if len(loop) == 2:
-                    # This special case is not possible when contracting in a new node.
-                    # The easy way to handle it is just to merge the two nodes and then
-                    # split them if the resulting rank is too high.
-                    _ = Link(b1, b2)
-                    n = self.mergeNodes(n1, n2)
-                    self.splitNode(n)
-                else:
-                    _ = Link(b1, b2)
-                    self.eliminateLoop(loop)
 
     def splitNode(self, node, ignore=None):
         '''
@@ -178,122 +151,3 @@ class TreeNetwork(Network):
 
         return nodes
 
-    def eliminateLoop(self, loop):
-        '''
-        Takes as input a list of Nodes which have been linked in a loop.
-        The nodes are assumed to be in linkage order (i.e. loop[i] and loop[i+1] are linked),
-        and the list is assumed to wrap-around (so loop[0] and loop[-1] are linked).
-
-        The loop is assumed to be the only loop in the Network.
-
-        The loop is eliminated by iteratively contracting along the loop and factoring out
-        extra indices as memory requires. This proceeds until the loop has length 3, and then
-        one of the three links is cut via SVD (putting all of that link's entropy in the remaining
-        two links).
-
-        The links are contracted in descending size order.
-        '''
-        for i in range(len(loop)):
-            assert loop[i - 1] in loop[i].connectedNodes
-            assert loop[i] in self.nodes
-
-        assert len(loop) >= 3
-
-        logger.debug('Eliminating cycle of length ' +
-                     str(len(loop)) + ' with components of (ID, shape, size):')
-        for l in loop:
-            logger.debug(str(l.id) + ', ' + str(l.tensor.shape) +
-                         ', ' + str(l.tensor.size))
-
-        while len(loop) > 3:
-            logger.debug('Loop is now of size ' + str(len(loop)) + '.')
-            best = [0, 0]
-            for i in range(len(loop)):
-                n1 = loop[(i + 1) % len(loop)]
-                n2 = loop[(i + 2) % len(loop)]
-                assert n1 in n2.connectedNodes
-                assert n2 in loop[(i + 3) % len(loop)].connectedNodes
-                ind1 = n1.indexConnecting(loop[i])
-                ind2 = n2.indexConnecting(loop[(i + 3) % len(loop)])
-                b1 = n1.buckets[ind1]
-                b2 = n2.buckets[ind2]
-                if n1.findLink(n2).bucket1.size > best[0]:
-                    best[0] = n1.findLink(n2).bucket1.size
-                    best[1] = [i, n1, n2, ind1, ind2, b1, b2]
-
-            i, n1, n2, ind1, ind2, b1, b2 = best[1]
-
-            loop = loop[i:] + loop[:i]
-
-            assert loop[0] != loop[1]
-            assert loop[1] != loop[2]
-            assert loop[2] != loop[3]
-            links = n1.linksConnecting(n2)
-            for l in links:
-                assert l != b1.link
-                assert l != b2.link
-                assert l.bucket1 != b1
-                assert l.bucket2 != b1
-                assert l.bucket1 != b2
-                assert l.bucket2 != b2
-
-            logger.debug('Merging loop components of shape ' +
-                         str(n1.tensor.shape) +
-                         ' and ' +
-                         str(n2.tensor.shape) +
-                         ' along indices ' +
-                         str(ind1) +
-                         ',' +
-                         str(ind2) +
-                         ' with bond dimension ' +
-                         str(n1.findLink(n2).bucket1.size))
-            n = self.mergeNodes(n1, n2)
-
-            loop.pop(1)
-
-            if n.tensor.rank > 4 or (
-                    n.tensor.size > 1e5 and n.tensor.rank > 3):
-                assert b1 in n.buckets
-                assert b2 in n.buckets
-                assert b1.node is n
-                assert b2.node is n
-                logger.debug('Splitting tensor of shape ' +
-                             str(n.tensor.shape) + '...')
-                nodes = self.splitNode(
-                    n,
-                    ignore=[
-                        n.bucketIndex(b1),
-                        n.bucketIndex(b2)])
-                logger.debug('Done! Size ratio is ' +
-                             str(1.0 *
-                                 sum(q.tensor.size for q in nodes) /
-                                 (n.tensor.size)) +
-                             '.')
-                logger.debug('Resulting shapes:')
-                for p in nodes:
-                    logger.debug(str(p.tensor.shape))
-                # The ignored indices always end up in the first node
-                n = nodes[0]
-
-            loop[1] = n
-
-        # This is necessary because we've been rotating the loop around and so have
-        # no guarantee that the rank conditions have been preserved.
-        for i in range(3):
-            if loop[i].tensor.rank > 3:
-                ind1 = loop[i].indexConnecting(loop[i - 1])
-                ind2 = loop[i].indexConnecting(loop[(i + 1) % 3])
-                nodes = self.splitNode(loop[i], ignore=[ind1, ind2])
-                loop[i] = nodes[0]
-
-        assert loop[0].tensor.rank <= 3
-        assert loop[1].tensor.rank <= 3
-        assert loop[2].tensor.rank <= 3
-
-        n = self.mergeNodes(loop[0], loop[1])
-        n = self.mergeNodes(n, loop[2])
-        if n.tensor.rank > 3:
-            self.splitNode(n)
-
-        for n in self.nodes:
-            assert n.tensor.rank <= 3

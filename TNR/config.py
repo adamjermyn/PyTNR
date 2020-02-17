@@ -1,3 +1,6 @@
+runParams['epsilon'] = 1e-10
+
+# Sets machine precision
 import yaml
 import os.path
 from pathlib import Path

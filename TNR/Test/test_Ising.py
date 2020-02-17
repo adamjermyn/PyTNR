@@ -1,7 +1,7 @@
 import numpy as np
 
 from TNR.Models.isingModel import IsingModel1D, exactIsing1Dh, exactIsing1DJ, IsingModel2D, exactIsing2D
-from TNR.Contractors.mergeContractor import mergeContractor
+from TNR.Contractors.mergeAllContractor import mergeContractor
 
 epsilon = 1e-10
 
@@ -18,9 +18,7 @@ def test_Ising1D():
         n = mergeContractor(
             n,
             accuracy,
-            optimize=False,
-            merge=False,
-            verbose=0)
+            optimize=False)
         assert len(n.nodes) == 1
         nn = n.nodes.pop()
         assert abs(np.log(nn.tensor.array) / nX -
@@ -35,9 +33,7 @@ def test_Ising1D():
         n = mergeContractor(
             n,
             accuracy,
-            optimize=False,
-            merge=False,
-            verbose=0)
+            optimize=False)
         assert len(n.nodes) == 1
         nn = n.nodes.pop()
         assert abs(np.log(nn.tensor.array) / nX -
@@ -53,7 +49,7 @@ def test_Ising1D_Opt():
         nX = np.random.randint(2, high=10)
         h = np.random.randn(1)
         n = IsingModel1D(nX, h, J, accuracy)
-        n = mergeContractor(n, accuracy, optimize=True, merge=False, verbose=0)
+        n = mergeContractor(n, accuracy, optimize=True)
         assert len(n.nodes) == 1
         nn = n.nodes.pop()
         assert abs(np.log(nn.tensor.array) / nX -
@@ -65,7 +61,7 @@ def test_Ising1D_Opt():
         nX = np.random.randint(2, high=10)
         J = np.random.randn(1)
         n = IsingModel1D(nX, h, J, accuracy)
-        n = mergeContractor(n, accuracy, optimize=True, merge=False, verbose=0)
+        n = mergeContractor(n, accuracy, optimize=True)
         assert len(n.nodes) == 1
         nn = n.nodes.pop()
         assert abs(np.log(nn.tensor.array) / nX -
@@ -81,7 +77,7 @@ def test_Ising1D_Merge():
         nX = np.random.randint(2, high=10)
         h = np.random.randn(1)
         n = IsingModel1D(nX, h, J, accuracy)
-        n = mergeContractor(n, accuracy, optimize=False, merge=True, verbose=0)
+        n = mergeContractor(n, accuracy, optimize=False)
         assert len(n.nodes) == 1
         nn = n.nodes.pop()
         assert abs(np.log(nn.tensor.array) / nX -
@@ -93,7 +89,7 @@ def test_Ising1D_Merge():
         nX = np.random.randint(2, high=10)
         J = np.random.randn(1)
         n = IsingModel1D(nX, h, J, accuracy)
-        n = mergeContractor(n, accuracy, optimize=False, merge=True, verbose=0)
+        n = mergeContractor(n, accuracy, optimize=False)
         assert len(n.nodes) == 1
         nn = n.nodes.pop()
         assert abs(np.log(nn.tensor.array) / nX -
@@ -109,7 +105,7 @@ def test_Ising1D_Opt_Merge():
         nX = np.random.randint(2, high=10)
         h = np.random.randn(1)
         n = IsingModel1D(nX, h, J, accuracy)
-        n = mergeContractor(n, accuracy, optimize=True, merge=True, verbose=0)
+        n = mergeContractor(n, accuracy, optimize=True)
         assert len(n.nodes) == 1
         nn = n.nodes.pop()
         assert abs(np.log(nn.tensor.array) / nX -
@@ -121,24 +117,27 @@ def test_Ising1D_Opt_Merge():
         nX = np.random.randint(2, high=10)
         J = np.random.randn(1)
         n = IsingModel1D(nX, h, J, accuracy)
-        n = mergeContractor(n, accuracy, optimize=True, merge=True, verbose=0)
+        n = mergeContractor(n, accuracy, optimize=True)
         assert len(n.nodes) == 1
         nn = n.nodes.pop()
         assert abs(np.log(nn.tensor.array) / nX -
                    exactIsing1DJ(nX, J)) < 2 * nX * epsilon
 
-
-def test_Ising2D():
-    nX = 4
-    nY = 4
-    accuracy = 1e-5
+def test_Ising2D_No_Opt():
+    nX = 5
+    nY = 5
+    accuracy = 1e-3
     h = 0.0
 
     for i in range(5):
         J = np.random.randn(1)
         n = IsingModel2D(nX, nY, h, J, accuracy)
-        n = mergeContractor(n, accuracy, optimize=True, merge=True, verbose=0)
-        assert len(n.nodes) == 1
-        nn = n.nodes.pop()
-        assert abs(np.log(nn.tensor.array) / (nX * nY) - exactIsing2D(J)
+        n = mergeContractor(n, accuracy, optimize=False)
+        arr, lg = n.array[:2]
+        if len(arr.shape) > 0:
+            lg = lg + np.log(sum(arr))
+        print(lg)
+        assert abs(lg / (nX * nY) - exactIsing2D(J)
                    ) < 2 * nX * nY * epsilon + abs(exactIsing2D(J)) / max(nX, nY)
+
+

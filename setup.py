@@ -23,6 +23,7 @@ setup(
 	packages = [
 	'TNR',
 	'TNR.Contractors',
+	'TNR.Environment',
 	'TNR.Examples',
 	'TNR.Test',
 	'TNR.Models',
@@ -30,6 +31,7 @@ setup(
 	'TNR.Tensor',
 	'TNR.Test',
 	'TNR.Utilities',
+	'TNR.NetworkTensor',
 	'TNR.TreeTensor',
 	'TNR.TensorLoopOptimization'
 	],

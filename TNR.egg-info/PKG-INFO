@@ -1,0 +1,17 @@
+Metadata-Version: 1.1
+Name: TNR
+Version: 1.1
+Summary: Tensor Network Renormalization
+Home-page: https://github.com/adamjermyn/mixer
+Author: Adam S. Jermyn
+Author-email: adamjermyn@gmail.com
+License: UNKNOWN
+Description-Content-Type: UNKNOWN
+Description: UNKNOWN
+Platform: UNKNOWN
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: GPLv3 License
+Classifier: Operating System :: Microsoft :: Windows
+Classifier: Operating System :: POSIX
+Classifier: Operating System :: Unix
+Classifier: Operating System :: MacOS
