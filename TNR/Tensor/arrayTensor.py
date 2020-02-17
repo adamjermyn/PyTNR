@@ -87,6 +87,12 @@ class ArrayTensor(Tensor):
                     (ind, otherInd)))
             return ArrayTensor(arr, logScalar=self.logScalar + other.logScalar)
 
+    def flatten(self, inds):
+        arr = np.copy(self.scaledArray)
+        arr = permuteIndices(arr, inds, front=False)
+        arr = np.reshape(arr, list(arr.shape[:-len(inds)]) + [-1])
+        return ArrayTensor(arr, logScalar=self.logScalar)
+
     def getIndexFactor(self, ind):
         return self.scaledArray, ind
 
