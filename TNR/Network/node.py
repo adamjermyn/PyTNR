@@ -82,7 +82,7 @@ class Node:
 
     def eliminateLoops(self):
         if hasattr(self.tensor, 'compressedSize'):
-            self.tensor.eliminateLoops(self.connectedNodes)
+            self.tensor.eliminateLoops()
 
     def mergeBuckets(self, buckets):
         '''
