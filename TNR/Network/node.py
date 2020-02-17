@@ -80,10 +80,6 @@ class Node:
     def bucketIndex(self, b):
         return self.buckets.index(b)
 
-    def eliminateLoops(self):
-        if hasattr(self.tensor, 'compressedSize'):
-            self.tensor.eliminateLoops()
-
     def mergeBuckets(self, buckets):
         '''
         This method merges the listed buckets.
