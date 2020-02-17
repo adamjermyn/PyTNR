@@ -7,7 +7,7 @@ print(find_packages())
 
 setup(
 	name = 'TNR',
-	version = '1.1',
+	version = '1.2',
 	description = 'Tensor Network Renormalization',
 	author = 'Adam S. Jermyn',
 	author_email = 'adamjermyn@gmail.com',
