@@ -33,7 +33,17 @@ def swap_elim(tensor, return_copy):
 
     return tensor
 
-def swap_elim_network(network, tensor, return_copy):
+def swap_elim_node(node, return_copy):
+    if return_copy:
+        node = deepcopy(node)
+
+    node.tensor = swap_elim(node.tensor, False)
+
+    return node
+
+def swap_elim_network(network, node, return_copy):
     if return_copy:
         network = deepcopy(network)
-    return network, swap_elim(tensor, return_copy)
+        node = list(n for n in network.nodes if n.id == node.id)[0]
+
+    return network, swap_elim_node(node, False)
