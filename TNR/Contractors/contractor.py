@@ -79,24 +79,22 @@ class replicaContractor(contractor):
 		# Perform one contraction step
 		new_node = None
 		done = None
-		new_node, done = c.take_step(heuristic, eliminateLoops=eliminateLoops)
-		if False:
-			try:
-				new_node, done = c.take_step(heuristic, eliminateLoops=eliminateLoops)
-			except KeyboardInterrupt:
-				exit()
-			except:
-				e = sys.exc_info()[0]
-				logger.info(str(e))
-				logger.info('Failed to contract network ' + str(ind) + '.')
-				logger.info('Replacing that with a clone of the next best network.')
-				# Clone the current best network in place of the failed one
-				del self.replicas[ind]
-				del self.costs[ind]
-				ind = self.costs.index(min(self.costs))
-				self.replicas.append(deepcopy(self.replicas[ind]))
-				self.costs.append(self.costs[ind])
-				replaced = True
+		try:
+			new_node, done = c.take_step(heuristic, eliminateLoops=eliminateLoops)
+		except KeyboardInterrupt:
+			exit()
+		except:
+			e = sys.exc_info()[0]
+			logger.info(str(e))
+			logger.info('Failed to contract network ' + str(ind) + '.')
+			logger.info('Replacing that with a clone of the next best network.')
+			# Clone the current best network in place of the failed one
+			del self.replicas[ind]
+			del self.costs[ind]
+			ind = self.costs.index(min(self.costs))
+			self.replicas.append(deepcopy(self.replicas[ind]))
+			self.costs.append(self.costs[ind])
+			replaced = True
 
 		# Check if cost cap was exceeded. If so, remove the offending replica and replace it with a copy of the cheapest one.
 		if self.cost_cap is not None:
