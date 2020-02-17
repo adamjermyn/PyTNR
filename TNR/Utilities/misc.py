@@ -5,34 +5,6 @@ from copy import deepcopy
 # Miscillaneous Helper Functions
 ################################
 
-def tupleReplace(tpl, i, j):
-    '''
-    Returns a tuple with element i of tpl replaced with the quantity j.
-    If j is None, just removes element i.
-    '''
-    assert i >= 0
-    assert i < len(tpl)
-
-    tpl = list(tpl)
-    if j is not None:
-        tpl = tpl[:i] + [j] + tpl[i + 1:]
-    else:
-        tpl = tpl[:i] + tpl[i + 1:]
-    return tuple(tpl)
-
-def cutSlice(i, shape):
-    '''
-    Creates a slice object which selects the zero position on index i for
-    an array of the specified shape.
-    :param i: The index to slice.
-    :param shape: The shape of the array.
-    :return: sl: A slice object.
-    '''
-
-    sl = list(slice(0, shape[k]) for k in range(i)) + [0] + list(
-        slice(0, shape[k]) for k in range(i + 1, len(shape)))
-    return sl
-
 def shortest_cycles(graph):
     graph = networkx.relabel_nodes(graph, lambda x: x.id)
     cycles = []
