@@ -176,18 +176,13 @@ def util(adj):
 
 
 class traceMin:
-    def __init__(self, network, otherNodes):
+    def __init__(self, network):
         '''
         A traceMin is an object which maintains the adjacency matrix for a network and
         provides helper methods for evaluating functions of this method and evaluating the
         effect of changes to this network.
-
-        otherNodes is a list of other nodes containing tree tensors whose graphs should be
-        accomodated in evaluating loops.
         '''
-        otherNodes = None  # TODODODODODODODODODODO
-        if otherNodes is None:
-            otherNodes = []
+        otherNodes = []
 
         self.network = network
         self.otherNodes = otherNodes
