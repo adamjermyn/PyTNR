@@ -1,7 +1,21 @@
 import numpy as np
+from copy import deepcopy
+
 from TNR.Utilities.arrays import ndArrayToMatrix, matrixToNDArray
 from TNR.Utilities.svd import svdByPrecision, matrixProductLinearOperator
 
+def compress_link_in_network(network, l, accuracy, return_copy):
+    if return_copy:
+        network = deepcopy(network)
+        n1 = l.bucket1.node
+        n2 = l.bucket2.node
+        node1 = list(n for n in network.nodes if n.id == n1.id)[0]
+        node2 = list(n for n in network.nodes if n.id == n2.id)[0]
+        l = node1.linksConnecting(node2)
+
+    compressLink(l, accuracy)
+
+    return network
 
 def compressLink(l, accuracy):
     b1 = l.bucket1

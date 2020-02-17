@@ -377,7 +377,7 @@ class Network:
 
         return n
 
-    def mergeLinks(self, n, compress=False, accuracy=1e-4):
+    def mergeLinks(self, n, accuracy=1e-4):
         merged = []
         for n1 in n.connectedNodes:
             links = n1.linksConnecting(n)
@@ -394,8 +394,6 @@ class Network:
                 b = n.mergeBuckets(buckets1)
                 b1 = n1.mergeBuckets(buckets2)
                 l = Link(b, b1)
-                if compress:
-                    compressLink(l, accuracy)
                 merged.append(n1)
         return merged
 
