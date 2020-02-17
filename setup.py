@@ -25,6 +25,7 @@ setup(
 	'TNR.Contractors',
 	'TNR.Environment',
 	'TNR.Examples',
+	'TNR.Loops',
 	'TNR.Test',
 	'TNR.Models',
 	'TNR.Network',
