@@ -1,6 +1,6 @@
 from TNR.Utilities.logger import makeLogger
 from TNR.Contractors.contractor import contractor
-from TNR.Contractors.heuristics import loopHeuristic as heuristic
+from TNR.Contractors.heuristics import simple_heuristic as heuristic
 
 def mergeContractor(
         n,
@@ -18,7 +18,7 @@ def mergeContractor(
         node, done = c.take_step(heuristic, eliminateLoops=False)
         if optimize:
             c.optimize(new_node)
-    n = c.replicas[ind].network
+    n = c.network
 
     for node in n.nodes:
         node.eliminateLoops()

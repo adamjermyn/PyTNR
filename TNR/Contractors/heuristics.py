@@ -67,6 +67,18 @@ def mergeHeuristic(n):
                 biggest = [metric, nn, nnn]
     return biggest
 
+def simple_heuristic(n):
+    nodes = list(n.nodes)
+
+    i = 0
+    n1 = nodes[0]
+    while len(n1.connectedNodes) == 0:
+        i += 1
+        n1 = nodes[i]
+    
+    n2 = next(iter(n1.connectedNodes))
+
+    return 0, n1, n2
 
 def smallLoopHeuristic(n):
     '''
