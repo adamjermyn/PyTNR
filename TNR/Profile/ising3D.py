@@ -17,7 +17,6 @@ J = 0.5
 n = IsingModel3D(nX, nY, nZ, h, J, accuracy)
 n = mergeContractor(
     n,
-    accuracy,
     optimize=False)
 
 print(len(n.nodes))
