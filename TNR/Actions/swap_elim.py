@@ -32,3 +32,8 @@ def swap_elim(tensor, return_copy):
     assert len(networkx.cycles.cycle_basis(network.toGraph())) == 0
 
     return tensor
+
+def swap_elim_network(network, tensor, return_copy):
+    if return_copy:
+        network = deepcopy(network)
+    return network, swap_elim(tensor, return_copy)

@@ -1,7 +1,9 @@
 from copy import deepcopy
-from TNR.Utilities.logger import makeLogger
 from TNR import config
 import sys
+
+
+from TNR.Utilities.logger import makeLogger
 logger = makeLogger(__name__, config.levels['contractor'])
 
 class contractor:
@@ -9,56 +11,10 @@ class contractor:
 	def __init__(self, network):
 		self.network = deepcopy(network)
 
-	def take_step(self, heuristic):
-		'''
-		Uses a heuristic to pick the next contraction and performs it.
+	def perform_action(self, action, *args):
+		return action(self.network, *args)
 
-		If the result is a tree tensor and the user specifies, this routine then eliminates any resulting loops.
-		'''
-
-		# Pre-contraction output
-		logger.info('Network has ' +
-					str(len(self.network.nodes)) +
-					' nodes.')
-
-		# Contraction
-		utility, node1, node2 = heuristic(self.network)
-		new_node = self.network.mergeNodes(node1, node2)
-
-		# Post-contraction output
-		logger.info('Contraction had utility ' +
-					str(utility) +
-					' and resulted in a tensor connected to ' +
-					str(len(new_node.connectedNodes)) +
-					' nodes.')
-
-		done = False
-		if len(self.network.internalBuckets) == 0:
-			done = True
-
-		return new_node, done
-
-	def merge_bonds(self, node):
-		'''
-		Merges all bonds shared between the specified node and any other node in the network.
-		'''
-		if hasattr(node.tensor, 'network') and len(node.tensor.network.nodes) > mergeCut:
-			done = False
-			while len(node.tensor.network.nodes) > mergeCut and not done:
-				merged = self.network.mergeClosestLinks(node, compress=True, accuracy=node.tensor.network.accuracy)
-				if merged is None:
-					done = True
-				else:
-					node.eliminateLoops()
-					merged.eliminateLoops()
-
-	def optimize(self, node):
-		'''
-		Optimizes the tree tensor of the specified node.
-		'''
-		node.tensor.optimize()
-
-class replicaContractor(contractor):
+class replicaContractor:
 
 	def __init__(self, network, num_copies, cost_cap):
 		self.replicas = list(contractor(network) for _ in range(num_copies))
@@ -66,24 +22,18 @@ class replicaContractor(contractor):
 		self.num_copies = num_copies
 		self.cost_cap = cost_cap
 
-	def take_step(self, heuristic):
-		replaced = False
+	def index_of_least_cost(self):
+		return 	self.costs.index(min(self.costs))
 
-		# Work with the lowest-cost network
-		ind = self.costs.index(min(self.costs))
-		c = self.replicas[ind]
-
-		# Perform one contraction step
-		new_node = None
-		done = None
+	def perform_action(self, index, action, *args):
 		try:
-			new_node, done = c.take_step(heuristic)
+			ret = self.replicas[index].perform_action(action, *args)
 		except KeyboardInterrupt:
 			exit()
 		except:
 			e = sys.exc_info()[0]
 			logger.info(str(e))
-			logger.info('Failed to contract network ' + str(ind) + '.')
+			logger.info('Error in taking action on network ' + str(ind) + '.')
 			logger.info('Replacing that with a clone of the next best network.')
 			# Clone the current best network in place of the failed one
 			del self.replicas[ind]
@@ -104,10 +54,4 @@ class replicaContractor(contractor):
 				self.costs.append(self.costs[ind])
 				replaced = True
 
-		return new_node, done, ind, replaced
-
-	def merge_bonds(self, node, ind):
-		self.replicas[ind].merge_bonds(node)
-
-	def optimize(self, node, ind):
-		self.replicas[ind].optimize(node)
+		return ret, replaced

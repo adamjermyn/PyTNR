@@ -2,9 +2,7 @@ from TNR.Utilities.logger import makeLogger
 from TNR.Contractors.contractor import contractor
 from TNR.Contractors.heuristics import simple_heuristic as heuristic
 
-def mergeContractor(
-        n,
-        optimize=True):
+def mergeAllContractor(n):
     '''
     This method contracts the network n to the specified accuracy using the specified heuristic.
 

@@ -5,6 +5,7 @@ from pathlib import Path
 # Logging levels
 
 levels = {}
+levels['basic_actions'] = 'info'
 levels['svd'] = 'debug'
 levels['linalg'] = 'debug'
 levels['misc'] = 'debug'
