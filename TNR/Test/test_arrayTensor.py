@@ -54,40 +54,6 @@ def test_contract():
                  x,
                  y))**2) < epsilon
 
-
-def test_trace():
-    for i in range(5):
-        x = np.random.randn(3, 3, 5)
-        xt = ArrayTensor(x)
-        assert np.sum(
-            (xt.trace(
-                [0],
-                [1]).array -
-                np.einsum(
-                'iij->j',
-                x))**2) < epsilon
-
-    for i in range(5):
-        x = np.random.randn(3, 3, 5, 4, 4)
-        xt = ArrayTensor(x)
-        assert np.sum((xt.trace([0, 3], [1, 4]).array -
-                       np.einsum('iijkk->j', x))**2) < epsilon
-
-
-def test_flatten():
-    for i in range(5):
-        x = np.random.randn(3, 3, 5)
-        xt = ArrayTensor(x)
-        assert np.sum((xt.flatten([0, 1]).array -
-                       np.reshape(x, (-1, 5)).T)**2) < epsilon
-
-    for i in range(5):
-        x = np.random.randn(3, 3, 5)
-        xt = ArrayTensor(x)
-        assert np.sum((xt.flatten(
-            [1, 0]).array - np.reshape(np.swapaxes(x, 0, 1), (-1, 5)).T)**2) < epsilon
-
-
 def test_getIndexFactor():
     for i in range(5):
         x = np.random.randn(3, 3, 3)
