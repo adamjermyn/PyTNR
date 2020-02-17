@@ -293,68 +293,6 @@ class NetworkTensor(Tensor):
         t.externalBuckets.remove(b)
         return t
 
-
-    def trace(self, ind0, ind1):
-        '''
-        Takes as input:
-                ind0	-	A list of indices on one side of their Links.
-                ind1	-	A list of indices on the other side of their Links.
-
-        Elements of ind0 and ind1 must correspond, such that the same Link is
-        represented by indices at the same location in each list.
-
-        Elements of ind0 should not appear in ind1, and vice-versa.
-
-        Returns a Tensor containing the trace over all of the pairs of indices.
-        '''
-
-        ind0 = list(ind0)
-        ind1 = list(ind1)
-
-        t = deepcopy(self)
-
-        for i in range(len(ind0)):
-            b1 = t.externalBuckets[ind0[i]]
-            b2 = t.externalBuckets[ind1[i]]
-
-            n1 = b1.node
-            n2 = b2.node
-
-            if n1 == n2:
-                # So we're just tracing an arrayTensor.
-                n1.tensor = n1.tensor.trace([b1.index], [b2.index])
-                n1.buckets.remove(b1)
-                n1.buckets.remove(b2)
-            else:
-                # We're connecting two leaves
-                _ = Link(b1, b2)
-                t.network.externalBuckets.remove(b1)
-                t.network.externalBuckets.remove(b2)
-                t.network.internalBuckets.add(b1)
-                t.network.internalBuckets.add(b2)
-
-            t.externalBuckets.remove(b1)
-            t.externalBuckets.remove(b2)
-
-            for j in range(len(ind0)):
-                d0 = 0
-                d1 = 0
-
-                if ind0[j] > ind0[i]:
-                    d0 += 1
-                if ind0[j] > ind1[i]:
-                    d0 += 1
-
-                if ind1[j] > ind0[i]:
-                    d1 += 1
-                if ind1[j] > ind1[i]:
-                    d1 += 1
-
-                ind0[j] -= d0
-                ind1[j] -= d1
-
-        return t
-
     def flatten(self, inds):
         '''
         This method merges the listed external indices using

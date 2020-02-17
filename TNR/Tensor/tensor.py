@@ -50,14 +50,6 @@ class Tensor(ABC):
         pass
 
     @abstractmethod
-    def trace(self, ind0, ind1):
-        '''
-        Returns the trace of the Tensor along the pairs of indices specified by ind0 and ind1, where ind0 and ind1
-        are either integers or lists of integers of the same shape.
-        '''
-        pass
-
-    @abstractmethod
     def flatten(self, inds):
         '''
         Returns a copy of the Tensor which has been flattened along the indices

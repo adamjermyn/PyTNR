@@ -71,23 +71,6 @@ def test_contract():
                  x,
                  y))**2) < epsilon
 
-
-def test_trace():
-    for i in range(5):
-        x = np.random.randn(2, 2, 2, 2, 2, 2)
-        xt = TreeTensor(accuracy=epsilon)
-        xt.addTensor(ArrayTensor(x))
-        assert np.sum(
-            (xt.trace(
-                [0],
-                [1]).array -
-                np.einsum(
-                'iijklm->jklm',
-                x))**2) < epsilon
-        assert np.sum((xt.trace([0, 2], [5, 4]).array -
-                       np.einsum('ijklki->jl', x))**2) < epsilon
-
-
 def test_flatten():
     for i in range(5):
         x = np.random.randn(3, 3, 5)
