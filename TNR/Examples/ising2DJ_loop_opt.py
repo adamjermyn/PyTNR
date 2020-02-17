@@ -4,7 +4,10 @@ import time
 from TNR.Models.isingModel import IsingModel2Ddisordered
 from TNR.Contractors.contractor import replicaContractor
 from TNR.Contractors.heuristics import loopHeuristic as heuristic
-from TNR.Actions.loop_svd_elim import loop_svd_elim as eliminateLoops
+
+from TNR.Actions.loop_svd_elim import loop_svd_elim_network as eliminateLoops
+from TNR.Actions.optimize_loop import loop_svd_optimize_network as optimize
+from TNR.Actions.basic_actions import merge_all_nodes
 
 from TNR.Utilities.logger import makeLogger
 from TNR import config
@@ -14,13 +17,20 @@ logger = makeLogger(__name__, config.levels['generic'])
 def ising2DFreeEnergy(nX, nY, h, J, accuracy):
     n = IsingModel2Ddisordered(nX, nY, h, J, accuracy)
 
+    # Merge all
+    n = merge_all_nodes(n, False)
+
+    # Eliminate loops
     c = replicaContractor(n, 5, 1e6)
-    done = False
-    while not done:
-        node, done, ind, replaced = c.take_step(heuristic)
-        if not replaced:
-            eliminateLoops(node.tensor, False)
-            c.optimize(new_node)
+    ind = 0
+    nodes = list(n.nodes)
+    for node in nodes:
+        done = False
+        while not done:
+            ind = c.index_of_least_cost()
+            next_info, replaced = c.perform_action(ind, eliminateLoops, node, False)
+            node, done = next_info
+
     n = c.replicas[ind].network
 
     arr, log_arr, bdict = n.array

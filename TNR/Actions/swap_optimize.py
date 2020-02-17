@@ -1,6 +1,21 @@
 from copy import deepcopy
 
-def optimize(tensor, return_copy):
+def swap_optimize_node(node, return_copy):
+    if return_copy:
+        node = deepcopy(node)
+
+    node.tensor = swap_optimize(node.tensor, False)
+
+    return node
+
+def swap_optimize_network(network, node, return_copy):
+    if return_copy:
+        network = deepcopy(network)
+        node = list(n for n in network.nodes if n.id == node.id)[0]
+
+    return network, swap_optimize_node(node, False)
+
+def swap_optimize(tensor, return_copy):
     '''
     Optimizes the tensor network to minimize memory usage.
     '''

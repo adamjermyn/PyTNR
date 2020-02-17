@@ -1,7 +1,28 @@
+import numpy as np
 from copy import deepcopy
-
+import networkx
 from TNR.TensorLoopOptimization.optimizer import optimize as opt
+from TNR.TensorLoopOptimization.densityMatrix import cutSVD
+from TNR.TensorLoopOptimization.svdCut import svdCut
 from TNR.Environment.environment import artificialCut, identityEnvironment, fullEnvironment
+from TNR.Utilities.logger import makeLogger
+from TNR import config
+logger = makeLogger(__name__, config.levels['loopOpt'])
+
+def loop_svd_elim_network(network, node, return_copy):
+    if return_copy:
+        network = deepcopy(network)
+        node = list(n for n in network.nodes if n.id == node.id)[0]
+
+    return network, loop_svd_elim_node(node, False)
+
+def loop_svd_elim_node(node, return_copy):
+    if return_copy:
+        node = deepcopy(node)
+
+    node.tensor = loop_svd_elim(node.tensor, False)
+
+    return node
 
 def loop_svd_elim(tensor, return_copy):
     if return_copy:
@@ -17,7 +38,7 @@ def loop_svd_elim(tensor, return_copy):
             print('Cycles:',len(cycles), list(len(c) for c in cycles))
             old_nodes = set(tensor.network.nodes)
 
-            tensor.cutLoop(cycles[0], False)
+            cutLoop(tensor,cycles[0], False)
             tensor.contractRank2()
             new_nodes = set(tensor.network.nodes)
 
@@ -28,7 +49,7 @@ def loop_svd_elim(tensor, return_copy):
     assert len(networkx.cycles.cycle_basis(tensor.network.toGraph())) == 0
 
     return tensor
-    
+
 def cutLoop(tensor, loop, return_copy, cutIndex=None):
     logger.debug('Cutting loop.')
     print(len(loop))

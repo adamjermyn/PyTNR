@@ -3,6 +3,21 @@ from copy import deepcopy
 from TNR.TensorLoopOptimization.optimizer import optimize as opt
 from TNR.Environment.environment import artificialCut, identityEnvironment, fullEnvironment
 
+def loop_svd_optimize_network(network, node, return_copy):
+    if return_copy:
+        network = deepcopy(network)
+        node = list(n for n in network.nodes if n.id == node.id)[0]
+
+    return network, loop_svd_optimize_node(node, False)
+
+def loop_svd_optimize_node(node, return_copy):
+    if return_copy:
+        node = deepcopy(node)
+
+    node.tensor = loop_svd_optimize(node.tensor, False)
+
+    return node
+    
 def loop_svd_optimize(tensor, return_copy):
     if return_copy:
         tensor = deepcopy(tensor)

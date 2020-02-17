@@ -26,6 +26,8 @@ class replicaContractor:
 		return 	self.costs.index(min(self.costs))
 
 	def perform_action(self, index, action, *args):
+		ret = [None, None]
+		ret = self.replicas[index].perform_action(action, *args)
 		try:
 			ret = self.replicas[index].perform_action(action, *args)
 		except KeyboardInterrupt:
@@ -33,11 +35,11 @@ class replicaContractor:
 		except:
 			e = sys.exc_info()[0]
 			logger.info(str(e))
-			logger.info('Error in taking action on network ' + str(ind) + '.')
+			logger.info('Error in taking action on network ' + str(index) + '.')
 			logger.info('Replacing that with a clone of the next best network.')
 			# Clone the current best network in place of the failed one
-			del self.replicas[ind]
-			del self.costs[ind]
+			del self.replicas[index]
+			del self.costs[index]
 			ind = self.costs.index(min(self.costs))
 			self.replicas.append(deepcopy(self.replicas[ind]))
 			self.costs.append(self.costs[ind])
@@ -50,8 +52,8 @@ class replicaContractor:
 					logger.info('Network ' + str(i) + ' has exceeded the cost cap. Replacing it with a clone of the best network.')
 					self.costs[i] = min(costs)
 					self.replicas[i] = deepcopy(self.replicas[self.costs.index(min(self.costs))])
-				self.replicas.append(deepcopy(self.replicas[ind]))
-				self.costs.append(self.costs[ind])
+				self.replicas.append(deepcopy(self.replicas[index]))
+				self.costs.append(self.costs[index])
 				replaced = True
 
 		return ret, replaced
