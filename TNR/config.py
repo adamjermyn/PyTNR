@@ -1,6 +1,3 @@
-runParams['epsilon'] = 1e-10
-
-# Sets machine precision
 import yaml
 import os.path
 from pathlib import Path
@@ -36,21 +33,20 @@ levels['generic'] = 'info'
 runParams = {}
 
 # Determines the cutoff size below which matrices default to the dense SVD.
-
 runParams['svdCutoff'] = 3e2
 
 # Determines the maximum number of attempts for the interpolative SVD.
-
 runParams['svdTries'] = 4
 
 # Determines the maximum bond dimension for using sparse SVD. Written as a
 # fraction of the matrix rank.
-
 runParams['svdBondCutoff'] = 0.1
 
 # Sets an upper bound on memory usage
-
 runParams['mem_limit'] = 2**33
+
+# Sets machine precision
+runParams['epsilon'] = 1e-10
 
 # Read config file if possible
 
