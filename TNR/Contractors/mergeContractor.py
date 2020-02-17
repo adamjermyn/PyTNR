@@ -20,7 +20,6 @@ def mergeContractor(
         heuristic,
         optimize=True,
         merge=True,
-        plot=False,
         mergeCut=35):
     '''
     This method contracts the network n to the specified accuracy using the specified heuristic.
@@ -37,24 +36,6 @@ def mergeContractor(
         counter = 0
 
     while len(n.internalBuckets) > 0:
-
-        if plot:
-            g = n.toGraph()
-            reusePos = {}
-            if pos is not None:
-                for nn in g.nodes():
-                    if nn in pos:
-                        reusePos[nn] = pos[nn]
-                pos = networkx.fruchterman_reingold_layout(
-                    g, pos=reusePos, fixed=reusePos.keys())
-            else:
-                pos = networkx.fruchterman_reingold_layout(g)
-            plt.figure(figsize=(11, 11))
-            networkx.draw(g, pos, width=2)
-            plt.savefig('Overview/' + str(counter) + '.png')
-            plt.clf()
-            plt.close()
-            counter += 1
 
         q, n1, n2 = heuristic(n)
 
