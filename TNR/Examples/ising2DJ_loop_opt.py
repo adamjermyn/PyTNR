@@ -1,11 +1,12 @@
 import numpy as np
 import time
+import networkx
 
 from TNR.Models.isingModel import IsingModel2Ddisordered
 from TNR.Contractors.contractor import replicaContractor
 from TNR.Contractors.heuristics import loopHeuristic as heuristic
 
-from TNR.Actions.loop_svd_elim import loop_svd_elim_network as eliminateLoops
+from TNR.Actions.loop_svd_elim import loop_svd_single_elim_network as eliminateLoops
 from TNR.Actions.optimize_loop import loop_svd_optimize_network as optimize
 from TNR.Actions.basic_actions import merge_all_nodes
 
@@ -26,10 +27,9 @@ def ising2DFreeEnergy(nX, nY, h, J, accuracy):
     nodes = list(n.nodes)
     for node in nodes:
         done = False
-        while not done:
+        while len(networkx.cycles.cycle_basis(node.tensor.network.toGraph())) > 0:
             ind = c.index_of_least_cost()
             next_info, replaced = c.perform_action(ind, eliminateLoops, node, False)
-            node, done = next_info
 
     n = c.replicas[ind].network
 
