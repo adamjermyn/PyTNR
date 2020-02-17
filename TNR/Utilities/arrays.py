@@ -1,18 +1,6 @@
 import numpy as np
 
 
-def insertIndex(arr, ind, newInd):
-    '''
-    This method removes the specified index (ind) and inserts
-    it in the new location (newInd).
-    '''
-    perm = list(range(len(arr.shape)))
-    perm.remove(ind)
-    perm.insert(newInd, ind)
-    arr = np.transpose(arr, axes=perm)
-    return arr
-
-
 def permuteIndices(arr, indices, front=True):
     '''
     This method moves the indices specified in indices
