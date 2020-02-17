@@ -1,10 +1,11 @@
 import networkx
 from copy import deepcopy
 
-def eliminateLoops(network, return_copy):
+def swap_elim(tensor, return_copy):
     if return_copy:
-        network = deepcopy(network)
+        tensor = deepcopy(tensor)
 
+    network = tensor.network
     tm = traceMin(network)
 
     while len(networkx.cycles.cycle_basis(network.toGraph())) > 0:
@@ -26,4 +27,4 @@ def eliminateLoops(network, return_copy):
     counter0 += 1
     assert len(networkx.cycles.cycle_basis(network.toGraph())) == 0
 
-    return network
+    return tensor

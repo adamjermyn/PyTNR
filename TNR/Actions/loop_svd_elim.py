@@ -3,6 +3,32 @@ from copy import deepcopy
 from TNR.TensorLoopOptimization.optimizer import optimize as opt
 from TNR.Environment.environment import artificialCut, identityEnvironment, fullEnvironment
 
+def loop_svd_elim(tensor, return_copy):
+    if return_copy:
+        tensor = deepcopy(tensor)
+
+    canon = lambda x: list(y for y in tensor.network.nodes for i in range(len(x)) if y.id == x[i])
+    prodkey = lambda x: sum(x[i].tensor.size*x[i+1].tensor.size for i in range(len(x)-1))
+    while len(networkx.cycles.cycle_basis(tensor.network.toGraph())) > 0:
+
+        tensor.contractRank2()
+        cycles = sorted(networkx.cycles.cycle_basis(tensor.network.toGraph()), key=len)
+        if len(cycles) > 0:
+            print('Cycles:',len(cycles), list(len(c) for c in cycles))
+            old_nodes = set(tensor.network.nodes)
+
+            tensor.cutLoop(cycles[0], False)
+            tensor.contractRank2()
+            new_nodes = set(tensor.network.nodes)
+
+            affected = set(cycles[0])
+            affected.update(new_nodes.difference(old_nodes))
+            tensor.network.graph = None
+
+    assert len(networkx.cycles.cycle_basis(tensor.network.toGraph())) == 0
+
+    return tensor
+    
 def cutLoop(tensor, loop, return_copy, cutIndex=None):
     logger.debug('Cutting loop.')
     print(len(loop))
@@ -129,30 +155,4 @@ def cutLoop(tensor, loop, return_copy, cutIndex=None):
     tensor.network.check()
 
     logger.debug('Cut.')
-    return tensor
-
-def loop_svd_elim(tensor, return_copy):
-    if return_copy:
-        tensor = deepcopy(tensor)
-
-    canon = lambda x: list(y for y in tensor.network.nodes for i in range(len(x)) if y.id == x[i])
-    prodkey = lambda x: sum(x[i].tensor.size*x[i+1].tensor.size for i in range(len(x)-1))
-    while len(networkx.cycles.cycle_basis(tensor.network.toGraph())) > 0:
-
-        tensor.contractRank2()
-        cycles = sorted(networkx.cycles.cycle_basis(tensor.network.toGraph()), key=len)
-        if len(cycles) > 0:
-            print('Cycles:',len(cycles), list(len(c) for c in cycles))
-            old_nodes = set(tensor.network.nodes)
-
-            tensor.cutLoop(cycles[0], False)
-            tensor.contractRank2()
-            new_nodes = set(tensor.network.nodes)
-
-            affected = set(cycles[0])
-            affected.update(new_nodes.difference(old_nodes))
-            tensor.network.graph = None
-
-    assert len(networkx.cycles.cycle_basis(tensor.network.toGraph())) == 0
-
     return tensor
