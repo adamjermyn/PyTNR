@@ -4,7 +4,7 @@ import time
 from TNR.Models.isingModel import IsingModel1D, exactIsing1Dh
 from TNR.Contractors.contractor import contractor
 from TNR.Contractors.heuristics import entropyHeuristic as heuristic
-
+from TNR.Actions.swap_elim import swap_elim as eliminateLoops
 
 def ising1DFreeEnergy(nX, h, J, accuracy):
     n = IsingModel1D(nX, h, J, accuracy)
@@ -12,7 +12,8 @@ def ising1DFreeEnergy(nX, h, J, accuracy):
     c = contractor(n)
     done = False
     while not done:
-        node, done = c.take_step(heuristic, eliminateLoops=True)
+        node, done = c.take_step(heuristic)
+        eliminateLoops(node.tensor)
     n = c.network
 
     arr, log_arr, bdict = n.array
