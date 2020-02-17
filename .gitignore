@@ -6,3 +6,4 @@ build/*
 dist/*
 TNR.egg*
 *.dat
+*.DS_Store
