@@ -1,6 +1,7 @@
 from copy import deepcopy
 from TNR.Utilities.logger import makeLogger
 from TNR import config
+import sys
 logger = makeLogger(__name__, config.levels['contractor'])
 
 class contractor:
@@ -76,6 +77,8 @@ class replicaContractor(contractor):
 		c = self.replicas[ind]
 
 		# Perform one contraction step
+		new_node = None
+		done = None
 		try:
 			new_node, done = c.take_step(heuristic, eliminateLoops=eliminateLoops)
 		except KeyboardInterrupt:
