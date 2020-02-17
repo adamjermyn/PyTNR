@@ -33,7 +33,8 @@ n = BayesTest2(
 c = contractor(n)
 done = False
 while not done:
-    node, done = c.take_step(heuristic, eliminateLoops=True)
+    node, done = c.take_step(heuristic)
+    eliminateLoops(node.tensor, False)
 n = c.network
 
 print(n.nodes.pop().tensor.array)

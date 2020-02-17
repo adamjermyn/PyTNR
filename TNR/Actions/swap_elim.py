@@ -1,5 +1,10 @@
 import networkx
 from copy import deepcopy
+from TNR.Network.traceMin import traceMin
+
+from TNR.Utilities.logger import makeLogger
+from TNR import config
+logger = makeLogger(__name__, config.levels['traceMin'])
 
 def swap_elim(tensor, return_copy):
     if return_copy:
@@ -24,7 +29,6 @@ def swap_elim(tensor, return_copy):
 
         logger.debug(str(network))
 
-    counter0 += 1
     assert len(networkx.cycles.cycle_basis(network.toGraph())) == 0
 
     return tensor

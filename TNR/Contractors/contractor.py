@@ -9,7 +9,7 @@ class contractor:
 	def __init__(self, network):
 		self.network = deepcopy(network)
 
-	def take_step(self, heuristic, eliminateLoops=True):
+	def take_step(self, heuristic):
 		'''
 		Uses a heuristic to pick the next contraction and performs it.
 
@@ -31,9 +31,6 @@ class contractor:
 					' and resulted in a tensor connected to ' +
 					str(len(new_node.connectedNodes)) +
 					' nodes.')
-
-		if eliminateLoops:
-			new_node.eliminateLoops()
 
 		done = False
 		if len(self.network.internalBuckets) == 0:
@@ -69,7 +66,7 @@ class replicaContractor(contractor):
 		self.num_copies = num_copies
 		self.cost_cap = cost_cap
 
-	def take_step(self, heuristic, eliminateLoops=True):
+	def take_step(self, heuristic):
 		replaced = False
 
 		# Work with the lowest-cost network
@@ -80,7 +77,7 @@ class replicaContractor(contractor):
 		new_node = None
 		done = None
 		try:
-			new_node, done = c.take_step(heuristic, eliminateLoops=eliminateLoops)
+			new_node, done = c.take_step(heuristic)
 		except KeyboardInterrupt:
 			exit()
 		except:

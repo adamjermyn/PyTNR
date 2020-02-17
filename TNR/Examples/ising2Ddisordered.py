@@ -4,6 +4,7 @@ import time
 from TNR.Models.isingModel import IsingModel2Ddisordered
 from TNR.Contractors.contractor import replicaContractor
 from TNR.Contractors.heuristics import loopHeuristic as heuristic
+from TNR.Actions.swap_elim import swap_elim as eliminateLoops
 
 from TNR.Utilities.logger import makeLogger
 from TNR import config
@@ -16,8 +17,9 @@ def ising2DFreeEnergy(nX, nY, h, J, accuracy):
     c = replicaContractor(n, 5, 1e6)
     done = False
     while not done:
-        node, done, ind, replaced = c.take_step(heuristic, eliminateLoops=True)
+        node, done, ind, replaced = c.take_step(heuristic)
         if not replaced:
+            eliminateLoops(node.tensor, False)
             c.optimize(new_node)
     n = c.replicas[ind].network
 

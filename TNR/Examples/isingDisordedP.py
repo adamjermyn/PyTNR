@@ -4,6 +4,7 @@ import time
 from TNR.Models.isingModel import IsingModel2DdisorderedProbs
 from TNR.Contractors.mergeContractor import mergeContractor
 from TNR.Contractors.heuristics import loopHeuristic as heuristic
+from TNR.Actions.swap_elim import swap_elim as eliminateLoops
 
 from TNR.Utilities.logger import makeLogger
 from TNR import config

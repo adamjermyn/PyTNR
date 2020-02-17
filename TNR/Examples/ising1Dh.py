@@ -13,7 +13,7 @@ def ising1DFreeEnergy(nX, h, J, accuracy):
     done = False
     while not done:
         node, done = c.take_step(heuristic)
-        eliminateLoops(node.tensor)
+        eliminateLoops(node.tensor, False)
     n = c.network
 
     arr, log_arr, bdict = n.array

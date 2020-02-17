@@ -5,6 +5,7 @@ import sys
 from TNR.Models.isingModel import IsingSpinGlass
 from TNR.Contractors.contractor import contractor
 from TNR.Contractors.heuristics import loopHeuristic as heuristic
+from TNR.Actions.swap_elim import swap_elim as eliminateLoops
 
 from TNR.Utilities.logger import makeLogger
 from TNR import config
@@ -17,7 +18,8 @@ def isingFreeEnergy(nX, J, k, accuracy):
     c = contractor(n)
     done = False
     while not done:
-        node, done = c.take_step(heuristic, eliminateLoops=True)
+        node, done = c.take_step(heuristic)
+        eliminateLoops(node.tensor, False)
         c.optimize(node)
     n = c.network
 
